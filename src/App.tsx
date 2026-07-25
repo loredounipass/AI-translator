@@ -8,8 +8,6 @@ import HistoryPanel from "./components/HistoryPanel";
 import { AI_MODELS, DEFAULT_MODEL } from "utils/constants";
 import { Analytics } from "@vercel/analytics/react";
 
-const modes = ["TEXT MODE", "VOICE MODE"];
-
 const SunIcon = () => (
   <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
     <circle cx="12" cy="12" r="5"></circle>
@@ -37,42 +35,6 @@ const HistoryIcon = () => (
   </svg>
 );
 
-const ModeIndicator = () => {
-  const [currentModeIdx, setCurrentModeIdx] = useState(0);
-  const [displayedText, setDisplayedText] = useState("");
-  const [isDeleting, setIsDeleting] = useState(false);
-
-  useEffect(() => {
-    const typingSpeed = isDeleting ? 40 : 100;
-    const currentMode = modes[currentModeIdx];
-
-    const timer = setTimeout(() => {
-      if (!isDeleting && displayedText === currentMode) {
-        setTimeout(() => setIsDeleting(true), 2500);
-      } else if (isDeleting && displayedText === "") {
-        setIsDeleting(false);
-        setCurrentModeIdx((prev) => (prev + 1) % modes.length);
-      } else {
-        setDisplayedText(currentMode.substring(0, displayedText.length + (isDeleting ? -1 : 1)));
-      }
-    }, typingSpeed);
-
-    return () => clearTimeout(timer);
-  }, [displayedText, isDeleting, currentModeIdx]);
-
-  return (
-    <div className="flex items-center justify-center bg-slate-50/80 dark:bg-slate-800/80 backdrop-blur-sm px-2.5 py-1 rounded border border-slate-200 dark:border-slate-700 shadow-sm w-28 h-6">
-      <span className="text-[10px] font-semibold text-slate-500 dark:text-slate-400 tracking-widest font-mono flex items-center">
-        {displayedText}
-        <span className="relative flex h-1.5 w-1.5 ml-0.5">
-          <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-blue-400 opacity-75"></span>
-          <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-blue-600"></span>
-        </span>
-      </span>
-    </div>
-  );
-};
-
 const Header = ({
   isDark,
   toggleDark,
@@ -98,7 +60,7 @@ const Header = ({
           <div className="font-semibold text-lg md:text-xl text-slate-800 dark:text-slate-100 tracking-tight">
             interpreter AI
           </div>
-          <ModeIndicator />
+          <img src="/favicon.ico" alt="Interpreter AI icon" className="w-10 h-10 object-contain" />
         </div>
 
         <div className="flex items-center gap-2 md:fixed md:top-6 md:right-8">
