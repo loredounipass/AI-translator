@@ -55,7 +55,7 @@ const Header = ({
 
   return (
     <>
-      <div className="fixed top-0 left-0 w-full p-4 md:top-6 md:left-8 md:w-auto md:p-0 flex flex-col sm:flex-row items-center justify-between gap-3 z-50 select-none cursor-default bg-white/90 dark:bg-slate-900/90 md:bg-transparent md:dark:bg-transparent backdrop-blur-md md:backdrop-blur-none border-b border-slate-200 dark:border-slate-800 md:border-none md:dark:border-none shadow-sm md:shadow-none transition-all">
+      <div className="fixed top-0 left-0 w-full p-4 md:top-4 md:p-0 md:px-8 flex flex-col sm:flex-row items-center justify-between gap-3 z-50 select-none cursor-default bg-white/90 dark:bg-slate-900/90 md:bg-transparent md:dark:bg-transparent backdrop-blur-md md:backdrop-blur-none border-b border-slate-200 dark:border-slate-800 md:border-none md:dark:border-none shadow-sm md:shadow-none transition-all">
         <div className="flex items-center gap-3">
           <div className="font-semibold text-lg md:text-xl text-slate-800 dark:text-slate-100 tracking-tight">
             interpreter AI
@@ -63,7 +63,7 @@ const Header = ({
           <img src="/favicon.ico" alt="Interpreter AI icon" className="w-10 h-10 object-contain" />
         </div>
 
-        <div className="flex items-center gap-2 md:fixed md:top-6 md:right-8">
+        <div className="flex items-center gap-2">
           <div className="relative group">
             <button
               onClick={openHistory}
