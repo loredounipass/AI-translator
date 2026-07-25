@@ -67,46 +67,78 @@ module.exports = function (app) {
       const bodyStr = bodyBuffer.toString();
       const cacheKey = generateCacheKey(bodyStr);
       
+      let isStreaming = false;
+      try {
+        const parsedBody = JSON.parse(bodyStr);
+        isStreaming = parsedBody.stream === true;
+      } catch (e) {
+        // Ignored
+      }
+      
       cleanupCache();
       
-      // Return from Cache
-      if (cache.has(cacheKey)) {
-        console.log("[setupProxy] Cache HIT for:", req.url);
-        const cachedResponse = cache.get(cacheKey);
-        res.status(cachedResponse.statusCode).json(cachedResponse.data);
-        return;
-      }
-
-      // Wait for Pending Request (Coalescing)
-      if (pendingRequests.has(cacheKey)) {
-        console.log("[setupProxy] Coalescing request for:", req.url);
-        try {
-          const response = await pendingRequests.get(cacheKey);
-          res.status(response.statusCode).json(response.data);
-        } catch (error) {
-          res.status(500).json({ error: "Coalesced request failed: " + error.message });
+      if (!isStreaming) {
+        // Return from Cache
+        if (cache.has(cacheKey)) {
+          console.log("[setupProxy] Cache HIT for:", req.url);
+          const cachedResponse = cache.get(cacheKey);
+          res.status(cachedResponse.statusCode).json(cachedResponse.data);
+          return;
         }
+
+        // Wait for Pending Request (Coalescing)
+        if (pendingRequests.has(cacheKey)) {
+          console.log("[setupProxy] Coalescing request for:", req.url);
+          try {
+            const response = await pendingRequests.get(cacheKey);
+            res.status(response.statusCode).json(response.data);
+          } catch (error) {
+            res.status(500).json({ error: "Coalesced request failed: " + error.message });
+          }
+          return;
+        }
+      }
+
+      console.log(`[setupProxy] Cache MISS, forwarding to NVIDIA API (Streaming: ${isStreaming})`);
+
+      const targetPath = req.url.replace(/^\/api\/nvidia/, "/v1");
+      
+      const options = {
+        hostname: "integrate.api.nvidia.com",
+        path: targetPath,
+        method: req.method,
+        headers: {
+          host: "integrate.api.nvidia.com",
+          Authorization: `Bearer ${apiKey}`,
+          "Content-Type": req.headers["content-type"] || "application/json",
+          "Content-Length": Buffer.byteLength(bodyBuffer),
+        },
+      };
+
+      if (isStreaming) {
+        const proxyReq = https.request(options, (proxyRes) => {
+          // Pass all headers from Nvidia directly back to the client
+          const headersToSet = { ...proxyRes.headers };
+          // Ensure it's treated as SSE
+          headersToSet['Cache-Control'] = 'no-cache';
+          headersToSet['Connection'] = 'keep-alive';
+          
+          res.writeHead(proxyRes.statusCode, headersToSet);
+          proxyRes.pipe(res);
+        });
+
+        proxyReq.on("error", (err) => {
+          console.error("[setupProxy] Streaming Error:", err.message);
+          if (!res.headersSent) {
+            res.status(500).json({ error: "Proxy streaming error: " + err.message });
+          }
+        });
+        proxyReq.end(bodyBuffer);
         return;
       }
 
-      console.log("[setupProxy] Cache MISS, forwarding to NVIDIA API");
-
-      // --- Make API Request ---
+      // --- Make API Request (Non-Streaming) ---
       const requestPromise = new Promise((resolve, reject) => {
-        const targetPath = req.url.replace(/^\/api\/nvidia/, "/v1");
-        
-        const options = {
-          hostname: "integrate.api.nvidia.com",
-          path: targetPath,
-          method: req.method,
-          headers: {
-            host: "integrate.api.nvidia.com",
-            Authorization: `Bearer ${apiKey}`,
-            "Content-Type": req.headers["content-type"] || "application/json",
-            "Content-Length": Buffer.byteLength(bodyBuffer),
-          },
-        };
-
         const proxyReq = https.request(options, (proxyRes) => {
           const chunks = [];
           proxyRes.on("data", (chunk) => chunks.push(chunk));
@@ -150,7 +182,9 @@ module.exports = function (app) {
       } catch (err) {
         pendingRequests.delete(cacheKey);
         console.error("[setupProxy] Error:", err.message);
-        res.status(500).json({ error: "Proxy error: " + err.message });
+        if (!res.headersSent) {
+           res.status(500).json({ error: "Proxy error: " + err.message });
+        }
       }
     };
 
