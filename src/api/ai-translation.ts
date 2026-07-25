@@ -1,5 +1,6 @@
 import axios from "axios";
 import { LRUCache } from "lru-cache";
+import { GLOSSARY } from "./glossary";
 
 const NVIDIA_API_URL = "/api/nvidia/chat/completions";
 
@@ -40,58 +41,7 @@ const getLanguageName = (code: string): string => {
   return LANGUAGE_NAMES[code] || code;
 };
 
-// 2. Glosario Modularizado
-const GLOSSARY: Record<string, Record<string, Record<string, string>>> = {
-  "es-en": {
-    "automotive": {
-      "defensa": "bumper",
-      "parrilla": "grill",
-      "caja": "trunk",
-      "capó": "hood",
-      "guardafangos": "fender",
-      "llanta": "tire",
-      "troca": "truck",
-      "camión": "truck"
-    },
-    "medical_vns": {
-      "chequeo general": "general checkup",
-      "medicina para el dolor": "pain medication",
-      "mamografía": "mammogram",
-      "rayos x": "X-ray",
-      "cáncer": "cancer",
-      "receta médica": "prescription",
-      "autorización previa": "prior authorization",
-      "copago": "copay",
-      "proveedor de atención médica": "healthcare provider",
-      "seguro médico": "health insurance",
-      "cobertura": "coverage",
-      "VNS Health": "VNS Health",
-      "Medicaid": "Medicaid",
-      "Medicare": "Medicare",
-      "sala de emergencias": "emergency room (ER)",
-      "cuidados paliativos": "hospice care"
-    },
-    "legal_us": {
-      "juez": "judge",
-      "abogado": "attorney",
-      "fiscal": "prosecutor",
-      "testigo": "witness",
-      "jurado": "jury",
-      "veredicto": "verdict",
-      "demanda": "lawsuit",
-      "demandante": "plaintiff",
-      "demandado": "defendant",
-      "acusado": "defendant",
-      "audiencia": "hearing",
-      "fianza": "bail",
-      "libertad condicional": "probation",
-      "orden de cateo": "search warrant",
-      "orden de arresto": "arrest warrant",
-      "declaración de culpabilidad": "guilty plea",
-      "apelar": "to appeal"
-    }
-  }
-};
+// 2. Glosario Modularizado importado desde glossary.ts
 
 const buildSystemPrompt = (targetLang: string, sourceLang: string): string => {
   const targetName = getLanguageName(targetLang);
@@ -115,6 +65,7 @@ const buildSystemPrompt = (targetLang: string, sourceLang: string): string => {
        // Map domains to standard display names
        if (domain === "medical_vns") domainName = "MEDICAL / VNS HEALTH / MEDICARE";
        if (domain === "legal_us") domainName = "US LEGAL / COURT";
+       if (domain === "veterinary_banfield") domainName = "VETERINARY / BANFIELD PET HOSPITAL";
        
        const formattedTerms = Object.entries(terms)
          .map(([src, tgt]) => isReversed ? `    - "${tgt}" → "${src}"` : `    - "${src}" → "${tgt}"`)
@@ -123,9 +74,9 @@ const buildSystemPrompt = (targetLang: string, sourceLang: string): string => {
     }
 
     domainRules = `
-- When translating concepts related to the following domains, you MUST use the exact domain-specific terminology:
+- The following glossary provides examples of REQUIRED domain-specific terminology. You MUST use these exact equivalents when they appear:
 ${termsOutput.trimEnd()}
-- Analyze context to determine the domain, then choose the most natural and accurate professional terminology.`;
+- IMPORTANT: This glossary is not exhaustive. You must analyze the context of the phrase to identify the specific domain (e.g., medical, legal, automotive, veterinary) and independently apply the most accurate, natural, and professional terminology for that domain, even for words not listed above.`;
   }
 
   let dialectRule = "";
