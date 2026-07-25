@@ -164,7 +164,7 @@ function App() {
           <Route
             path="/"
             Component={() => (
-              <div className="text-center text-[#111111] dark:text-slate-100 h-[calc(100vh-8rem)] md:h-[80vh] w-[95%] md:w-[97%] bg-white dark:bg-slate-800 rounded-2xl mx-auto mt-28 md:mt-[10vh] overflow-hidden flex flex-col font-sans shadow-lg border border-slate-200/50 dark:border-slate-700/50 transition-colors duration-200">
+              <div className="text-center text-[#111111] dark:text-slate-100 h-[calc(100vh-8rem)] md:h-[calc(90vh-1rem)] w-[95%] md:w-[97%] bg-white dark:bg-slate-800 rounded-2xl mx-auto mt-28 md:mt-[10vh] overflow-hidden flex flex-col font-sans shadow-lg border border-slate-200/50 dark:border-slate-700/50 transition-colors duration-200">
                 <LanguagesBar />
                 <div className="flex-1 flex flex-col md:flex-row overflow-hidden">
                   <TranslationTextField />
