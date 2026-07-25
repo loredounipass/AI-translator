@@ -32,6 +32,7 @@ const LANGUAGE_NAMES: Record<string, string> = {
   la: "Latin",
   ms: "Malay",
   pt: "Portuguese",
+  ru: "Russian",
   tr: "Turkish",
   ur: "Urdu",
   zh: "Chinese",

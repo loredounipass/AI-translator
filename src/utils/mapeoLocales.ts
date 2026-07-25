@@ -121,3 +121,25 @@ export const REGION_A_IDIOMA_BASE: Record<string, string> = {
   ru: 'ru',
   zh: 'zh', taiwan: 'zh',
 };
+
+const STORAGE_KEY = 'source_regions';
+
+export const getSavedRegion = (base: string): string | null => {
+  try {
+    const saved = localStorage.getItem(STORAGE_KEY);
+    if (!saved) return null;
+    const regions: Record<string, string> = JSON.parse(saved);
+    const code = regions[base];
+    if (!code) return null;
+    return REGION_A_IDIOMA_BASE[code] === base ? code : null;
+  } catch { return null; }
+};
+
+export const saveRegion = (base: string, code: string): void => {
+  try {
+    const saved = localStorage.getItem(STORAGE_KEY);
+    const regions: Record<string, string> = saved ? JSON.parse(saved) : {};
+    regions[base] = code;
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(regions));
+  } catch { /* localStorage not available */ }
+};

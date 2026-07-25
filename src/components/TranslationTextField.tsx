@@ -6,7 +6,7 @@ import { useSearchParams } from "react-router-dom";
 import MicIcon from "assets/MicIcon";
 import PauseIcon from "assets/PauseIcon";
 import { DEFAULT_SOURCE_LANGUAGE } from "utils/constants";
-import { MAPEO_LOCALES, REGIONES_POR_IDIOMA, REGION_A_IDIOMA_BASE, normalizarLocale, filtrarRegiones, localeSoportado } from "../utils/mapeoLocales";
+import { MAPEO_LOCALES, REGIONES_POR_IDIOMA, REGION_A_IDIOMA_BASE, normalizarLocale, filtrarRegiones, localeSoportado, getSavedRegion, saveRegion } from "../utils/mapeoLocales";
 import {
   vadCheckInterval,
   silenceHoldCount,
@@ -164,21 +164,23 @@ const TranslationTextField = () => {
 
   const handleChangeRegion = (value: string) => {
     const locale = MAPEO_LOCALES[value] || value;
+    const slBase = REGION_A_IDIOMA_BASE[sl] || sl;
     if (!localeSoportado(locale)) {
+      const fallback = regionesActuales?.[0]?.code ?? slBase;
       notification.error({
         message: 'Unsupported Dialect',
         description: `"${locale}" is not supported by your browser. Reverted to Neutral.`,
         placement: 'topRight',
         duration: 4,
       });
-      try { localStorage.setItem("source_region", "es"); } catch (_) {}
+      saveRegion(slBase, fallback);
       setURLSearchParams(params => {
-        params.set("sr", "es");
+        params.set("sr", fallback);
         return params;
       });
       return;
     }
-    try { localStorage.setItem("source_region", value); } catch (_) {}
+    saveRegion(slBase, value);
     setURLSearchParams(params => {
       params.set("sr", value);
       return params;

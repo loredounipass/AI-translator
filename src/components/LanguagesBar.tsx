@@ -6,7 +6,7 @@ import {
   DEFAULT_SOURCE_LANGUAGE, 
   DEFAULT_TARGET_LANGUAGE 
 } from "utils/constants";
-import { REGIONES_POR_IDIOMA, REGION_A_IDIOMA_BASE } from "../utils/mapeoLocales";
+import { REGIONES_POR_IDIOMA, getSavedRegion, saveRegion } from "../utils/mapeoLocales";
 import { SwitchIcon } from "../assets/SwitchIcon";
 
 const LanguagesBar = () => {
@@ -42,13 +42,6 @@ const LanguagesBar = () => {
     });
   }, [setURLSearchParams]);
 
-  const getSavedRegion = (base: string): string | null => {
-    try {
-      const saved = localStorage.getItem("source_region");
-      return saved && REGION_A_IDIOMA_BASE[saved] === base ? saved : null;
-    } catch { return null; }
-  };
-
   const switchLangsHandler = () => {
     const newSource = targetLang;
     const newTarget = sourceLang;
@@ -80,7 +73,7 @@ const LanguagesBar = () => {
     if (AVAILABLE_LANGUAGES.some((lang) => lang.code === value)) {
       const regiones = REGIONES_POR_IDIOMA[value];
       const nuevoSr = regiones
-        ? (getSavedRegion(value) || searchParams.get("sr") || regiones[0].code)
+        ? (getSavedRegion(value) || regiones[0].code)
         : null;
 
       setSourceLang(value);
@@ -90,6 +83,7 @@ const LanguagesBar = () => {
         else params.delete("sr");
         return params;
       });
+      if (nuevoSr) saveRegion(value, nuevoSr);
     }
   };
 
