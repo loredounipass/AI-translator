@@ -73,14 +73,14 @@ const ModeIndicator = () => {
   );
 };
 
-const Header = ({ 
-  isDark, 
-  toggleDark, 
-  openHistory 
-}: { 
-  isDark: boolean; 
-  toggleDark: () => void; 
-  openHistory: () => void; 
+const Header = ({
+  isDark,
+  toggleDark,
+  openHistory
+}: {
+  isDark: boolean;
+  toggleDark: () => void;
+  openHistory: () => void;
 }) => {
   const [searchParams, setSearchParams] = useSearchParams();
   const currentModel = searchParams.get("model") || DEFAULT_MODEL;
@@ -96,14 +96,14 @@ const Header = ({
       <div className="fixed top-0 left-0 w-full p-4 md:top-6 md:left-8 md:w-auto md:p-0 flex flex-col sm:flex-row items-center justify-between gap-3 z-50 select-none cursor-default bg-white/90 dark:bg-slate-900/90 md:bg-transparent md:dark:bg-transparent backdrop-blur-md md:backdrop-blur-none border-b border-slate-200 dark:border-slate-800 md:border-none md:dark:border-none shadow-sm md:shadow-none transition-all">
         <div className="flex items-center gap-3">
           <div className="font-semibold text-lg md:text-xl text-slate-800 dark:text-slate-100 tracking-tight">
-            AI translator
+            interpreter AI
           </div>
           <ModeIndicator />
         </div>
-        
+
         <div className="flex items-center gap-2 md:fixed md:top-6 md:right-8">
           <div className="relative group">
-            <button 
+            <button
               onClick={openHistory}
               className="p-2 rounded-full text-slate-500 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
               aria-label="Ver historial"
@@ -114,9 +114,9 @@ const Header = ({
               History
             </div>
           </div>
-          
+
           <div className="relative group mr-2 md:mr-4">
-            <button 
+            <button
               onClick={toggleDark}
               className="p-2 rounded-full text-slate-500 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
               aria-label="Toggle dark mode"
@@ -127,42 +127,42 @@ const Header = ({
               {isDark ? "Light mode" : "Dark mode"}
             </div>
           </div>
-          
+
           <div className="relative flex items-center gap-1.5 group">
-          <span className="text-xs text-slate-500 dark:text-slate-400 font-medium tracking-wide">AI model</span>
-          <div className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-300 cursor-help transition-colors">
-            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-              <circle cx="12" cy="12" r="10"></circle>
-              <line x1="12" y1="16" x2="12" y2="12"></line>
-              <line x1="12" y1="8" x2="12.01" y2="8"></line>
-            </svg>
-          </div>
-          
-          <div className="absolute right-0 top-full mt-2 w-72 p-3 bg-slate-800 text-slate-300 text-xs rounded-lg shadow-xl opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 pointer-events-none z-50">
-            <div className="font-semibold mb-1 text-slate-50 flex items-center gap-1.5">
-              <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-amber-400">
-                <path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"></path>
-                <line x1="12" y1="9" x2="12" y2="13"></line>
-                <line x1="12" y1="17" x2="12.01" y2="17"></line>
+            <span className="text-xs text-slate-500 dark:text-slate-400 font-medium tracking-wide">AI model</span>
+            <div className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-300 cursor-help transition-colors">
+              <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <circle cx="12" cy="12" r="10"></circle>
+                <line x1="12" y1="16" x2="12" y2="12"></line>
+                <line x1="12" y1="8" x2="12.01" y2="8"></line>
               </svg>
-              Attention
             </div>
-            These open-source neural network models vary in inference speed and translation accuracy. <strong className="text-slate-100 font-medium">Mistral</strong> and <strong className="text-slate-100 font-medium">Llama</strong> offer the fastest response times, while Mistral typically delivers the highest quality results for this application.
-            <div className="absolute top-0 right-[7.5rem] -mt-1.5 w-3 h-3 bg-slate-800 transform rotate-45"></div>
+
+            <div className="absolute right-0 top-full mt-2 w-72 p-3 bg-slate-800 text-slate-300 text-xs rounded-lg shadow-xl opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 pointer-events-none z-50">
+              <div className="font-semibold mb-1 text-slate-50 flex items-center gap-1.5">
+                <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-amber-400">
+                  <path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"></path>
+                  <line x1="12" y1="9" x2="12" y2="13"></line>
+                  <line x1="12" y1="17" x2="12.01" y2="17"></line>
+                </svg>
+                Attention
+              </div>
+              These open-source neural network models vary in inference speed and translation accuracy. <strong className="text-slate-100 font-medium">Mistral</strong> and <strong className="text-slate-100 font-medium">Llama</strong> offer the fastest response times, while Mistral typically delivers the highest quality results for this application.
+              <div className="absolute top-0 right-[7.5rem] -mt-1.5 w-3 h-3 bg-slate-800 transform rotate-45"></div>
+            </div>
           </div>
+          <select
+            value={currentModel}
+            onChange={handleModelChange}
+            className="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-200 text-xs rounded px-2 py-1 outline-none focus:border-blue-400 shadow-sm font-sans max-w-[120px] sm:max-w-none truncate transition-colors"
+          >
+            {Object.entries(AI_MODELS).map(([key, model]) => (
+              <option key={key} value={key}>
+                {model.name}
+              </option>
+            ))}
+          </select>
         </div>
-        <select 
-          value={currentModel} 
-          onChange={handleModelChange}
-          className="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-200 text-xs rounded px-2 py-1 outline-none focus:border-blue-400 shadow-sm font-sans max-w-[120px] sm:max-w-none truncate transition-colors"
-        >
-          {Object.entries(AI_MODELS).map(([key, model]) => (
-            <option key={key} value={key}>
-              {model.name}
-            </option>
-          ))}
-        </select>
-      </div>
       </div>
     </>
   );
@@ -192,9 +192,9 @@ function App() {
   return (
     <Router>
       <div className="min-h-screen bg-slate-50 dark:bg-slate-900 transition-colors duration-200 overflow-x-hidden">
-        <Header 
-          isDark={isDark} 
-          toggleDark={() => setIsDark(!isDark)} 
+        <Header
+          isDark={isDark}
+          toggleDark={() => setIsDark(!isDark)}
           openHistory={() => setIsHistoryOpen(true)}
         />
         <HistoryPanel isOpen={isHistoryOpen} onClose={() => setIsHistoryOpen(false)} />
@@ -204,15 +204,15 @@ function App() {
             Component={() => (
               <div className="text-center text-[#111111] dark:text-slate-100 h-[calc(100vh-8rem)] md:h-[80vh] w-[95%] md:w-[97%] bg-white dark:bg-slate-800 rounded-2xl mx-auto mt-28 md:mt-[10vh] overflow-hidden flex flex-col font-sans shadow-lg border border-slate-200/50 dark:border-slate-700/50 transition-colors duration-200">
                 <LanguagesBar />
-              <div className="flex-1 flex flex-col md:flex-row overflow-hidden">
-                <TranslationTextField />
-                <TranslatedText />
+                <div className="flex-1 flex flex-col md:flex-row overflow-hidden">
+                  <TranslationTextField />
+                  <TranslatedText />
+                </div>
               </div>
-            </div>
-          )}
-        />
-      </Routes>
-      <Analytics />
+            )}
+          />
+        </Routes>
+        <Analytics />
       </div>
     </Router>
   );
