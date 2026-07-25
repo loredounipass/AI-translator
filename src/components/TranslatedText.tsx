@@ -50,16 +50,19 @@ const TranslatedText = () => {
   const modelId = AI_MODELS[modelKey as keyof typeof AI_MODELS]?.id || AI_MODELS[DEFAULT_MODEL as keyof typeof AI_MODELS].id;
   const isRTL = ["ar", "fa", "ur"].includes(tl);
   const [translatedText, setTranslatedText] = React.useState<string[]>([]);
+  const [isTranslating, setIsTranslating] = React.useState(false);
   const abortControllerRef = React.useRef<AbortController | null>(null);
   const currentTextRef = React.useRef(text);
 
   const translateHandler = React.useCallback(async (value: string, targetLang: string, sourceLang: string, mId: string) => {
     if (!value || value !== currentTextRef.current) {
       setTranslatedText([]);
+      setIsTranslating(false);
       return;
     }
 
     try {
+      setIsTranslating(true);
       if (abortControllerRef.current) {
         abortControllerRef.current.abort();
       }
@@ -106,6 +109,8 @@ const TranslatedText = () => {
         console.error("Error de traducción:", error);
         setTranslatedText(["<< Error en la traducción >>"]);
       }
+    } finally {
+      setIsTranslating(false);
     }
   }, [setTranslatedText]);
 
@@ -141,6 +146,7 @@ const TranslatedText = () => {
         abortControllerRef.current.abort();
       }
       setTranslatedText([]);
+      setIsTranslating(false);
       return;
     }
 
@@ -208,7 +214,7 @@ const TranslatedText = () => {
 
   return (
     <div className={`relative bg-[#f3f4f6] dark:bg-slate-800 text-[#0f1720] dark:text-slate-100 font-sans font-normal leading-normal ${isRTL ? 'text-right' : 'text-left'} text-lg break-words min-h-[100px] border-t md:border-t-0 md:border-l border-[#e6e9ee] dark:border-slate-700/50 flex-1 flex flex-col transition-colors`}>
-      {translatedText.length === 0 ? (
+      {translatedText.length === 0 && !isTranslating ? (
         <div className="flex flex-col items-center justify-center h-full min-h-[100px] text-[#9ca3af] dark:text-slate-400 text-base font-normal p-4 px-6 text-center leading-relaxed">
           <div className="flex items-center justify-center">
             {displayedText}
@@ -217,6 +223,15 @@ const TranslatedText = () => {
               <span className="relative inline-flex rounded-full h-2 w-2 bg-[#9ca3af]"></span>
             </span>
           </div>
+        </div>
+      ) : translatedText.length === 0 && isTranslating ? (
+        <div className="flex flex-col items-center justify-center h-full min-h-[100px] text-[#9ca3af] dark:text-slate-400 text-sm font-normal p-4 px-6 text-center leading-relaxed gap-3">
+          <div className="flex items-center gap-1.5">
+            <span className="inline-block w-1.5 h-1.5 rounded-full bg-blue-400 dark:bg-blue-500 animate-bounce" style={{ animationDelay: '0ms' }}></span>
+            <span className="inline-block w-1.5 h-1.5 rounded-full bg-blue-400 dark:bg-blue-500 animate-bounce" style={{ animationDelay: '150ms' }}></span>
+            <span className="inline-block w-1.5 h-1.5 rounded-full bg-blue-400 dark:bg-blue-500 animate-bounce" style={{ animationDelay: '300ms' }}></span>
+          </div>
+          <span className="text-xs tracking-wide text-slate-400 dark:text-slate-500">Translating...</span>
         </div>
       ) : (
         <div className="p-4 overflow-auto max-h-[68vh] blue-scrollbar h-full whitespace-pre-wrap">

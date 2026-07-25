@@ -87,7 +87,6 @@ const TranslationTextField = () => {
   // Detección: voces en canciones, susurros, gritos | Ignora: viento, respiración, ruido blanco
   const baseVolumeThreshold = 0.01;
   const vadCheckInterval = 25;
-  const activeHoldCount = 1;
   const silenceHoldCount = 2;
   const silenceTimeout = 800;
   const rmsSmoothingAlpha = 0.30;
@@ -98,6 +97,47 @@ const TranslationTextField = () => {
   const spectralFlatnessThreshold = 0.45;
   const zeroCrossingThreshold = 0.18;
   const windNoiseThreshold = 35;
+
+  /**
+   * Resets all VAD-related refs and timers to their initial state.
+   * Shared by cleanupAudioProcessing and setupAudioProcessing to eliminate duplication.
+   */
+  const resetVADState = React.useCallback(() => {
+    if (vadIntervalRef.current) {
+      window.clearInterval(vadIntervalRef.current);
+      vadIntervalRef.current = null;
+    }
+    if (silenceTimerRef.current) {
+      window.clearTimeout(silenceTimerRef.current);
+      silenceTimerRef.current = null;
+    }
+    activeFramesRef.current = 0;
+    silentFramesRef.current = 0;
+    rmsSmoothRef.current = 0;
+    noiseFloorRef.current = 1;
+    floatDataRef.current = null;
+    byteDataRef.current = null;
+    fftDataRef.current = null;
+    fftSizeRef.current = 0;
+    currentAnalyserRef.current = null;
+    analyserRef.current = null;
+  }, []);
+
+  /**
+   * Tears down a media stream and its AudioContext.
+   * Always releases hardware resources to prevent memory/device leaks.
+   */
+  const teardownAudioResources = React.useCallback(async (
+    stream: MediaStream | null,
+    audioCtx: AudioContext | null
+  ) => {
+    if (stream) {
+      stream.getTracks().forEach(t => t.stop());
+    }
+    if (audioCtx) {
+      try { await audioCtx.close(); } catch (_) { /* already closed */ }
+    }
+  }, []);
 
   const MAX_URL_TEXT_LENGTH = 8000;
 
@@ -205,53 +245,31 @@ const TranslationTextField = () => {
 
   const cleanupAudioProcessing = React.useCallback(async () => {
     try {
-      const shouldClose = !keepMicOnRef.current;
-
-      if (shouldClose) {
-        if (vadIntervalRef.current) {
-          window.clearInterval(vadIntervalRef.current);
-          vadIntervalRef.current = null;
-        }
-
-        if (silenceTimerRef.current) {
-          window.clearTimeout(silenceTimerRef.current);
-          silenceTimerRef.current = null;
-        }
-
-        activeFramesRef.current = 0;
-        silentFramesRef.current = 0;
-
-        floatDataRef.current = null;
-        byteDataRef.current = null;
-        fftDataRef.current = null;
-        fftSizeRef.current = 0;
-        currentAnalyserRef.current = null;
-        analyserRef.current = null;
-      }
-
-      if (mediaStreamRef.current) {
-        if (shouldClose) {
-          mediaStreamRef.current.getTracks().forEach(t => t.stop());
-          mediaStreamRef.current = null;
-        }
-      }
-
-      if (audioContextRef.current) {
-        if (shouldClose) {
-          try { await audioContextRef.current.close(); } catch (e) { }
-          audioContextRef.current = null;
-        }
+      if (!keepMicOnRef.current) {
+        resetVADState();
+        await teardownAudioResources(mediaStreamRef.current, audioContextRef.current);
+        mediaStreamRef.current = null;
+        audioContextRef.current = null;
       }
     } catch (err) {
       console.warn('Error during cleanupAudioProcessing', err);
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [resetVADState, teardownAudioResources]);
 
   const setupAudioProcessing = React.useCallback(async (deviceId: string | null) => {
+    // FIX: Always capture old references BEFORE reassigning, then always
+    // tear them down. This prevents memory leaks when keepMicOn changes
+    // between calls — the old AudioContext/stream is released regardless.
     const oldAudioCtx = audioContextRef.current;
     const oldStream = mediaStreamRef.current;
-    const shouldClose = !keepMicOnRef.current;
+
+    // Reset VAD state unconditionally — we're starting fresh
+    resetVADState();
+
+    // Always release old resources to prevent device/memory leaks
+    await teardownAudioResources(oldStream, oldAudioCtx);
+    mediaStreamRef.current = null;
+    audioContextRef.current = null;
 
     const AudioContextClass = (window as any).AudioContext || (window as any).webkitAudioContext;
     const audioCtx = new AudioContextClass();
@@ -261,34 +279,6 @@ const TranslationTextField = () => {
     }
 
     try {
-      if (shouldClose) {
-        if (vadIntervalRef.current) {
-          window.clearInterval(vadIntervalRef.current);
-          vadIntervalRef.current = null;
-        }
-        if (silenceTimerRef.current) {
-          window.clearTimeout(silenceTimerRef.current);
-          silenceTimerRef.current = null;
-        }
-        activeFramesRef.current = 0;
-        silentFramesRef.current = 0;
-        floatDataRef.current = null;
-        byteDataRef.current = null;
-        fftDataRef.current = null;
-        fftSizeRef.current = 0;
-        currentAnalyserRef.current = null;
-        analyserRef.current = null;
-      }
-
-      if (oldStream && shouldClose) {
-        oldStream.getTracks().forEach(t => t.stop());
-      }
-      mediaStreamRef.current = null;
-
-      if (oldAudioCtx && shouldClose) {
-        try { await oldAudioCtx.close(); } catch (e) { }
-      }
-
       const constraints: MediaStreamConstraints = {
         audio: {
           deviceId: deviceId ? { exact: deviceId } : undefined,
@@ -316,8 +306,7 @@ const TranslationTextField = () => {
     } catch (err) {
       console.error('No se pudo inicializar audio:', err);
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [resetVADState, teardownAudioResources]);
 
   const ensureAudioStreamActive = React.useCallback(async () => {
     try {
@@ -446,9 +435,6 @@ const TranslationTextField = () => {
           window.clearTimeout(silenceTimerRef.current);
           silenceTimerRef.current = null;
         }
-
-        if (activeFramesRef.current >= activeHoldCount) {
-        }
       } else {
         silentFramesRef.current += 1;
         activeFramesRef.current = 0;
@@ -465,16 +451,70 @@ const TranslationTextField = () => {
         }
       }
     }, vadCheckInterval);
-  }, [listening, vadCheckInterval, baseVolumeThreshold, adaptiveMultiplier, peakVoiceThreshold, formantRatioThreshold, spectralCentroidThreshold, spectralFlatnessThreshold, zeroCrossingThreshold, windNoiseThreshold, silenceTimeout, activeHoldCount, silenceHoldCount, rmsSmoothingAlpha]);
+  }, [listening, vadCheckInterval, baseVolumeThreshold, adaptiveMultiplier, peakVoiceThreshold, formantRatioThreshold, spectralCentroidThreshold, spectralFlatnessThreshold, zeroCrossingThreshold, windNoiseThreshold, silenceTimeout, silenceHoldCount, rmsSmoothingAlpha]);
 
   const previousTranscriptRef = React.useRef("");
 
+  /**
+   * Adds contextual punctuation to speech-to-text output.
+   * Supports question detection in EN, ES, FR, PT, DE, IT, AR, TR, HI, KO, JA.
+   * Detects exclamatory patterns (interjections, imperatives, emotional markers).
+   */
   const addPunctuation = (text: string): string => {
     const trimmed = text.trim();
-    if (!trimmed || /[.!?…]$/.test(trimmed)) return trimmed;
-    const questionWords = /^(what|who|where|when|why|how|which|do|does|did|is|are|was|were|can|could|will|would|shall|should|may|might|am|has|have|had|que|qué|quien|quién|donde|dónde|cuando|cuándo|como|cómo|por qué|porque|cuál|cual|cuáles|cuales)$/i;
-    const firstWord = trimmed.split(/\s+/)[0];
-    if (questionWords.test(firstWord)) return trimmed + '?';
+    if (!trimmed || /[.!?…¿¡。？！]$/.test(trimmed)) return trimmed;
+
+    const firstWord = trimmed.split(/\s+/)[0].toLowerCase();
+    const lowerTrimmed = trimmed.toLowerCase();
+
+    // Multi-language question word detection
+    const questionWords = new Set([
+      // English
+      'what', 'who', 'where', 'when', 'why', 'how', 'which',
+      'do', 'does', 'did', 'is', 'are', 'was', 'were',
+      'can', 'could', 'will', 'would', 'shall', 'should',
+      'may', 'might', 'am', 'has', 'have', 'had',
+      // Spanish
+      'que', 'qué', 'quien', 'quién', 'quienes', 'quiénes',
+      'donde', 'dónde', 'cuando', 'cuándo', 'como', 'cómo',
+      'por', 'cuál', 'cual', 'cuáles', 'cuales', 'cuánto', 'cuánta', 'cuántos', 'cuántas',
+      // French
+      'qui', 'quoi', 'où', 'quand', 'comment', 'pourquoi', 'combien', 'quel', 'quelle',
+      'est-ce', 'lequel', 'laquelle', 'lesquels', 'lesquelles',
+      // Portuguese
+      'quem', 'onde', 'quando', 'quanto', 'quanta', 'quantos', 'quantas', 'qual', 'quais',
+      // German
+      'wer', 'was', 'wo', 'wann', 'warum', 'wie', 'welcher', 'welche', 'welches', 'welchem',
+      // Italian
+      'chi', 'cosa', 'dove', 'perché', 'quale', 'quali', 'quanto', 'quanta',
+      // Turkish
+      'kim', 'ne', 'nerede', 'neden', 'niçin', 'nasıl', 'hangi', 'kaç',
+      // Arabic (transliterated common forms recognized by speech APIs)
+      'هل', 'ما', 'من', 'أين', 'متى', 'لماذا', 'كيف', 'كم',
+      // Hindi
+      'क्या', 'कौन', 'कहाँ', 'कब', 'क्यों', 'कैसे', 'कितना',
+      // Korean
+      '누구', '무엇', '어디', '언제', '왜', '어떻게',
+      // Japanese
+      'なに', 'だれ', 'どこ', 'いつ', 'なぜ', 'どう', 'どの',
+    ]);
+
+    // Exclamation patterns: interjections, imperatives, emotional markers
+    const exclamationPatterns = /^(oh|wow|hey|stop|help|run|go|no|yes|sí|oye|alto|corre|ayuda|mira|cuidado|bravo|vamos|arrête|allez|achtung|hilfe|fermati|aiuto|pare|socorro|dur|imdat)$/i;
+
+    // Spanish inverted question mark prefix
+    const startsWithInvertedQ = trimmed.startsWith('¿');
+    const startsWithInvertedExcl = trimmed.startsWith('¡');
+
+    if (startsWithInvertedQ) return trimmed + '?';
+    if (startsWithInvertedExcl) return trimmed + '!';
+    if (questionWords.has(firstWord)) return trimmed + '?';
+    // "por qué" as two-word question starter (Spanish)
+    if (firstWord === 'por' && lowerTrimmed.startsWith('por qué')) return trimmed + '?';
+    // "est-ce que" as French question starter
+    if (lowerTrimmed.startsWith('est-ce que') || lowerTrimmed.startsWith('est-ce qu\'')) return trimmed + '?';
+    if (exclamationPatterns.test(firstWord)) return trimmed + '!';
+
     return trimmed + '.';
   };
 
