@@ -84,20 +84,20 @@ const TranslatedText = () => {
             const historyStr = localStorage.getItem("translation_history");
             let history = historyStr ? JSON.parse(historyStr) : [];
             const lastItem = history[0];
-            
+
             // Prevent spamming history while typing continuously
             if (lastItem && value.trim().startsWith(lastItem.original) && (Date.now() - lastItem.timestamp < 15000)) {
-               history[0] = { original: value.trim(), translated: cleaned, timestamp: Date.now() };
+              history[0] = { original: value.trim(), translated: cleaned, timestamp: Date.now() };
             } else if (lastItem && lastItem.original === value.trim()) {
-               // Do nothing if it's the exact same
+              // Do nothing if it's the exact same
             } else {
-               history.unshift({ original: value.trim(), translated: cleaned, timestamp: Date.now() });
+              history.unshift({ original: value.trim(), translated: cleaned, timestamp: Date.now() });
             }
-            
+
             history = history.slice(0, 50); // Keep last 50
             localStorage.setItem("translation_history", JSON.stringify(history));
             window.dispatchEvent(new Event("historyUpdated"));
-          } catch (e) {}
+          } catch (e) { }
         }
       }
     } catch (error) {
@@ -169,7 +169,7 @@ const TranslatedText = () => {
   const copyTimeoutRef = React.useRef<number | null>(null);
 
   const messages = React.useMemo(() => [
-    "Translate any text instantly",
+    "Translate any text instantly now",
     "Interpreter AI agent always ready",
     "Type and I'll translate instantly",
     "Fast AI translation",
