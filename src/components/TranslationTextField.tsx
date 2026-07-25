@@ -6,6 +6,14 @@ import { useSearchParams } from "react-router-dom";
 import MicIcon from "assets/MicIcon";
 import PauseIcon from "assets/PauseIcon";
 import { DEFAULT_SOURCE_LANGUAGE } from "utils/constants";
+import {
+  vadCheckInterval,
+  silenceHoldCount,
+  silenceTimeout
+} from "../utils/vadConstants";
+import { addPunctuation } from "../utils/punctuationLogic";
+import { analyzeAudioFrame } from "../utils/vadMath";
+import { useTypewriterPlaceholder } from "../hooks/useTypewriterPlaceholder";
 
 const TranslationTextField = () => {
   const [searchParams, setURLSearchParams] = useSearchParams();
@@ -13,6 +21,7 @@ const TranslationTextField = () => {
   const urlTextParam = searchParams.get("text") || "";
   const sl = searchParams.get("sl") || DEFAULT_SOURCE_LANGUAGE;
   const [isProcessing, setIsProcessing] = React.useState(false);
+  const [isRefreshing, setIsRefreshing] = React.useState(false);
   const [selectedDeviceId, setSelectedDeviceId] = React.useState<string | null>(null);
   const audioContextRef = React.useRef<AudioContext | null>(null);
   const mediaStreamRef = React.useRef<MediaStream | null>(null);
@@ -46,62 +55,7 @@ const TranslationTextField = () => {
   const textareaRef = React.useRef<HTMLTextAreaElement>(null);
   const manualEditRef = React.useRef<boolean>(false);
   const manualEditTimeoutRef = React.useRef<number | null>(null);
-  const [keepMicOn, setKeepMicOn] = React.useState<boolean>(() => {
-    try {
-      return localStorage.getItem("keepMicOn") === "true";
-    } catch (e) {
-      return false;
-    }
-  });
-  const keepMicOnRef = React.useRef<boolean>(keepMicOn);
-  const PLACEHOLDER_MESSAGES = React.useMemo(() => ["Start typing..", "Or use voice mode"], []);
-  const [placeholder, setPlaceholder] = React.useState("");
-
-  React.useEffect(() => {
-    if (text) return;
-    let timer: number | null = null;
-    let msgIndex = 0;
-    let charIndex = 0;
-
-    const typeNext = () => {
-      const currentMsg = PLACEHOLDER_MESSAGES[msgIndex];
-      charIndex++;
-      if (charIndex > currentMsg.length) {
-        timer = window.setTimeout(() => {
-          setPlaceholder("");
-          charIndex = 0;
-          msgIndex = (msgIndex + 1) % PLACEHOLDER_MESSAGES.length;
-          typeNext();
-        }, 3000);
-        return;
-      }
-      setPlaceholder(currentMsg.slice(0, charIndex));
-      timer = window.setTimeout(typeNext, 80);
-    };
-    typeNext();
-    return () => { if (timer !== null) window.clearTimeout(timer); };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [text ? 'filled' : 'empty']);
-
-  // VAD (Voice Activity Detection) settings - OPTIMIZED FOR VOICE IN MUSIC & NOISE REJECTION
-  // Detección: voces en canciones, susurros, gritos | Ignora: viento, respiración, ruido blanco
-  const baseVolumeThreshold = 0.01;
-  const vadCheckInterval = 25;
-  const silenceHoldCount = 2;
-  const silenceTimeout = 800;
-  const rmsSmoothingAlpha = 0.30;
-  const adaptiveMultiplier = 2.0;
-  const peakVoiceThreshold = 0.45;
-  const spectralCentroidThreshold = 1200;
-  const formantRatioThreshold = 0.30;
-  const spectralFlatnessThreshold = 0.45;
-  const zeroCrossingThreshold = 0.18;
-  const windNoiseThreshold = 35;
-
-  /**
-   * Resets all VAD-related refs and timers to their initial state.
-   * Shared by cleanupAudioProcessing and setupAudioProcessing to eliminate duplication.
-   */
+  
   const resetVADState = React.useCallback(() => {
     if (vadIntervalRef.current) {
       window.clearInterval(vadIntervalRef.current);
@@ -123,10 +77,6 @@ const TranslationTextField = () => {
     analyserRef.current = null;
   }, []);
 
-  /**
-   * Tears down a media stream and its AudioContext.
-   * Always releases hardware resources to prevent memory/device leaks.
-   */
   const teardownAudioResources = React.useCallback(async (
     stream: MediaStream | null,
     audioCtx: AudioContext | null
@@ -138,6 +88,25 @@ const TranslationTextField = () => {
       try { await audioCtx.close(); } catch (_) { /* already closed */ }
     }
   }, []);
+
+
+  React.useEffect(() => {
+    return () => {
+      resetVADState();
+      teardownAudioResources(mediaStreamRef.current, audioContextRef.current);
+      SpeechRecognition.abortListening();
+    };
+  }, [resetVADState, teardownAudioResources]);
+
+  const [keepMicOn, setKeepMicOn] = React.useState<boolean>(() => {
+    try {
+      return localStorage.getItem("keepMicOn") === "true";
+    } catch (e) {
+      return false;
+    }
+  });
+  const keepMicOnRef = React.useRef<boolean>(keepMicOn);
+  const placeholder = useTypewriterPlaceholder(text);
 
   const MAX_URL_TEXT_LENGTH = 8000;
 
@@ -221,11 +190,13 @@ const TranslationTextField = () => {
         if (!keepMicOnRef.current) await cleanupAudioProcessing();
       } else {
         if (!keepMicOnRef.current) {
-          message.warning("Debes activar el micrófono");
+          message.error("Microphone must be active");
+          setIsProcessing(false);
           return;
         }
         if (isMicrophoneAvailable === false) {
-          alert("Por favor permite acceso al micrófono");
+          message.error("Please allow microphone access");
+          setIsProcessing(false);
           return;
         }
         await setupAudioProcessing(selectedDeviceId);
@@ -256,17 +227,14 @@ const TranslationTextField = () => {
     }
   }, [resetVADState, teardownAudioResources]);
 
+  const startVADRef = React.useRef<(() => void) | null>(null);
+
   const setupAudioProcessing = React.useCallback(async (deviceId: string | null) => {
-    // FIX: Always capture old references BEFORE reassigning, then always
-    // tear them down. This prevents memory leaks when keepMicOn changes
-    // between calls — the old AudioContext/stream is released regardless.
     const oldAudioCtx = audioContextRef.current;
     const oldStream = mediaStreamRef.current;
 
-    // Reset VAD state unconditionally — we're starting fresh
     resetVADState();
 
-    // Always release old resources to prevent device/memory leaks
     await teardownAudioResources(oldStream, oldAudioCtx);
     mediaStreamRef.current = null;
     audioContextRef.current = null;
@@ -302,7 +270,7 @@ const TranslationTextField = () => {
 
       analyserRef.current = analyser;
 
-      startVAD();
+      startVADRef.current?.();
     } catch (err) {
       console.error('No se pudo inicializar audio:', err);
     }
@@ -348,84 +316,17 @@ const TranslationTextField = () => {
       const nyquist = analyser.context.sampleRate / 2;
       const binWidth = nyquist / fftData.length;
 
-      const lowBinStart = Math.floor(60 / binWidth);
-      const lowBinEnd = Math.floor(250 / binWidth);
-      let lowEnergy = 0;
-      for (let i = lowBinStart; i < lowBinEnd; i++) {
-        lowEnergy += fftData[i];
-      }
-      lowEnergy /= (lowBinEnd - lowBinStart + 1);
+      const { isVoiceDetected, newSmooth, newNoiseFloor } = analyzeAudioFrame(
+        floatData,
+        fftData,
+        binWidth,
+        nyquist,
+        rmsSmoothRef.current || 0,
+        noiseFloorRef.current
+      );
 
-      const midBinStart = lowBinEnd;
-      const midBinEnd = Math.floor(2000 / binWidth);
-      let midEnergy = 0;
-      for (let i = midBinStart; i < midBinEnd; i++) {
-        midEnergy += fftData[i];
-      }
-      midEnergy /= (midBinEnd - midBinStart + 1);
-
-      const highBinStart = midBinEnd;
-      const highBinEnd = Math.floor(4000 / binWidth);
-      let highEnergy = 0;
-      for (let i = highBinStart; i < highBinEnd; i++) {
-        highEnergy += fftData[i];
-      }
-      highEnergy /= (highBinEnd - highBinStart + 1);
-
-      const formantRatio = (midEnergy + highEnergy) / (lowEnergy + midEnergy + 0.001);
-      const voiceSignature = midEnergy > lowEnergy * 0.7;
-
-      let numerator = 0;
-      let denominator = 0;
-      let geometricProduct = 1;
-      for (let i = highBinStart; i < highBinEnd; i++) {
-        const frequency = (i * nyquist) / fftData.length;
-        numerator += frequency * fftData[i];
-        denominator += fftData[i];
-        if (fftData[i] > 0) geometricProduct *= Math.pow(fftData[i], 1 / (highBinEnd - highBinStart + 1));
-      }
-      const spectralCentroid = denominator > 0 ? numerator / denominator : 0;
-      const isSpectralInVoiceRange = spectralCentroid > spectralCentroidThreshold * 0.6;
-
-      const arithmeticMean = denominator / (highBinEnd - highBinStart + 1) || 1e-10;
-      const spectralFlatness = Math.max(0, Math.min(1, geometricProduct / (arithmeticMean + 1e-10)));
-      const isNotWindNoise = spectralFlatness < spectralFlatnessThreshold;
-
-      let zeroCrossings = 0;
-      for (let i = 1; i < floatData.length; i++) {
-        if ((floatData[i] > 0 && floatData[i - 1] <= 0) || (floatData[i] <= 0 && floatData[i - 1] > 0)) {
-          zeroCrossings++;
-        }
-      }
-      const zcr = zeroCrossings / floatData.length;
-      const isNotVoiceNoise = zcr < zeroCrossingThreshold;
-
-      const voiceEnergyRatio = (midEnergy + highEnergy) / (lowEnergy + 1e-6);
-      const isNotWindRespiration = voiceEnergyRatio > windNoiseThreshold * 0.01;
-
-      let sum = 0;
-      for (let i = 0; i < floatData.length; i++) {
-        const v = floatData[i];
-        sum += v * v;
-      }
-      const rms = Math.sqrt(sum / floatData.length);
-
-      const prevSmooth = rmsSmoothRef.current || 0;
-      const smooth = rmsSmoothingAlpha * rms + (1 - rmsSmoothingAlpha) * prevSmooth;
-      rmsSmoothRef.current = smooth;
-
-      noiseFloorRef.current = Math.min(noiseFloorRef.current, smooth * 0.8);
-      noiseFloorRef.current = Math.max(noiseFloorRef.current, noiseFloorRef.current * 1.001);
-
-      const adaptiveThreshold = Math.max(baseVolumeThreshold, noiseFloorRef.current * adaptiveMultiplier + 0.003);
-
-      const isVoiceDetected =
-        (smooth > adaptiveThreshold || rms > peakVoiceThreshold) &&
-        (voiceSignature || formantRatio > formantRatioThreshold) &&
-        isSpectralInVoiceRange &&
-        isNotWindNoise &&
-        isNotVoiceNoise &&
-        isNotWindRespiration;
+      rmsSmoothRef.current = newSmooth;
+      noiseFloorRef.current = newNoiseFloor;
 
       if (isVoiceDetected) {
         activeFramesRef.current += 1;
@@ -451,72 +352,13 @@ const TranslationTextField = () => {
         }
       }
     }, vadCheckInterval);
-  }, [listening, vadCheckInterval, baseVolumeThreshold, adaptiveMultiplier, peakVoiceThreshold, formantRatioThreshold, spectralCentroidThreshold, spectralFlatnessThreshold, zeroCrossingThreshold, windNoiseThreshold, silenceTimeout, silenceHoldCount, rmsSmoothingAlpha]);
+  }, [listening]);
+
+  React.useEffect(() => {
+    startVADRef.current = startVAD;
+  }, [startVAD]);
 
   const previousTranscriptRef = React.useRef("");
-
-  /**
-   * Adds contextual punctuation to speech-to-text output.
-   * Supports question detection in EN, ES, FR, PT, DE, IT, AR, TR, HI, KO, JA.
-   * Detects exclamatory patterns (interjections, imperatives, emotional markers).
-   */
-  const addPunctuation = (text: string): string => {
-    const trimmed = text.trim();
-    if (!trimmed || /[.!?…¿¡。？！]$/.test(trimmed)) return trimmed;
-
-    const firstWord = trimmed.split(/\s+/)[0].toLowerCase();
-    const lowerTrimmed = trimmed.toLowerCase();
-
-    // Multi-language question word detection
-    const questionWords = new Set([
-      // English
-      'what', 'who', 'where', 'when', 'why', 'how', 'which',
-      'do', 'does', 'did', 'is', 'are', 'was', 'were',
-      'can', 'could', 'will', 'would', 'shall', 'should',
-      'may', 'might', 'am', 'has', 'have', 'had',
-      // Spanish
-      'que', 'qué', 'quien', 'quién', 'quienes', 'quiénes',
-      'donde', 'dónde', 'cuando', 'cuándo', 'como', 'cómo',
-      'por', 'cuál', 'cual', 'cuáles', 'cuales', 'cuánto', 'cuánta', 'cuántos', 'cuántas',
-      // French
-      'qui', 'quoi', 'où', 'quand', 'comment', 'pourquoi', 'combien', 'quel', 'quelle',
-      'est-ce', 'lequel', 'laquelle', 'lesquels', 'lesquelles',
-      // Portuguese
-      'quem', 'onde', 'quando', 'quanto', 'quanta', 'quantos', 'quantas', 'qual', 'quais',
-      // German
-      'wer', 'was', 'wo', 'wann', 'warum', 'wie', 'welcher', 'welche', 'welches', 'welchem',
-      // Italian
-      'chi', 'cosa', 'dove', 'perché', 'quale', 'quali', 'quanto', 'quanta',
-      // Turkish
-      'kim', 'ne', 'nerede', 'neden', 'niçin', 'nasıl', 'hangi', 'kaç',
-      // Arabic (transliterated common forms recognized by speech APIs)
-      'هل', 'ما', 'من', 'أين', 'متى', 'لماذا', 'كيف', 'كم',
-      // Hindi
-      'क्या', 'कौन', 'कहाँ', 'कब', 'क्यों', 'कैसे', 'कितना',
-      // Korean
-      '누구', '무엇', '어디', '언제', '왜', '어떻게',
-      // Japanese
-      'なに', 'だれ', 'どこ', 'いつ', 'なぜ', 'どう', 'どの',
-    ]);
-
-    // Exclamation patterns: interjections, imperatives, emotional markers
-    const exclamationPatterns = /^(oh|wow|hey|stop|help|run|go|no|yes|sí|oye|alto|corre|ayuda|mira|cuidado|bravo|vamos|arrête|allez|achtung|hilfe|fermati|aiuto|pare|socorro|dur|imdat)$/i;
-
-    // Spanish inverted question mark prefix
-    const startsWithInvertedQ = trimmed.startsWith('¿');
-    const startsWithInvertedExcl = trimmed.startsWith('¡');
-
-    if (startsWithInvertedQ) return trimmed + '?';
-    if (startsWithInvertedExcl) return trimmed + '!';
-    if (questionWords.has(firstWord)) return trimmed + '?';
-    // "por qué" as two-word question starter (Spanish)
-    if (firstWord === 'por' && lowerTrimmed.startsWith('por qué')) return trimmed + '?';
-    // "est-ce que" as French question starter
-    if (lowerTrimmed.startsWith('est-ce que') || lowerTrimmed.startsWith('est-ce qu\'')) return trimmed + '?';
-    if (exclamationPatterns.test(firstWord)) return trimmed + '!';
-
-    return trimmed + '.';
-  };
 
   React.useEffect(() => {
     if (!listening) return;
@@ -542,7 +384,6 @@ const TranslationTextField = () => {
     }
   }, [listening]);
 
-  // Restart speech recognition when source language changes while listening
   React.useEffect(() => {
     if (listening) {
       const restartWithNewLang = async () => {
@@ -609,13 +450,33 @@ const TranslationTextField = () => {
         <span className="text-[11px] text-[#999] dark:text-slate-500">
           {text.length.toLocaleString()} / {MAX_URL_TEXT_LENGTH.toLocaleString()}
         </span>
-
-        <button onClick={async () => {
-          try {
-            const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-            stream.getTracks().forEach(t => t.stop());
-          } catch (err) { console.warn(err); }
-        }} className="bg-none border-none text-[#333] cursor-pointer" aria-label="Refrescar dispositivos">↻</button>
+        {browserSupportsSpeechRecognition && (
+          <button
+            onClick={async () => {
+              if (isRefreshing) return;
+              try {
+                setIsRefreshing(true);
+                const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+                stream.getTracks().forEach(t => t.stop());
+                const list = await navigator.mediaDevices.enumerateDevices();
+                const inputs = list.filter(d => d.kind === 'audioinput');
+                if (inputs.length > 0) setSelectedDeviceId(inputs[0].deviceId);
+              } catch (err) { 
+                console.warn(err); 
+              } finally {
+                setTimeout(() => setIsRefreshing(false), 300); // keep spinning slightly for visual feedback
+              }
+            }}
+            className="bg-none border-none text-[#333] dark:text-slate-400 cursor-pointer p-1"
+            style={{ 
+              transform: isRefreshing ? 'rotate(180deg)' : 'none', 
+              transition: 'transform 0.3s ease' 
+            }}
+            aria-label="Refresh devices"
+          >
+            ↻
+          </button>
+        )}
       </div>
       <div className="absolute bottom-2.5 left-2.5 flex items-center gap-4">
         {browserSupportsSpeechRecognition ? (

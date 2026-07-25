@@ -8,7 +8,7 @@ import { debounce } from "lodash";
 
 const cleanText = (rawText: string) => {
   // 1. Fully formed <translation> block
-  const translationMatch = rawText.match(/<translation\s*>([\s\S]*?)(?:<\/translation\s*>|$)/i);
+  const translationMatch = rawText.match(/<translation[^>]*>([\s\S]*?)(?:<\/translation\s*>|$)/i);
   if (translationMatch) {
     let result = translationMatch[1].trimStart();
     // Hide any incomplete tag being typed at the very end of the stream (e.g. "</", "</trans")
@@ -53,6 +53,7 @@ const TranslatedText = () => {
   const [isTranslating, setIsTranslating] = React.useState(false);
   const abortControllerRef = React.useRef<AbortController | null>(null);
   const currentTextRef = React.useRef(text);
+  const requestIdRef = React.useRef(0);
 
   const translateHandler = React.useCallback(async (value: string, targetLang: string, sourceLang: string, mId: string) => {
     if (!value || value !== currentTextRef.current) {
@@ -60,6 +61,9 @@ const TranslatedText = () => {
       setIsTranslating(false);
       return;
     }
+
+    requestIdRef.current += 1;
+    const currentRequestId = requestIdRef.current;
 
     try {
       setIsTranslating(true);
@@ -83,49 +87,73 @@ const TranslatedText = () => {
         setTranslatedText(cleaned ? [cleaned] : []);
 
         if (cleaned && value.trim()) {
-          try {
-            const historyStr = localStorage.getItem("translation_history");
-            let history = historyStr ? JSON.parse(historyStr) : [];
-            const lastItem = history[0];
+          // Defer I/O to prevent blocking the Main Thread during UI reconciliation
+          window.setTimeout(() => {
+            try {
+              const historyStr = localStorage.getItem("translation_history");
+              let history = historyStr ? JSON.parse(historyStr) : [];
+              const lastItem = history[0];
 
-            // Prevent spamming history while typing continuously
-            if (lastItem && value.trim().startsWith(lastItem.original) && (Date.now() - lastItem.timestamp < 15000)) {
-              history[0] = { original: value.trim(), translated: cleaned, timestamp: Date.now() };
-            } else if (lastItem && lastItem.original === value.trim()) {
-              // Do nothing if it's the exact same
-            } else {
-              history.unshift({ original: value.trim(), translated: cleaned, timestamp: Date.now() });
+              // Prevent spamming history while typing continuously
+              if (lastItem && value.trim().startsWith(lastItem.original) && (Date.now() - lastItem.timestamp < 15000)) {
+                history[0] = { original: value.trim(), translated: cleaned, timestamp: Date.now() };
+              } else if (lastItem && lastItem.original === value.trim()) {
+                // Do nothing if it's the exact same
+              } else {
+                history.unshift({ original: value.trim(), translated: cleaned, timestamp: Date.now() });
+              }
+
+              history = history.slice(0, 50); // Keep last 50
+              try {
+                localStorage.setItem("translation_history", JSON.stringify(history));
+              } catch (quotaErr) {
+                // If quota exceeded, do a drastic cut to last 10
+                history = history.slice(0, 10);
+                localStorage.setItem("translation_history", JSON.stringify(history));
+              }
+              window.dispatchEvent(new Event("historyUpdated"));
+            } catch (e) {
+              console.warn("History save error:", e);
             }
-
-            history = history.slice(0, 50); // Keep last 50
-            localStorage.setItem("translation_history", JSON.stringify(history));
-            window.dispatchEvent(new Event("historyUpdated"));
-          } catch (e) { }
+          }, 0);
         }
       }
     } catch (error) {
       if (axios.isCancel(error)) return;
       if (!(error instanceof DOMException)) {
-        console.error("Error de traducción:", error);
-        setTranslatedText(["<< Error en la traducción >>"]);
+        console.error("Translation error:", error);
+        if (currentRequestId === requestIdRef.current) {
+          setTranslatedText(["<< Translation Error >>"]);
+        }
       }
     } finally {
-      setIsTranslating(false);
+      if (currentRequestId === requestIdRef.current) {
+        setIsTranslating(false);
+      }
     }
   }, [setTranslatedText]);
 
-  const copyHandler = () => {
+  const copyHandler = async () => {
     try {
       const txt = translatedText.join("\n");
-      navigator.clipboard.writeText(txt);
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        await navigator.clipboard.writeText(txt);
+      } else {
+        const textArea = document.createElement("textarea");
+        textArea.value = txt;
+        document.body.appendChild(textArea);
+        textArea.select();
+        document.execCommand("copy");
+        textArea.remove();
+      }
       setCopied(true);
       if (copyTimeoutRef.current) {
         window.clearTimeout(copyTimeoutRef.current);
       }
       copyTimeoutRef.current = window.setTimeout(() => setCopied(false), 2000);
     } catch (error) {
-      console.error("Error al copiar:", error);
-      alert("No se pudo copiar el texto");
+      console.error("Copy error:", error);
+      alert("Could not copy text");
     }
   };
 
@@ -191,6 +219,8 @@ const TranslatedText = () => {
     const currentMessage = messages[placeholderIndex];
 
     const timer = setTimeout(() => {
+      if (translatedText.length > 0 || isTranslating) return;
+
       if (!isDeleting && displayedText === currentMessage) {
         setTimeout(() => setIsDeleting(true), 2500);
       } else if (isDeleting && displayedText === "") {
@@ -202,15 +232,19 @@ const TranslatedText = () => {
     }, typingSpeed);
 
     return () => clearTimeout(timer);
-  }, [displayedText, isDeleting, placeholderIndex, messages]);
+  }, [displayedText, isDeleting, placeholderIndex, messages, translatedText.length, isTranslating]);
 
   React.useEffect(() => {
     return () => {
+      debouncedTranslateHandler.cancel();
+      if (abortControllerRef.current) {
+        abortControllerRef.current.abort();
+      }
       if (copyTimeoutRef.current) {
         window.clearTimeout(copyTimeoutRef.current);
       }
     };
-  }, []);
+  }, [debouncedTranslateHandler]);
 
   return (
     <div className={`relative bg-[#f3f4f6] dark:bg-slate-800 text-[#0f1720] dark:text-slate-100 font-sans font-normal leading-normal ${isRTL ? 'text-right' : 'text-left'} text-lg break-words min-h-[100px] border-t md:border-t-0 md:border-l border-[#e6e9ee] dark:border-slate-700/50 flex-1 flex flex-col transition-colors`}>
