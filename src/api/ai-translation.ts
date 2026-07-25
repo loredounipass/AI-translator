@@ -96,18 +96,37 @@ const GLOSSARY: Record<string, Record<string, Record<string, string>>> = {
 const buildSystemPrompt = (targetLang: string, sourceLang: string): string => {
   const targetName = getLanguageName(targetLang);
 
-  // Generar reglas desde el glosario automáticamente para todos los dominios
-  const automotiveTerms = Object.entries(GLOSSARY["es-en"].automotive)
-    .map(([es, en]) => `    - "${es}" → "${en}"`)
-    .join("\n");
-    
-  const medicalTerms = Object.entries(GLOSSARY["es-en"].medical_vns)
-    .map(([es, en]) => `    - "${es}" → "${en}"`)
-    .join("\n");
-    
-  const legalTerms = Object.entries(GLOSSARY["es-en"].legal_us)
-    .map(([es, en]) => `    - "${es}" → "${en}"`)
-    .join("\n");
+  const exactKey = `${sourceLang}-${targetLang}`;
+  const reverseKey = `${targetLang}-${sourceLang}`;
+  
+  let pairGlossary = GLOSSARY[exactKey];
+  let isReversed = false;
+
+  if (!pairGlossary && GLOSSARY[reverseKey]) {
+    pairGlossary = GLOSSARY[reverseKey];
+    isReversed = true;
+  }
+
+  let domainRules = "";
+  if (pairGlossary) {
+    let termsOutput = "";
+    for (const [domain, terms] of Object.entries(pairGlossary)) {
+       let domainName = domain.toUpperCase().replace(/_/g, " ");
+       // Map domains to standard display names
+       if (domain === "medical_vns") domainName = "MEDICAL / VNS HEALTH / MEDICARE";
+       if (domain === "legal_us") domainName = "US LEGAL / COURT";
+       
+       const formattedTerms = Object.entries(terms)
+         .map(([src, tgt]) => isReversed ? `    - "${tgt}" → "${src}"` : `    - "${src}" → "${tgt}"`)
+         .join("\n");
+       termsOutput += `  [${domainName}]:\n${formattedTerms}\n`;
+    }
+
+    domainRules = `
+- When translating concepts related to the following domains, you MUST use the exact domain-specific terminology:
+${termsOutput.trimEnd()}
+- Analyze context to determine the domain, then choose the most natural and accurate professional terminology.`;
+  }
 
   let dialectRule = "";
   if (targetLang === "en") dialectRule = "\n- Use professional American English (US dialect, not British).";
@@ -115,22 +134,14 @@ const buildSystemPrompt = (targetLang: string, sourceLang: string): string => {
 
   const styleRules = `
 STYLE RULES & DOMAIN TERMINOLOGY - MANDATORY:
-- Maintain formal/professional tone appropriate for business, medical, and legal contexts.${dialectRule}
-- When translating concepts related to the following domains, you MUST use the exact domain-specific terminology equivalent to these standard references (shown as Spanish->English reference, but apply the exact professional equivalent in ${targetName}):
-  [AUTOMOTIVE]:
-${automotiveTerms}
-  [MEDICAL / VNS HEALTH / MEDICARE]:
-${medicalTerms}
-  [US LEGAL / COURT]:
-${legalTerms}
-- Analyze context to determine the domain, then choose the most natural and accurate professional terminology.`;
+- Maintain formal/professional tone appropriate for business, medical, and legal contexts.${dialectRule}${domainRules}`;
 
   return `You are an elite, highly precise professional interpreter. You MUST obey the following rules WITHOUT EXCEPTION.
 
 CRITICAL RULES:
-1. Translate EVERYTHING. NEVER omit, summarize, or skip content.
-2. NEVER add or remove words, punctuation, or content.
-3. PRESERVE numbers exactly as they appear: "123", "45.6", "$50", "2024-03-15".
+1. Translate EVERYTHING. NEVER omit, summarize, or skip any factual content or meaning.
+2. Maintain strict semantic fidelity. Do not add foreign commentary, explanations, or meta-text outside of the requested translation.
+3. PRESERVE numbers, dates, and codes exactly as they appear: "123", "45.6", "$50", "2024-03-15".
 4. If the text is already in ${targetName}, return it AS-IS.
 5. REPEATED PHRASES: if the same phrase appears consecutively (e.g., "el dia de ayer el dia de ayer"), translate it ONCE only.
 6. Interpret in first person when source uses "I" or "we".
@@ -187,12 +198,8 @@ export const translate = async (
   const systemPrompt = buildSystemPrompt(targetLang, sourceLang);
   const userPrompt = `Translate the following text to ${getLanguageName(targetLang)}.\n\n${cleanedText}`;
 
-  // 3. Few-Shot Prompting (Ejemplos dinámicos en contexto)
   const messages = [
     { role: "system", content: systemPrompt },
-    // Few-Shot Example
-    { role: "user", content: `Translate the following text to ${getLanguageName(targetLang)}.\n\nHola, 123!` },
-    { role: "assistant", content: `<thinking>\n- Source text contains a greeting and a number.\n- Number "123" must be preserved exactly.\n- Translation required.\n</thinking>\n<translation>\nHello, 123!\n</translation>` },
     // Actual Request
     { role: "user", content: userPrompt },
   ];
@@ -230,36 +237,66 @@ export const translate = async (
         }
 
         const reader = fetchResponse.body?.getReader();
+        if (!reader) {
+          throw new Error("No se pudo iniciar el lector de streaming del response body");
+        }
+
         const decoder = new TextDecoder("utf-8");
         let accumulatedRawText = "";
         let buffer = "";
 
-        if (reader) {
-          while (true) {
-            const { done, value } = await reader.read();
-            if (done) break;
-            buffer += decoder.decode(value, { stream: true });
-            const lines = buffer.split("\n");
-            buffer = lines.pop() || "";
-            for (const line of lines) {
-              const trimmedLine = line.trim();
-              if (trimmedLine === "data: [DONE]") continue;
-              if (trimmedLine.startsWith("data: ")) {
-                try {
-                  const data = JSON.parse(trimmedLine.substring(6));
-                  const content = data.choices?.[0]?.delta?.content || "";
-                  if (content) {
-                    accumulatedRawText += content;
-                    options.onData(accumulatedRawText);
+        while (true) {
+          if (options.signal?.aborted) {
+            reader.cancel();
+            throw new DOMException("Aborted", "AbortError");
+          }
+          const { done, value } = await reader.read();
+          if (done) break;
+          buffer += decoder.decode(value, { stream: true });
+          const lines = buffer.split("\n");
+          buffer = lines.pop() || "";
+          for (const line of lines) {
+            const trimmedLine = line.trim();
+            if (!trimmedLine || trimmedLine === "data: [DONE]") continue;
+            if (trimmedLine.startsWith("data: ")) {
+              try {
+                const data = JSON.parse(trimmedLine.substring(6));
+                const content = data.choices?.[0]?.delta?.content || "";
+                if (content) {
+                  accumulatedRawText += content;
+
+                  // Filter: only emit the text inside <translation> to the UI
+                  const translationIndex = accumulatedRawText.indexOf("<translation>");
+                  if (translationIndex !== -1) {
+                    let streamText = accumulatedRawText.substring(translationIndex + 13);
+                    const endIndex = streamText.indexOf("</translation>");
+                    if (endIndex !== -1) {
+                      streamText = streamText.substring(0, endIndex);
+                    }
+                    streamText = streamText.trimStart();
+                    if (streamText) {
+                      options.onData(streamText);
+                    }
                   }
-                } catch (e) {
-                  // Ignore incomplete JSON chunks
+                  // While inside <thinking> or before any tag, emit nothing to the user
                 }
+              } catch {
+                // Ignore incomplete JSON chunks from SSE
               }
             }
           }
         }
-        
+        // Flush any remaining bytes in the decoder
+        const remaining = decoder.decode();
+        if (remaining) {
+          accumulatedRawText += remaining;
+        }
+
+        if (!accumulatedRawText.trim()) {
+          throw new Error("No se recibió contenido del modelo durante el streaming");
+        }
+
+        // Extract the clean translation from the full accumulated response
         let translated = accumulatedRawText;
         const translationMatch = accumulatedRawText.match(/<translation>([\s\S]*?)<\/translation>/);
         if (translationMatch && translationMatch[1]) {
@@ -268,11 +305,19 @@ export const translate = async (
           const thinkingMatch = accumulatedRawText.match(/<\/thinking>([\s\S]*)/);
           if (thinkingMatch && thinkingMatch[1]) {
             translated = thinkingMatch[1].trim();
+            // Strip any residual XML tags from the fallback
+            translated = translated.replace(/<\/?translation>/g, "").trim();
           }
         }
-        
+
+        if (!translated) {
+          throw new Error("Fallo al extraer la traducción de las etiquetas XML (streaming)");
+        }
+
+        // Send the final clean translation to ensure UI has the complete text
+        options.onData(translated);
         translationCache.set(cacheKey, translated);
-        return accumulatedRawText; // Return the full raw text including thinking tags so UI is consistent with the stream
+        return translated;
       } else {
         const response = await axios.post(
           NVIDIA_API_URL,
@@ -281,6 +326,7 @@ export const translate = async (
             messages: messages,
             temperature: dynamicTemperature,
             max_tokens: 4096,
+            stream: false,
           },
           {
             headers: {
