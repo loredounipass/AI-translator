@@ -1,12 +1,12 @@
 import React from "react";
-import { message, Select } from "antd";
+import { notification, Select } from "antd";
 import CloseIcon from "../assets/CloseIcon";
 import SpeechRecognition, { useSpeechRecognition } from "react-speech-recognition";
 import { useSearchParams } from "react-router-dom";
 import MicIcon from "assets/MicIcon";
 import PauseIcon from "assets/PauseIcon";
 import { DEFAULT_SOURCE_LANGUAGE } from "utils/constants";
-import { MAPEO_LOCALES, REGIONES_POR_IDIOMA, REGION_A_IDIOMA_BASE, normalizarLocale, filtrarRegiones } from "../utils/mapeoLocales";
+import { MAPEO_LOCALES, REGIONES_POR_IDIOMA, REGION_A_IDIOMA_BASE, normalizarLocale, filtrarRegiones, localeSoportado } from "../utils/mapeoLocales";
 import {
   vadCheckInterval,
   silenceHoldCount,
@@ -163,6 +163,21 @@ const TranslationTextField = () => {
   }, [urlTextParam, text]);
 
   const handleChangeRegion = (value: string) => {
+    const locale = MAPEO_LOCALES[value] || value;
+    if (!localeSoportado(locale)) {
+      notification.error({
+        message: 'Unsupported Dialect',
+        description: `"${locale}" is not supported by your browser. Reverted to Neutral.`,
+        placement: 'topRight',
+        duration: 4,
+      });
+      try { localStorage.setItem("source_region", "es"); } catch (_) {}
+      setURLSearchParams(params => {
+        params.set("sr", "es");
+        return params;
+      });
+      return;
+    }
     try { localStorage.setItem("source_region", value); } catch (_) {}
     setURLSearchParams(params => {
       params.set("sr", value);
@@ -207,12 +222,12 @@ const TranslationTextField = () => {
         if (!keepMicOnRef.current) await cleanupAudioProcessing();
       } else {
         if (!keepMicOnRef.current) {
-          message.error("Microphone must be active");
+          notification.error({ message: 'Microphone Required', description: 'Microphone must be active', placement: 'topRight', duration: 3 });
           setIsProcessing(false);
           return;
         }
         if (isMicrophoneAvailable === false) {
-          message.error("Please allow microphone access");
+          notification.error({ message: 'Microphone Access', description: 'Please allow microphone access', placement: 'topRight', duration: 3 });
           setIsProcessing(false);
           return;
         }
