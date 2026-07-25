@@ -64,7 +64,7 @@ const TranslationTextField = () => {
   const textareaRef = React.useRef<HTMLTextAreaElement>(null);
   const manualEditRef = React.useRef<boolean>(false);
   const manualEditTimeoutRef = React.useRef<number | null>(null);
-  
+
   const resetVADState = React.useCallback(() => {
     if (vadIntervalRef.current) {
       window.clearInterval(vadIntervalRef.current);
@@ -458,8 +458,8 @@ const TranslationTextField = () => {
   }, [keepMicOn, browserSupportsSpeechRecognition, isMicrophoneAvailable, ensureAudioStreamActive, listening, cleanupAudioProcessing]);
 
   return (
-    <div className="relative h-auto font-sans font-normal leading-normal max-h-screen flex-1">
-      <div className="h-full relative">
+    <div className="relative flex flex-col flex-1 min-h-0 font-sans font-normal leading-normal">
+      <div className="flex-1 relative min-h-0">
         <div
           className={`absolute top-0 left-0 right-0 bottom-0 flex items-center justify-center text-lg text-[#9ca3af] dark:text-slate-500 font-sans pointer-events-none ${!text && placeholder ? 'flex' : 'hidden'}`}
         >
@@ -474,7 +474,7 @@ const TranslationTextField = () => {
           autoFocus
           spellCheck={false}
           maxLength={MAX_URL_TEXT_LENGTH}
-          className="w-full h-[87%] bg-white dark:bg-slate-800 border-none outline-none shadow-none text-[#111111] dark:text-slate-100 p-4 pr-10 pb-6 text-lg resize-none transition-colors duration-200 focus:outline-none focus:shadow-none custom-scrollbar"
+          className="absolute inset-0 w-full h-full bg-white dark:bg-slate-800 border-none outline-none shadow-none text-[#111111] dark:text-slate-100 p-4 pr-10 pb-16 text-lg resize-none transition-colors duration-200 focus:outline-none focus:shadow-none custom-scrollbar"
         ></textarea>
         {text && (
           <button
@@ -486,39 +486,12 @@ const TranslationTextField = () => {
           </button>
         )}
       </div>
-      <div className="flex gap-2 items-center mt-2 pl-3 md:pl-4">
-        <span className="text-[11px] text-[#999] dark:text-slate-500">
+      <div className="flex shrink-0 pl-3 md:pl-4 pb-1">
+        <span className="text-[10px] text-[#999] dark:text-slate-500 opacity-40 leading-none">
           {text.length.toLocaleString()} / {MAX_URL_TEXT_LENGTH.toLocaleString()}
         </span>
-        {browserSupportsSpeechRecognition && (
-          <button
-            onClick={async () => {
-              if (isRefreshing) return;
-              try {
-                setIsRefreshing(true);
-                const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-                stream.getTracks().forEach(t => t.stop());
-                const list = await navigator.mediaDevices.enumerateDevices();
-                const inputs = list.filter(d => d.kind === 'audioinput');
-                if (inputs.length > 0) setSelectedDeviceId(inputs[0].deviceId);
-              } catch (err) { 
-                console.warn(err); 
-              } finally {
-                setTimeout(() => setIsRefreshing(false), 300); // keep spinning slightly for visual feedback
-              }
-            }}
-            className="bg-none border-none text-[#333] dark:text-slate-400 cursor-pointer p-1"
-            style={{ 
-              transform: isRefreshing ? 'rotate(180deg)' : 'none', 
-              transition: 'transform 0.3s ease' 
-            }}
-            aria-label="Refresh devices"
-          >
-            ↻
-          </button>
-        )}
       </div>
-      <div className="absolute bottom-2.5 left-2.5 right-2.5 flex items-center gap-2 flex-wrap">
+      <div className="flex shrink-0 items-center gap-2 flex-wrap pl-3 md:pl-4 pb-2.5">
         {browserSupportsSpeechRecognition ? (
           <div className="flex items-center gap-2">
             <div className="flex items-center gap-2">

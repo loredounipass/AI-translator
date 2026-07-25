@@ -268,7 +268,7 @@ const TranslatedText = () => {
           <span className="text-xs tracking-wide text-slate-400 dark:text-slate-500">Translating...</span>
         </div>
       ) : (
-        <div className="p-4 overflow-auto max-h-[68vh] blue-scrollbar h-full whitespace-pre-wrap">
+        <div className="p-4 pb-14 overflow-auto max-h-[75vh] blue-scrollbar h-full whitespace-pre-wrap">
           {translatedText.join("\n")}
         </div>
       )}
