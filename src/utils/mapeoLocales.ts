@@ -62,10 +62,40 @@ export const REGIONES_POR_IDIOMA: Record<string, { code: string; nombre: string 
 };
 
 export const normalizarLocale = (locale: string): string => {
-  // Algunos navegadores no soportan subtags numéricos como es-419
-  // https://bugs.chromium.org/p/chromium/issues/detail?id=1045179
   if (locale === 'es-419') return 'es-MX';
   return locale;
+};
+
+// Locales de soporte amplio (Chrome, Edge Chromium)
+const LOCALES_EXTENDIDOS = new Set([
+  'es-419', 'es-SV', 'es-NI', 'es-DO', 'es-PR', 'es-CL', 'es-CO', 'es-VE', 'es-GT',
+  'en-IN', 'en-PH', 'en-SG', 'en-ZA', 'en-JM',
+]);
+
+// Locales universales (soportados en todos los navegadores con Web Speech API)
+const LOCALES_UNIVERSALES = new Set([
+  'es-ES', 'es-MX', 'en-US', 'en-GB',
+]);
+
+const esChromium = (): boolean => {
+  const ua = navigator.userAgent;
+  return ua.includes('Chrome') || ua.includes('Edge') || ua.includes('Chromium');
+};
+
+export const localeSoportado = (locale: string): boolean => {
+  const normalizado = normalizarLocale(locale);
+  if (LOCALES_UNIVERSALES.has(normalizado)) return true;
+  if (LOCALES_EXTENDIDOS.has(locale)) return esChromium();
+  return true;
+};
+
+export const filtrarRegiones = (
+  regiones: { code: string; nombre: string }[]
+): { code: string; nombre: string }[] => {
+  return regiones.filter(r => {
+    const locale = MAPEO_LOCALES[r.code] || r.code;
+    return localeSoportado(locale);
+  });
 };
 
 export const REGION_A_IDIOMA_BASE: Record<string, string> = {

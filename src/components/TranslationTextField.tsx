@@ -6,7 +6,7 @@ import { useSearchParams } from "react-router-dom";
 import MicIcon from "assets/MicIcon";
 import PauseIcon from "assets/PauseIcon";
 import { DEFAULT_SOURCE_LANGUAGE } from "utils/constants";
-import { MAPEO_LOCALES, REGIONES_POR_IDIOMA, REGION_A_IDIOMA_BASE, normalizarLocale } from "../utils/mapeoLocales";
+import { MAPEO_LOCALES, REGIONES_POR_IDIOMA, REGION_A_IDIOMA_BASE, normalizarLocale, filtrarRegiones } from "../utils/mapeoLocales";
 import {
   vadCheckInterval,
   silenceHoldCount,
@@ -24,9 +24,11 @@ const TranslationTextField = () => {
   const sr = searchParams.get("sr");
   const slBase = REGION_A_IDIOMA_BASE[sl] || sl;
   const regionesActuales = REGIONES_POR_IDIOMA[slBase] || null;
-  const regionActual = sr && REGION_A_IDIOMA_BASE[sr] === slBase
+  const regionesFiltradas = regionesActuales ? filtrarRegiones(regionesActuales) : null;
+  const regionPorDefecto = regionesFiltradas?.[0]?.code ?? regionesActuales?.[0]?.code;
+  const regionActual = sr && REGION_A_IDIOMA_BASE[sr] === slBase && regionesFiltradas?.some(r => r.code === sr)
     ? sr
-    : (REGION_A_IDIOMA_BASE[sl] ? sl : regionesActuales?.[0]?.code);
+    : (REGION_A_IDIOMA_BASE[sl] && regionesFiltradas?.some(r => r.code === sl) ? sl : regionPorDefecto);
   const [isProcessing, setIsProcessing] = React.useState(false);
   const [isRefreshing, setIsRefreshing] = React.useState(false);
   const [selectedDeviceId, setSelectedDeviceId] = React.useState<string | null>(null);
@@ -542,7 +544,7 @@ const TranslationTextField = () => {
                 <Select<string>
                   value={regionActual}
                   onChange={handleChangeRegion}
-                  options={regionesActuales.map(r => ({ value: r.code, label: r.nombre }))}
+                  options={(regionesFiltradas ?? regionesActuales).map(r => ({ value: r.code, label: r.nombre }))}
                   popupMatchSelectWidth={false}
                   className="region-select"
                   style={{ width: 100 }}
