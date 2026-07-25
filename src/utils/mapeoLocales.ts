@@ -38,6 +38,11 @@ export const MAPEO_LOCALES: Record<string, string> = {
   africanos: 'en-ZA',
   haitianos: 'en-JM',
   egypt: 'en-EG',
+  ru: 'ru-RU',
+  russian: 'ru-RU',
+  zh: 'zh-CN',
+  chinese: 'zh-CN',
+  taiwan: 'zh-TW',
 };
 
 export const REGIONES_POR_IDIOMA: Record<string, { code: string; nombre: string }[]> = {
@@ -60,6 +65,15 @@ export const REGIONES_POR_IDIOMA: Record<string, { code: string; nombre: string 
     { code: 'india', nombre: 'India' },
     { code: 'philippines', nombre: 'Filipinas' },
     { code: 'egypt', nombre: 'Egypt' },
+    { code: 'africanos', nombre: 'African' },
+    { code: 'haitianos', nombre: 'Haitian' },
+  ],
+  ru: [
+    { code: 'ru', nombre: 'Neutral' },
+  ],
+  zh: [
+    { code: 'zh', nombre: 'Neutral' },
+    { code: 'taiwan', nombre: 'Taiwan' },
   ],
 };
 
@@ -76,7 +90,7 @@ const LOCALES_EXTENDIDOS = new Set([
 
 // Locales universales (soportados en todos los navegadores con Web Speech API)
 const LOCALES_UNIVERSALES = new Set([
-  'es-ES', 'es-MX', 'en-US', 'en-GB',
+  'es-ES', 'es-MX', 'en-US', 'en-GB', 'ru-RU', 'zh-CN', 'zh-TW',
 ]);
 
 const esChromium = (): boolean => {
@@ -103,5 +117,7 @@ export const filtrarRegiones = (
 export const REGION_A_IDIOMA_BASE: Record<string, string> = {
   es: 'es', mex: 'es', col: 'es', chl: 'es', ven: 'es', gtm: 'es',
   dom: 'es', pri: 'es', slv: 'es', nic: 'es',
-  en: 'en', usa: 'en', uk: 'en', india: 'en', philippines: 'en', egypt: 'en',
+  en: 'en', usa: 'en', uk: 'en', india: 'en', philippines: 'en', egypt: 'en', africanos: 'en', haitianos: 'en',
+  ru: 'ru',
+  zh: 'zh', taiwan: 'zh',
 };
