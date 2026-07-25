@@ -1,11 +1,12 @@
 import React from "react";
-import { message } from "antd";
+import { notification, Select } from "antd";
 import CloseIcon from "../assets/CloseIcon";
 import SpeechRecognition, { useSpeechRecognition } from "react-speech-recognition";
 import { useSearchParams } from "react-router-dom";
 import MicIcon from "assets/MicIcon";
 import PauseIcon from "assets/PauseIcon";
 import { DEFAULT_SOURCE_LANGUAGE } from "utils/constants";
+import { MAPEO_LOCALES, REGIONES_POR_IDIOMA, REGION_A_IDIOMA_BASE, normalizarLocale, filtrarRegiones, localeSoportado, saveRegion } from "../utils/mapeoLocales";
 import {
   vadCheckInterval,
   silenceHoldCount,
@@ -20,6 +21,14 @@ const TranslationTextField = () => {
   const [text, setText] = React.useState(searchParams.get("text") || "");
   const urlTextParam = searchParams.get("text") || "";
   const sl = searchParams.get("sl") || DEFAULT_SOURCE_LANGUAGE;
+  const sr = searchParams.get("sr");
+  const slBase = REGION_A_IDIOMA_BASE[sl] || sl;
+  const regionesActuales = REGIONES_POR_IDIOMA[slBase] || null;
+  const regionesFiltradas = regionesActuales ? filtrarRegiones(regionesActuales) : null;
+  const regionPorDefecto = regionesFiltradas?.[0]?.code ?? regionesActuales?.[0]?.code;
+  const regionActual = sr && REGION_A_IDIOMA_BASE[sr] === slBase && regionesFiltradas?.some(r => r.code === sr)
+    ? sr
+    : (REGION_A_IDIOMA_BASE[sl] && regionesFiltradas?.some(r => r.code === sl) ? sl : regionPorDefecto);
   const [isProcessing, setIsProcessing] = React.useState(false);
   const [isRefreshing, setIsRefreshing] = React.useState(false);
   const [selectedDeviceId, setSelectedDeviceId] = React.useState<string | null>(null);
@@ -153,6 +162,31 @@ const TranslationTextField = () => {
     }
   }, [urlTextParam, text]);
 
+  const handleChangeRegion = (value: string) => {
+    const locale = MAPEO_LOCALES[value] || value;
+    const slBase = REGION_A_IDIOMA_BASE[sl] || sl;
+    if (!localeSoportado(locale)) {
+      const fallback = regionesActuales?.[0]?.code ?? slBase;
+      notification.error({
+        message: 'Unsupported Dialect',
+        description: `"${locale}" is not supported by your browser. Reverted to Neutral.`,
+        placement: 'topRight',
+        duration: 4,
+      });
+      saveRegion(slBase, fallback);
+      setURLSearchParams(params => {
+        params.set("sr", fallback);
+        return params;
+      });
+      return;
+    }
+    saveRegion(slBase, value);
+    setURLSearchParams(params => {
+      params.set("sr", value);
+      return params;
+    });
+  };
+
   const clearTextHandler = async () => {
     setTextParam("");
     resetTranscript();
@@ -190,21 +224,24 @@ const TranslationTextField = () => {
         if (!keepMicOnRef.current) await cleanupAudioProcessing();
       } else {
         if (!keepMicOnRef.current) {
-          message.error("Microphone must be active");
+          notification.error({ message: 'Microphone Required', description: 'Microphone must be active', placement: 'topRight', duration: 3 });
           setIsProcessing(false);
           return;
         }
         if (isMicrophoneAvailable === false) {
-          message.error("Please allow microphone access");
+          notification.error({ message: 'Microphone Access', description: 'Please allow microphone access', placement: 'topRight', duration: 3 });
           setIsProcessing(false);
           return;
         }
         await setupAudioProcessing(selectedDeviceId);
 
+        const effectiveSl = sr || sl;
+        const slSanitizado = effectiveSl.toLowerCase().trim().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+        const idiomaOptimizado = normalizarLocale(MAPEO_LOCALES[slSanitizado] || sl);
         await SpeechRecognition.startListening({
           continuous: true,
           interimResults: true,
-          language: sl
+          language: idiomaOptimizado
         });
       }
     } catch (error) {
@@ -388,10 +425,13 @@ const TranslationTextField = () => {
     if (listening) {
       const restartWithNewLang = async () => {
         await SpeechRecognition.stopListening();
+        const effectiveSl = sr || sl;
+        const slSanitizado = effectiveSl.toLowerCase().trim().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+        const idiomaOptimizado = normalizarLocale(MAPEO_LOCALES[slSanitizado] || sl);
         await SpeechRecognition.startListening({
           continuous: true,
           interimResults: true,
-          language: sl
+          language: idiomaOptimizado
         });
       };
       restartWithNewLang().catch(console.error);
@@ -478,9 +518,9 @@ const TranslationTextField = () => {
           </button>
         )}
       </div>
-      <div className="absolute bottom-2.5 left-2.5 flex items-center gap-4">
+      <div className="absolute bottom-2.5 left-2.5 right-2.5 flex items-center gap-2 flex-wrap">
         {browserSupportsSpeechRecognition ? (
-          <>
+          <div className="flex items-center gap-2">
             <div className="flex items-center gap-2">
               <button
                 type="button"
@@ -503,7 +543,7 @@ const TranslationTextField = () => {
                   boxShadow: '0 1px 2px rgba(0,0,0,0.2)'
                 }} />
               </button>
-              <span className="text-[#333] dark:text-slate-300 text-xs">{keepMicOn ? "Turn off" : "Turn on"}</span>
+              <span className="text-[#333] dark:text-slate-300 text-xs whitespace-nowrap">{keepMicOn ? "Turn off" : "Turn on"}</span>
             </div>
             <button
               onMouseDown={() => { if (!mediaStreamRef.current && keepMicOn) ensureAudioStreamActive(); }}
@@ -515,14 +555,27 @@ const TranslationTextField = () => {
             >
               {listening ? <PauseIcon /> : <MicIcon />}
             </button>
-          </>
-        ) : (
-          <p>Reconocimiento de voz no soportado</p>
-        )}
-        {!isMicrophoneAvailable && browserSupportsSpeechRecognition && (
-          <div className="text-[#ff4444] text-xs ml-2.5 animate-fadeIn">
-            Micrófono no detectado
+            {regionesActuales && (
+              <div className="flex items-center gap-1.5 ml-2 pl-2 border-l border-slate-200 dark:border-slate-700">
+                <span className="text-[10px] uppercase tracking-widest text-slate-400 dark:text-slate-500 font-semibold">Dialect</span>
+                <Select<string>
+                  value={regionActual}
+                  onChange={handleChangeRegion}
+                  options={(regionesFiltradas ?? regionesActuales).map(r => ({ value: r.code, label: r.nombre }))}
+                  popupMatchSelectWidth={false}
+                  className="region-select"
+                  style={{ width: 100 }}
+                />
+              </div>
+            )}
+            {!isMicrophoneAvailable && (
+              <span className="text-[#ff4444] text-xs animate-fadeIn whitespace-nowrap">
+                Micrófono no detectado
+              </span>
+            )}
           </div>
+        ) : (
+          <p className="text-xs text-slate-400">Reconocimiento de voz no soportado</p>
         )}
       </div>
     </div>

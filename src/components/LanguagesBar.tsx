@@ -6,6 +6,7 @@ import {
   DEFAULT_SOURCE_LANGUAGE, 
   DEFAULT_TARGET_LANGUAGE 
 } from "utils/constants";
+import { REGIONES_POR_IDIOMA, getSavedRegion, saveRegion } from "../utils/mapeoLocales";
 import { SwitchIcon } from "../assets/SwitchIcon";
 
 const LanguagesBar = () => {
@@ -45,12 +46,18 @@ const LanguagesBar = () => {
     const newSource = targetLang;
     const newTarget = sourceLang;
     const newText = translatedTextRef.current;
-    
+    const regiones = REGIONES_POR_IDIOMA[newSource];
+    const nuevoSr = regiones
+      ? (getSavedRegion(newSource) || regiones[0].code)
+      : null;
+
     setSourceLang(newSource);
     setTargetLang(newTarget);
     setURLSearchParams(params => {
       params.set("sl", newSource);
       params.set("tl", newTarget);
+      if (nuevoSr) params.set("sr", nuevoSr);
+      else params.delete("sr");
       if (newText) {
         params.set("text", newText);
       }
@@ -59,8 +66,25 @@ const LanguagesBar = () => {
   };
 
   const handleChangeSourceLang = (value: string) => {
-    if(value === targetLang) switchLangsHandler();
-    else updateLang(value, setSourceLang, "sl");
+    if (value === targetLang) {
+      switchLangsHandler();
+      return;
+    }
+    if (AVAILABLE_LANGUAGES.some((lang) => lang.code === value)) {
+      const regiones = REGIONES_POR_IDIOMA[value];
+      const nuevoSr = regiones
+        ? (getSavedRegion(value) || regiones[0].code)
+        : null;
+
+      setSourceLang(value);
+      setURLSearchParams(params => {
+        params.set("sl", value);
+        if (nuevoSr) params.set("sr", nuevoSr);
+        else params.delete("sr");
+        return params;
+      });
+      if (nuevoSr) saveRegion(value, nuevoSr);
+    }
   };
 
   const handleChangeTargetLang = (value: string) => {
@@ -83,9 +107,18 @@ const LanguagesBar = () => {
   );
 
   React.useEffect(() => {
-    if (!searchParams.get("sl")) setLangParam("sl", DEFAULT_SOURCE_LANGUAGE);
+    if (!searchParams.get("sl")) {
+      const sl = DEFAULT_SOURCE_LANGUAGE;
+      const regiones = REGIONES_POR_IDIOMA[sl];
+      const savedSr = getSavedRegion(sl);
+      setURLSearchParams(params => {
+        params.set("sl", sl);
+        if (regiones) params.set("sr", savedSr || regiones[0].code);
+        return params;
+      });
+    }
     if (!searchParams.get("tl")) setLangParam("tl", DEFAULT_TARGET_LANGUAGE);
-  }, [searchParams, setLangParam]);
+  }, [searchParams, setLangParam, setURLSearchParams]);
 
   return (
     <div className="bg-white/80 dark:bg-slate-800/80 backdrop-blur-sm flex items-center justify-between p-2 md:p-3 px-3 md:px-6 gap-2 md:gap-4 border-b border-slate-200 dark:border-slate-700 w-full overflow-hidden transition-colors">
