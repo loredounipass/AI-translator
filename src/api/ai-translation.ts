@@ -1,6 +1,7 @@
 import axios from "axios";
 import { LRUCache } from "lru-cache";
 import { GLOSSARY } from "./glossary";
+import { INTERPETERAI_TRAINING_MODULE } from "./interpreter.guide";
 
 const NVIDIA_API_URL = "/api/nvidia/chat/completions";
 
@@ -48,7 +49,7 @@ const buildSystemPrompt = (targetLang: string, sourceLang: string): string => {
 
   const exactKey = `${sourceLang}-${targetLang}`;
   const reverseKey = `${targetLang}-${sourceLang}`;
-  
+
   let pairGlossary = GLOSSARY[exactKey];
   let isReversed = false;
 
@@ -61,16 +62,16 @@ const buildSystemPrompt = (targetLang: string, sourceLang: string): string => {
   if (pairGlossary) {
     let termsOutput = "";
     for (const [domain, terms] of Object.entries(pairGlossary)) {
-       let domainName = domain.toUpperCase().replace(/_/g, " ");
-       // Map domains to standard display names
-       if (domain === "medical_vns") domainName = "MEDICAL / VNS HEALTH / MEDICARE";
-       if (domain === "legal_us") domainName = "US LEGAL / COURT";
-       if (domain === "veterinary_banfield") domainName = "VETERINARY / BANFIELD PET HOSPITAL";
-       
-       const formattedTerms = Object.entries(terms)
-         .map(([src, tgt]) => isReversed ? `    - "${tgt}" → "${src}"` : `    - "${src}" → "${tgt}"`)
-         .join("\n");
-       termsOutput += `  [${domainName}]:\n${formattedTerms}\n`;
+      let domainName = domain.toUpperCase().replace(/_/g, " ");
+      // Map domains to standard display names
+      if (domain === "medical_vns") domainName = "MEDICAL / VNS HEALTH / MEDICARE";
+      if (domain === "legal_us") domainName = "US LEGAL / COURT";
+      if (domain === "veterinary_banfield") domainName = "VETERINARY / BANFIELD PET HOSPITAL";
+
+      const formattedTerms = Object.entries(terms)
+        .map(([src, tgt]) => isReversed ? `    - "${tgt}" → "${src}"` : `    - "${src}" → "${tgt}"`)
+        .join("\n");
+      termsOutput += `  [${domainName}]:\n${formattedTerms}\n`;
     }
 
     domainRules = `
@@ -87,7 +88,17 @@ ${termsOutput.trimEnd()}
 STYLE RULES & DOMAIN TERMINOLOGY - MANDATORY:
 - Maintain formal/professional tone appropriate for business, medical, and legal contexts.${dialectRule}${domainRules}`;
 
-  return `You are an elite, highly precise professional interpreter. You MUST obey the following rules WITHOUT EXCEPTION.
+  const interpreterContext = `CONTEXT ABOUT THE USER'S JOB (FOR YOUR UNDERSTANDING ONLY):
+The user you are assisting is a professional over-the-phone interpreter. Their job involves strict training based on the following module:
+
+${JSON.stringify(INTERPETERAI_TRAINING_MODULE, null, 2)}
+
+That is the USER'S job and they will handle all behavioral and cultural nuances described in the module (such as speaking in 1st person, maintaining neutrality, using specific 3rd person phrases).
+
+YOUR ROLE AS THE AI:
+You are an elite, highly precise translation assistant supporting the user. You MUST NOT try to do the user's job or intervene in the scenarios. Your ONLY job is to translate the text exactly as requested. You MUST obey the following rules WITHOUT EXCEPTION.`;
+
+  return `${interpreterContext}
 
 CRITICAL RULES:
 1. Translate EVERYTHING. NEVER omit, summarize, or skip any factual content or meaning.
@@ -118,7 +129,7 @@ const isTrivialText = (text: string): boolean => {
   const trivialRegex = /^[\d\s.,!?;:'"()[\]{}<>\-_=+*/\\|@#%^&`~]+$/;
   // Emails o URLs puras
   const urlEmailRegex = /^(https?:\/\/[^\s]+|[^\s@]+@[^\s@]+\.[^\s@]+)$/i;
-  
+
   return trivialRegex.test(text) || urlEmailRegex.test(text);
 };
 
@@ -293,7 +304,7 @@ export const translate = async (
         // 4. Extracción de <translation> XML
         let translated = rawContent;
         const translationMatch = rawContent.match(/<translation>([\s\S]*?)<\/translation>/);
-        
+
         if (translationMatch && translationMatch[1]) {
           translated = translationMatch[1].trim();
         } else {
@@ -322,8 +333,8 @@ export const translate = async (
         }
       }
       if (error instanceof Error && error.message.startsWith("HTTP Error: ")) {
-         lastError = error;
-         continue;
+        lastError = error;
+        continue;
       }
 
       throw new Error(`Error en traducción AI: ${(error as Error).message}`);
