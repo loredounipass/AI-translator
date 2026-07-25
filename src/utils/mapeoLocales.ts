@@ -37,6 +37,7 @@ export const MAPEO_LOCALES: Record<string, string> = {
   asiaticos: 'en-SG',
   africanos: 'en-ZA',
   haitianos: 'en-JM',
+  egypt: 'en-EG',
 };
 
 export const REGIONES_POR_IDIOMA: Record<string, { code: string; nombre: string }[]> = {
@@ -58,6 +59,7 @@ export const REGIONES_POR_IDIOMA: Record<string, { code: string; nombre: string 
     { code: 'uk', nombre: 'Reino Unido' },
     { code: 'india', nombre: 'India' },
     { code: 'philippines', nombre: 'Filipinas' },
+    { code: 'egypt', nombre: 'Egypt' },
   ],
 };
 
@@ -69,7 +71,7 @@ export const normalizarLocale = (locale: string): string => {
 // Locales de soporte amplio (Chrome, Edge Chromium)
 const LOCALES_EXTENDIDOS = new Set([
   'es-419', 'es-SV', 'es-NI', 'es-DO', 'es-PR', 'es-CL', 'es-CO', 'es-VE', 'es-GT',
-  'en-IN', 'en-PH', 'en-SG', 'en-ZA', 'en-JM',
+  'en-IN', 'en-PH', 'en-SG', 'en-ZA', 'en-JM', 'en-EG',
 ]);
 
 // Locales universales (soportados en todos los navegadores con Web Speech API)
@@ -101,5 +103,5 @@ export const filtrarRegiones = (
 export const REGION_A_IDIOMA_BASE: Record<string, string> = {
   es: 'es', mex: 'es', col: 'es', chl: 'es', ven: 'es', gtm: 'es',
   dom: 'es', pri: 'es', slv: 'es', nic: 'es',
-  en: 'en', usa: 'en', uk: 'en', india: 'en', philippines: 'en',
+  en: 'en', usa: 'en', uk: 'en', india: 'en', philippines: 'en', egypt: 'en',
 };
