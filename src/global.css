@@ -50,6 +50,97 @@ body {
   }
 }
 
+.region-select .ant-select-selector {
+  background: #f8fafc !important;
+  border: 1px solid #e2e8f0 !important;
+  border-radius: 8px !important;
+  box-shadow: 0 1px 2px rgba(0,0,0,0.03) !important;
+  color: #334155 !important;
+  font-size: 12px !important;
+  padding: 3px 6px !important;
+  height: auto !important;
+  transition: all 0.15s ease !important;
+}
+
+.region-select:hover .ant-select-selector {
+  border-color: #cbd5e1 !important;
+  background: #f1f5f9 !important;
+}
+
+.region-select.ant-select-focused .ant-select-selector {
+  border-color: #2196F3 !important;
+  box-shadow: 0 0 0 2px rgba(33,150,243,0.1) !important;
+}
+
+.dark .region-select .ant-select-selector {
+  background: #1e293b !important;
+  border-color: #475569 !important;
+  color: #cbd5e1 !important;
+  box-shadow: 0 1px 2px rgba(0,0,0,0.1) !important;
+}
+
+.dark .region-select:hover .ant-select-selector {
+  border-color: #64748b !important;
+  background: #1e293b !important;
+}
+
+.dark .region-select.ant-select-focused .ant-select-selector {
+  border-color: #60a5fa !important;
+  box-shadow: 0 0 0 2px rgba(96,165,250,0.15) !important;
+}
+
+.region-select .ant-select-selection-item {
+  font-size: 12px !important;
+  font-weight: 500 !important;
+}
+
+.region-select .ant-select-arrow {
+  color: #94a3b8 !important;
+  font-size: 10px !important;
+}
+
+.dark .region-select .ant-select-arrow {
+  color: #64748b !important;
+}
+
+.region-select.ant-select-dropdown {
+  border-radius: 8px !important;
+  padding: 4px !important;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.08) !important;
+  border: 1px solid #e2e8f0 !important;
+}
+
+.dark .region-select.ant-select-dropdown {
+  background: #1e293b !important;
+  border-color: #475569 !important;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.3) !important;
+}
+
+.region-select .ant-select-item {
+  border-radius: 6px !important;
+  font-size: 12px !important;
+  padding: 5px 10px !important;
+}
+
+.region-select .ant-select-item-option-active {
+  background: #f1f5f9 !important;
+}
+
+.dark .region-select .ant-select-item-option-active {
+  background: #334155 !important;
+}
+
+.region-select .ant-select-item-option-selected {
+  background: #eff6ff !important;
+  color: #2196F3 !important;
+  font-weight: 500 !important;
+}
+
+.dark .region-select .ant-select-item-option-selected {
+  background: #1e3a5f !important;
+  color: #60a5fa !important;
+}
+
 .custom-scrollbar::-webkit-scrollbar {
   width: 12px;
 }
