@@ -111,7 +111,10 @@ const TranslatedText = () => {
       if (!(error instanceof DOMException)) {
         console.error("Translation error");
         if (currentRequestId === requestIdRef.current) {
-          setTranslatedText(["<< Translation Error >>"]);
+          const msg = (error as Error).message.includes("401")
+            ? "<< Translation Error — You must add an API key >>"
+            : "<< Translation Error >>";
+          setTranslatedText([msg]);
         }
       }
     } finally {
