@@ -94,7 +94,7 @@ export const analyzeAudioFrame = (
   const smooth = rmsSmoothingAlpha * rms + (1 - rmsSmoothingAlpha) * prevSmooth;
   
   let newNoiseFloor = Math.min(prevNoiseFloor, smooth * 0.8);
-  newNoiseFloor = Math.max(newNoiseFloor, newNoiseFloor * 1.001);
+  newNoiseFloor = Math.max(newNoiseFloor, prevNoiseFloor * 1.001);
 
   const adaptiveThreshold = Math.max(baseVolumeThreshold, newNoiseFloor * adaptiveMultiplier + 0.003);
 

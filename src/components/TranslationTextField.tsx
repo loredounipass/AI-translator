@@ -429,7 +429,7 @@ const TranslationTextField = () => {
 
       const punctuated = addPunctuation(transcript);
       const truncated = punctuated.length > MAX_URL_TEXT_LENGTH
-        ? punctuated.slice(-MAX_URL_TEXT_LENGTH)
+        ? punctuated.slice(0, MAX_URL_TEXT_LENGTH)
         : punctuated;
 
       requestAnimationFrame(() => {

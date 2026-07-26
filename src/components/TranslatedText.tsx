@@ -185,6 +185,7 @@ const TranslatedText = () => {
 
   const [copied, setCopied] = React.useState(false);
   const copyTimeoutRef = React.useRef<number | null>(null);
+  const deleteTimeoutRef = React.useRef<number | null>(null);
 
   const messages = React.useMemo(() => [
     "Translate any text instantly now",
@@ -206,7 +207,7 @@ const TranslatedText = () => {
       if (translatedText.length > 0 || isTranslating) return;
 
       if (!isDeleting && displayedText === currentMessage) {
-        setTimeout(() => setIsDeleting(true), 2500);
+        deleteTimeoutRef.current = window.setTimeout(() => setIsDeleting(true), 2500);
       } else if (isDeleting && displayedText === "") {
         setIsDeleting(false);
         setPlaceholderIndex((prev) => (prev + 1) % messages.length);
@@ -215,7 +216,13 @@ const TranslatedText = () => {
       }
     }, typingSpeed);
 
-    return () => clearTimeout(timer);
+    return () => {
+      clearTimeout(timer);
+      if (deleteTimeoutRef.current !== null) {
+        window.clearTimeout(deleteTimeoutRef.current);
+        deleteTimeoutRef.current = null;
+      }
+    };
   }, [displayedText, isDeleting, placeholderIndex, messages, translatedText.length, isTranslating]);
 
   React.useEffect(() => {

@@ -13,6 +13,7 @@ import { useAuth } from "hooks/useAuth";
 const LanguagesBar = () => {
   const { user } = useAuth();
   const translatedTextRef = React.useRef("");
+  const MAX_URL_TEXT_LENGTH = 8000;
 
   React.useEffect(() => {
     const handleTranslationChange = (e: any) => {
@@ -61,7 +62,7 @@ const LanguagesBar = () => {
       if (nuevoSr) params.set("sr", nuevoSr);
       else params.delete("sr");
       if (newText) {
-        params.set("text", newText);
+        params.set("text", newText.length > MAX_URL_TEXT_LENGTH ? newText.slice(0, MAX_URL_TEXT_LENGTH) : newText);
       }
       return params;
     });
