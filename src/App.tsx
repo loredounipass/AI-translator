@@ -12,7 +12,6 @@ import { AI_MODELS, DEFAULT_MODEL } from "utils/constants";
 import { Analytics } from "@vercel/analytics/react";
 import { useAuth } from "hooks/useAuth";
 import { ApiKeyProvider, useApiKey } from "./contexts/ApiKeyContext";
-import { message } from "antd";
 import type { User } from "@supabase/supabase-js";
 
 const SunIcon = () => (
@@ -63,11 +62,11 @@ const Header = ({
 
   const handleModelChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
     const provider = "nvidia";
-    const hasKey = getKey(provider);
     if (!user) {
-      message.warning("Debes iniciar sesión para usar tu propia API key");
+      openAuth();
       return;
     }
+    const hasKey = getKey(provider);
     if (!hasKey) {
       onApiKeyNeeded();
       return;
