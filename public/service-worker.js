@@ -34,27 +34,14 @@ self.addEventListener('fetch', (event) => {
 
   event.respondWith(
     caches.match(event.request).then((cached) => {
-      const networkFetch = fetch(event.request)
-        .then((response) => {
-          if (!response || response.status !== 200 || response.type !== 'basic') {
-            return response;
-          }
+      if (cached) return cached;
+      return fetch(event.request).then((response) => {
+        if (response && response.status === 200 && response.type === 'basic') {
           const responseClone = response.clone();
-          try {
-            const reqUrl = new URL(event.request.url);
-            if (reqUrl.protocol === 'http:' || reqUrl.protocol === 'https:') {
-              caches.open(CACHE_NAME).then((cache) => {
-                cache.put(event.request, responseClone);
-              });
-            }
-          } catch (e) {
-            // If URL parsing fails or unsupported scheme, skip caching
-          }
-          return response;
-        })
-        .catch(() => cached);
-
-      return cached || networkFetch;
+          caches.open(CACHE_NAME).then((cache) => cache.put(event.request, responseClone));
+        }
+        return response;
+      });
     })
   );
 });
