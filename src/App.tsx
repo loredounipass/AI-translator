@@ -5,8 +5,11 @@ import TranslationTextField from "./components/TranslationTextField";
 import { BrowserRouter as Router, Route, Routes, useSearchParams } from "react-router-dom";
 import TranslatedText from "components/TranslatedText";
 import HistoryPanel from "./components/HistoryPanel";
+import AuthModal from "./components/AuthModal";
+import UserAvatar from "./components/UserAvatar";
 import { AI_MODELS, DEFAULT_MODEL } from "utils/constants";
 import { Analytics } from "@vercel/analytics/react";
+import { useAuth } from "hooks/useAuth";
 
 const SunIcon = () => (
   <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -38,11 +41,15 @@ const HistoryIcon = () => (
 const Header = ({
   isDark,
   toggleDark,
-  openHistory
+  openHistory,
+  openAuth,
+  user,
 }: {
   isDark: boolean;
   toggleDark: () => void;
   openHistory: () => void;
+  openAuth: () => void;
+  user: any;
 }) => {
   const [searchParams, setSearchParams] = useSearchParams();
   const currentModel = searchParams.get("model") || DEFAULT_MODEL;
@@ -77,7 +84,7 @@ const Header = ({
             </div>
           </div>
 
-          <div className="relative group mr-2 md:mr-4">
+          <div className="relative group">
             <button
               onClick={toggleDark}
               className="p-2 rounded-full text-slate-500 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
@@ -89,6 +96,26 @@ const Header = ({
               {isDark ? "Light mode" : "Dark mode"}
             </div>
           </div>
+
+          {user ? (
+            <UserAvatar user={user} />
+          ) : (
+            <div className="relative group">
+              <button
+                onClick={openAuth}
+                className="p-2 rounded-full text-slate-500 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
+                aria-label="Iniciar sesión"
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/>
+                  <circle cx="12" cy="7" r="4"/>
+                </svg>
+              </button>
+              <div className="absolute top-full mt-2 left-1/2 -translate-x-1/2 px-2.5 py-1.5 bg-slate-800 dark:bg-slate-700 text-white text-[11px] font-medium rounded-md opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap pointer-events-none z-50 shadow-lg border border-slate-700 dark:border-slate-600">
+                Iniciar sesión
+              </div>
+            </div>
+          )}
 
           <div className="relative flex items-center gap-1.5 group">
             <span className="text-xs text-slate-500 dark:text-slate-400 font-medium tracking-wide">AI model</span>
@@ -140,6 +167,8 @@ function App() {
   });
 
   const [isHistoryOpen, setIsHistoryOpen] = useState(false);
+  const [isAuthOpen, setIsAuthOpen] = useState(false);
+  const { user } = useAuth();
 
   useEffect(() => {
     if (isDark) {
@@ -158,8 +187,11 @@ function App() {
           isDark={isDark}
           toggleDark={() => setIsDark(!isDark)}
           openHistory={() => setIsHistoryOpen(true)}
+          openAuth={() => setIsAuthOpen(true)}
+          user={user}
         />
         <HistoryPanel isOpen={isHistoryOpen} onClose={() => setIsHistoryOpen(false)} />
+        <AuthModal isOpen={isAuthOpen} onClose={() => setIsAuthOpen(false)} />
         <Routes>
           <Route
             path="/"

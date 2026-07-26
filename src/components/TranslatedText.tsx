@@ -5,6 +5,8 @@ import { translate } from "api/ai-translation";
 import CopyIcon from "assets/CopyIcon";
 import { DEFAULT_SOURCE_LANGUAGE, DEFAULT_TARGET_LANGUAGE, DEFAULT_MODEL, AI_MODELS } from "utils/constants";
 import { debounce } from "lodash";
+import { useAuth } from "hooks/useAuth";
+import { historyService } from "utils/historyService";
 
 const cleanText = (rawText: string) => {
   // 1. Fully formed <translation> block
@@ -54,6 +56,7 @@ const TranslatedText = () => {
   const abortControllerRef = React.useRef<AbortController | null>(null);
   const currentTextRef = React.useRef(text);
   const requestIdRef = React.useRef(0);
+  const { user } = useAuth();
 
   const translateHandler = React.useCallback(async (value: string, targetLang: string, sourceLang: string, mId: string) => {
     if (!value || value !== currentTextRef.current) {
@@ -86,35 +89,10 @@ const TranslatedText = () => {
         const cleaned = cleanText(translated);
         setTranslatedText(cleaned ? [cleaned] : []);
 
-        if (cleaned && value.trim()) {
-          // Defer I/O to prevent blocking the Main Thread during UI reconciliation
+        if (cleaned && value.trim() && user) {
           window.setTimeout(() => {
-            try {
-              const historyStr = localStorage.getItem("translation_history");
-              let history = historyStr ? JSON.parse(historyStr) : [];
-              const lastItem = history[0];
-
-              // Prevent spamming history while typing continuously
-              if (lastItem && value.trim().startsWith(lastItem.original) && (Date.now() - lastItem.timestamp < 15000)) {
-                history[0] = { original: value.trim(), translated: cleaned, timestamp: Date.now() };
-              } else if (lastItem && lastItem.original === value.trim()) {
-                // Do nothing if it's the exact same
-              } else {
-                history.unshift({ original: value.trim(), translated: cleaned, timestamp: Date.now() });
-              }
-
-              history = history.slice(0, 50); // Keep last 50
-              try {
-                localStorage.setItem("translation_history", JSON.stringify(history));
-              } catch (quotaErr) {
-                // If quota exceeded, do a drastic cut to last 10
-                history = history.slice(0, 10);
-                localStorage.setItem("translation_history", JSON.stringify(history));
-              }
-              window.dispatchEvent(new Event("historyUpdated"));
-            } catch (e) {
-              console.warn("History save error:", e);
-            }
+            historyService.add(user.id, value.trim(), cleaned, sl, tl);
+            window.dispatchEvent(new Event("historyUpdated"));
           }, 0);
         }
       }

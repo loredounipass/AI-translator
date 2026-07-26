@@ -30,7 +30,6 @@ const TranslationTextField = () => {
     ? sr
     : (REGION_A_IDIOMA_BASE[sl] && regionesFiltradas?.some(r => r.code === sl) ? sl : regionPorDefecto);
   const [isProcessing, setIsProcessing] = React.useState(false);
-  const [isRefreshing, setIsRefreshing] = React.useState(false);
   const [selectedDeviceId, setSelectedDeviceId] = React.useState<string | null>(null);
   const audioContextRef = React.useRef<AudioContext | null>(null);
   const mediaStreamRef = React.useRef<MediaStream | null>(null);
