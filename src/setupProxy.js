@@ -11,11 +11,10 @@ const cache = new Map();
 // 2. Request Coalescing
 const pendingRequests = new Map();
 
-// 3. Global Rate Limiter
+// 3. Global Rate Limiter (timestamp-based, no race condition)
 const RATE_LIMIT_MAX = 50; // Max requests per window
 const RATE_LIMIT_WINDOW = 60000; // 1 minute
-let requestsInWindow = 0;
-let windowStartTime = Date.now();
+const requestTimestamps = [];
 
 const generateCacheKey = (bodyStr) => {
   return crypto.createHash("sha256").update(bodyStr || "").digest("hex");
@@ -44,7 +43,7 @@ module.exports = function (app) {
 
     console.log("[setupProxy] PROXYING:", req.method, req.url);
 
-    const apiKey = process.env.NVIDIA_API_KEY || process.env.REACT_APP_NVIDIA_API_KEY;
+    const apiKey = process.env.NVIDIA_API_KEY;
     if (!apiKey) {
       res.status(500).json({ error: "NVIDIA_API_KEY not configured" });
       return;
@@ -52,16 +51,14 @@ module.exports = function (app) {
 
     // --- Rate Limiting ---
     const now = Date.now();
-    if (now - windowStartTime > RATE_LIMIT_WINDOW) {
-      requestsInWindow = 0;
-      windowStartTime = now;
+    while (requestTimestamps.length > 0 && requestTimestamps[0] < now - RATE_LIMIT_WINDOW) {
+      requestTimestamps.shift();
     }
-    requestsInWindow++;
-    
-    if (requestsInWindow > RATE_LIMIT_MAX) {
+    if (requestTimestamps.length >= RATE_LIMIT_MAX) {
       res.status(429).json({ error: "Too Many Requests" });
       return;
     }
+    requestTimestamps.push(now);
 
     const processRequest = async (bodyBuffer) => {
       const bodyStr = bodyBuffer.toString();
@@ -92,8 +89,8 @@ module.exports = function (app) {
           try {
             const response = await pendingRequests.get(cacheKey);
             res.status(response.statusCode).json(response.data);
-          } catch (error) {
-            res.status(500).json({ error: "Coalesced request failed: " + error.message });
+          } catch {
+            res.status(500).json({ error: "Coalesced request failed" });
           }
           return;
         }
@@ -101,7 +98,11 @@ module.exports = function (app) {
 
       console.log(`[setupProxy] Cache MISS, forwarding to NVIDIA API (Streaming: ${isStreaming})`);
 
-      const targetPath = req.url.replace(/^\/api\/nvidia/, "/v1");
+      if (req.url !== "/api/nvidia/chat/completions") {
+        res.status(404).json({ error: "Not found" });
+        return;
+      }
+      const targetPath = "/v1/chat/completions";
       
       const options = {
         hostname: "integrate.api.nvidia.com",
@@ -127,10 +128,9 @@ module.exports = function (app) {
           proxyRes.pipe(res);
         });
 
-        proxyReq.on("error", (err) => {
-          console.error("[setupProxy] Streaming Error:", err.message);
+        proxyReq.on("error", () => {
           if (!res.headersSent) {
-            res.status(500).json({ error: "Proxy streaming error: " + err.message });
+            res.status(500).json({ error: "Proxy streaming error" });
           }
         });
         proxyReq.end(bodyBuffer);
@@ -179,11 +179,10 @@ module.exports = function (app) {
         const response = await requestPromise;
         pendingRequests.delete(cacheKey);
         res.status(response.statusCode).json(response.data);
-      } catch (err) {
+      } catch {
         pendingRequests.delete(cacheKey);
-        console.error("[setupProxy] Error:", err.message);
         if (!res.headersSent) {
-           res.status(500).json({ error: "Proxy error: " + err.message });
+           res.status(500).json({ error: "Proxy error" });
         }
       }
     };

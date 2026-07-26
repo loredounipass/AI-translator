@@ -11,7 +11,8 @@ const UserAvatar = ({ user }: UserAvatarProps) => {
     const menuRef = useRef<HTMLDivElement>(null);
     const { logout } = useAuth();
 
-    const avatarUrl = user.user_metadata?.avatar_url;
+    const rawAvatarUrl = user.user_metadata?.avatar_url;
+    const avatarUrl = typeof rawAvatarUrl === "string" && rawAvatarUrl.startsWith("https://") ? rawAvatarUrl : null;
     const userName =
         user.user_metadata?.full_name ||
         user.user_metadata?.name ||

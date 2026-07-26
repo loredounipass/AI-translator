@@ -105,7 +105,7 @@ const TranslatedText = () => {
     } catch (error) {
       if (axios.isCancel(error)) return;
       if (!(error instanceof DOMException)) {
-        console.error("Translation error:", error);
+        console.error("Translation error");
         if (currentRequestId === requestIdRef.current) {
           setTranslatedText(["<< Translation Error >>"]);
         }

@@ -41,12 +41,14 @@ const HistoryPanel = ({ isOpen, onClose }: HistoryPanelProps) => {
   };
 
   const deleteItem = async (id: string) => {
-    await historyService.delete(id);
+    if (!user) return;
+    await historyService.delete(id, user.id);
     setHistory((prev) => prev.filter((item) => item.id !== id));
   };
 
   const toggleFavorite = async (id: string, current: boolean) => {
-    await historyService.toggleFavorite(id, !current);
+    if (!user) return;
+    await historyService.toggleFavorite(id, !current, user.id);
     setHistory((prev) =>
       prev.map((item) =>
         item.id === id ? { ...item, is_favorite: !current } : item

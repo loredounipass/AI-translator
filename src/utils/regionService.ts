@@ -17,7 +17,7 @@ export const regionService = {
             .eq("user_id", userId);
 
         if (error) {
-            console.error("Error fetching regions:", error);
+            console.error("Error fetching regions");
             return [];
         }
         return data || [];
@@ -49,7 +49,7 @@ export const regionService = {
             );
 
         if (error) {
-            console.error("Error saving region:", error);
+            console.error("Error saving region");
             return false;
         }
         return true;
@@ -63,7 +63,7 @@ export const regionService = {
             .eq("base_lang", baseLang);
 
         if (error) {
-            console.error("Error deleting region:", error);
+            console.error("Error deleting region");
             return false;
         }
         return true;

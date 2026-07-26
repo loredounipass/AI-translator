@@ -9,11 +9,10 @@ const cache = new Map();
 // 2. Request Coalescing
 const pendingRequests = new Map();
 
-// 3. Global Rate Limiter
+// 3. Global Rate Limiter (timestamp-based, no race condition)
 const RATE_LIMIT_MAX = 50; // Max requests per window
 const RATE_LIMIT_WINDOW = 60000; // 1 minute
-let requestsInWindow = 0;
-let windowStartTime = Date.now();
+const requestTimestamps = [];
 
 const generateCacheKey = (bodyObj) => {
   return crypto.createHash("sha256").update(JSON.stringify(bodyObj || {})).digest("hex");
@@ -37,22 +36,20 @@ module.exports = async (req, res) => {
     return res.status(405).json({ error: "Method not allowed" });
   }
 
-  const apiKey = process.env.NVIDIA_API_KEY || process.env.REACT_APP_NVIDIA_API_KEY;
+  const apiKey = process.env.NVIDIA_API_KEY;
   if (!apiKey) {
     return res.status(500).json({ error: "NVIDIA_API_KEY not configured" });
   }
 
   // --- Rate Limiting ---
   const now = Date.now();
-  if (now - windowStartTime > RATE_LIMIT_WINDOW) {
-    requestsInWindow = 0;
-    windowStartTime = now;
+  while (requestTimestamps.length > 0 && requestTimestamps[0] < now - RATE_LIMIT_WINDOW) {
+    requestTimestamps.shift();
   }
-  requestsInWindow++;
-  
-  if (requestsInWindow > RATE_LIMIT_MAX) {
+  if (requestTimestamps.length >= RATE_LIMIT_MAX) {
     return res.status(429).json({ error: "Too Many Requests" });
   }
+  requestTimestamps.push(now);
 
   // --- Streaming Bypass ---
   if (req.body && req.body.stream === true) {
@@ -74,9 +71,9 @@ module.exports = async (req, res) => {
       proxyRes.pipe(res);
     });
 
-    proxyReq.on("error", (err) => {
+    proxyReq.on("error", () => {
       if (!res.headersSent) {
-        res.status(500).json({ error: "Proxy stream error: " + err.message });
+        res.status(500).json({ error: "Proxy stream error" });
       }
     });
     proxyReq.end(bodyStr);
@@ -99,8 +96,8 @@ module.exports = async (req, res) => {
     try {
       const response = await pendingRequests.get(cacheKey);
       return res.status(response.statusCode).json(response.data);
-    } catch (error) {
-      return res.status(500).json({ error: "Coalesced request failed: " + error.message });
+    } catch {
+      return res.status(500).json({ error: "Coalesced request failed" });
     }
   }
 
@@ -160,8 +157,8 @@ module.exports = async (req, res) => {
     const response = await requestPromise;
     pendingRequests.delete(cacheKey);
     return res.status(response.statusCode).json(response.data);
-  } catch (err) {
+  } catch {
     pendingRequests.delete(cacheKey);
-    return res.status(500).json({ error: "Proxy error: " + err.message });
+    return res.status(500).json({ error: "Proxy error" });
   }
 };

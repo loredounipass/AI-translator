@@ -20,7 +20,7 @@ export const historyService = {
             .order("created_at", { ascending: false });
 
         if (error) {
-            console.error("Error fetching history:", error);
+            console.error("Error fetching history");
             return [];
         }
 
@@ -47,35 +47,37 @@ export const historyService = {
             .single();
 
         if (error) {
-            console.error("Error saving history:", error);
+            console.error("Error saving history");
             return null;
         }
 
         return data;
     },
 
-    async toggleFavorite(id: string, isFavorite: boolean): Promise<boolean> {
+    async toggleFavorite(id: string, isFavorite: boolean, userId: string): Promise<boolean> {
         const { error } = await supabase
             .from("translation_history")
             .update({ is_favorite: isFavorite })
-            .eq("id", id);
+            .eq("id", id)
+            .eq("user_id", userId);
 
         if (error) {
-            console.error("Error toggling favorite:", error);
+            console.error("Error toggling favorite");
             return false;
         }
 
         return true;
     },
 
-    async delete(id: string): Promise<boolean> {
+    async delete(id: string, userId: string): Promise<boolean> {
         const { error } = await supabase
             .from("translation_history")
             .delete()
-            .eq("id", id);
+            .eq("id", id)
+            .eq("user_id", userId);
 
         if (error) {
-            console.error("Error deleting history:", error);
+            console.error("Error deleting history");
             return false;
         }
 
@@ -89,7 +91,7 @@ export const historyService = {
             .eq("user_id", userId);
 
         if (error) {
-            console.error("Error clearing history:", error);
+            console.error("Error clearing history");
             return false;
         }
 

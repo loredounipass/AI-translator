@@ -131,8 +131,8 @@ const TranslationTextField = () => {
         const inputs = list.filter(d => d.kind === 'audioinput');
         if (inputs.length > 0 && !selectedDeviceId) setSelectedDeviceId(inputs[0].deviceId);
       } catch (err) {
-        console.warn('No se pudo acceder a dispositivos de audio', err);
-      }
+      console.warn('No se pudo acceder a dispositivos de audio');
+    }
     };
 
     initDevices();
@@ -255,7 +255,7 @@ const TranslationTextField = () => {
         });
       }
     } catch (error) {
-      console.error("Error:", error);
+      console.error("Error in speech handler");
     } finally {
       setIsProcessing(false);
     }
@@ -269,8 +269,8 @@ const TranslationTextField = () => {
         mediaStreamRef.current = null;
         audioContextRef.current = null;
       }
-    } catch (err) {
-      console.warn('Error during cleanupAudioProcessing', err);
+    } catch {
+      console.warn('Error during cleanupAudioProcessing');
     }
   }, [resetVADState, teardownAudioResources]);
 
@@ -328,7 +328,7 @@ const TranslationTextField = () => {
 
       startVADRef.current?.();
     } catch (err) {
-      console.error('No se pudo inicializar audio:', err);
+      console.error('No se pudo inicializar audio');
     }
   }, [resetVADState, teardownAudioResources]);
 
@@ -340,7 +340,7 @@ const TranslationTextField = () => {
         await setupAudioProcessing(selectedDeviceId);
       }
     } catch (e) {
-      console.warn('No se pudo activar captura de audio:', e);
+      console.warn('No se pudo activar captura de audio');
     } finally {
       isSettingUpRef.current = false;
     }
