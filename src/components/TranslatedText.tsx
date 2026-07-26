@@ -6,6 +6,7 @@ import CopyIcon from "assets/CopyIcon";
 import { DEFAULT_SOURCE_LANGUAGE, DEFAULT_TARGET_LANGUAGE, DEFAULT_MODEL, AI_MODELS } from "utils/constants";
 import { debounce } from "lodash";
 import { useAuth } from "hooks/useAuth";
+import { useApiKey } from "../contexts/ApiKeyContext";
 import { historyService } from "utils/historyService";
 
 const cleanText = (rawText: string) => {
@@ -60,6 +61,8 @@ const TranslatedText = () => {
   const { user } = useAuth();
   const userRef = React.useRef(user);
   userRef.current = user;
+  const { getKey } = useApiKey();
+  const apiKey = getKey("nvidia");
 
   const translateHandler = React.useCallback(async (value: string, targetLang: string, sourceLang: string, mId: string) => {
     if (!value || value !== currentTextRef.current) {
@@ -80,6 +83,7 @@ const TranslatedText = () => {
 
       const translated = await translate(targetLang, sourceLang, value, mId, {
         signal: abortControllerRef.current.signal,
+        apiKey: apiKey || undefined,
         onData: (text) => {
           const cleaned = cleanText(text);
           if (cleaned) {
@@ -115,7 +119,7 @@ const TranslatedText = () => {
         setIsTranslating(false);
       }
     }
-  }, [setTranslatedText]);
+  }, [setTranslatedText, apiKey]);
 
   const copyHandler = async () => {
     try {

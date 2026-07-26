@@ -36,10 +36,14 @@ module.exports = async (req, res) => {
     return res.status(405).json({ error: "Method not allowed" });
   }
 
-  const apiKey = process.env.NVIDIA_API_KEY;
+  const apiKey = (req.body && req.body.apiKey) || "";
   if (!apiKey) {
-    return res.status(500).json({ error: "NVIDIA_API_KEY not configured" });
+    return res.status(401).json({ error: "API key requerida — proporciona tu propia key de NVIDIA" });
   }
+
+  // Strip apiKey from body before forwarding
+  const cleanBody = { ...req.body };
+  delete cleanBody.apiKey;
 
   // --- Rate Limiting ---
   const now = Date.now();
@@ -52,8 +56,8 @@ module.exports = async (req, res) => {
   requestTimestamps.push(now);
 
   // --- Streaming Bypass ---
-  if (req.body && req.body.stream === true) {
-    const bodyStr = JSON.stringify(req.body);
+  if (cleanBody.stream === true) {
+    const bodyStr = JSON.stringify(cleanBody);
     const options = {
       hostname: "integrate.api.nvidia.com",
       path: "/v1/chat/completions",
@@ -81,7 +85,7 @@ module.exports = async (req, res) => {
   }
 
   // --- Cache & Coalescing ---
-  const cacheKey = generateCacheKey(req.body);
+  const cacheKey = generateCacheKey(cleanBody);
   
   cleanupCache();
   
@@ -103,7 +107,7 @@ module.exports = async (req, res) => {
 
   // --- Make API Request ---
   const requestPromise = new Promise((resolve, reject) => {
-    const bodyStr = JSON.stringify(req.body);
+    const bodyStr = JSON.stringify(cleanBody);
 
     const options = {
       hostname: "integrate.api.nvidia.com",

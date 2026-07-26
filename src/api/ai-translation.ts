@@ -139,7 +139,7 @@ export const translate = async (
   sourceLang: string,
   text: string,
   modelId: string,
-  options?: { signal?: AbortSignal; onData?: (text: string) => void }
+  options?: { signal?: AbortSignal; onData?: (text: string) => void; apiKey?: string }
 ): Promise<string> => {
   const cleanedText = text.trim();
   if (!cleanedText) throw new Error("El texto a traducir no puede estar vacío.");
@@ -191,6 +191,7 @@ export const translate = async (
             temperature: dynamicTemperature,
             max_tokens: 4096,
             stream: true,
+            apiKey: options?.apiKey,
           }),
           signal: options?.signal,
         });
@@ -290,6 +291,7 @@ export const translate = async (
             temperature: dynamicTemperature,
             max_tokens: 4096,
             stream: false,
+            apiKey: options?.apiKey,
           },
           {
             headers: {

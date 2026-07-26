@@ -6,10 +6,13 @@ import { BrowserRouter as Router, Route, Routes, useSearchParams } from "react-r
 import TranslatedText from "components/TranslatedText";
 import HistoryPanel from "./components/HistoryPanel";
 import AuthModal from "./components/AuthModal";
+import ApiKeyModal from "./components/ApiKeyModal";
 import UserAvatar from "./components/UserAvatar";
 import { AI_MODELS, DEFAULT_MODEL } from "utils/constants";
 import { Analytics } from "@vercel/analytics/react";
 import { useAuth } from "hooks/useAuth";
+import { ApiKeyProvider, useApiKey } from "./contexts/ApiKeyContext";
+import { message } from "antd";
 import type { User } from "@supabase/supabase-js";
 
 const SunIcon = () => (
@@ -45,17 +48,30 @@ const Header = ({
   openHistory,
   openAuth,
   user,
+  onApiKeyNeeded,
 }: {
   isDark: boolean;
   toggleDark: () => void;
   openHistory: () => void;
   openAuth: () => void;
   user: User | null;
+  onApiKeyNeeded: () => void;
 }) => {
   const [searchParams, setSearchParams] = useSearchParams();
   const currentModel = searchParams.get("model") || DEFAULT_MODEL;
+  const { getKey } = useApiKey();
 
   const handleModelChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    const provider = "nvidia";
+    const hasKey = getKey(provider);
+    if (!user) {
+      message.warning("Debes iniciar sesión para usar tu propia API key");
+      return;
+    }
+    if (!hasKey) {
+      onApiKeyNeeded();
+      return;
+    }
     const newParams = new URLSearchParams(searchParams);
     newParams.set("model", e.target.value);
     setSearchParams(newParams);
@@ -169,6 +185,7 @@ function App() {
 
   const [isHistoryOpen, setIsHistoryOpen] = useState(false);
   const [isAuthOpen, setIsAuthOpen] = useState(false);
+  const [isApiKeyOpen, setIsApiKeyOpen] = useState(false);
   const { user } = useAuth();
 
   useEffect(() => {
@@ -184,15 +201,24 @@ function App() {
   return (
     <Router>
       <div className="min-h-screen bg-slate-50 dark:bg-slate-900 transition-colors duration-200 overflow-x-hidden">
+        <ApiKeyProvider>
         <Header
           isDark={isDark}
           toggleDark={() => setIsDark(!isDark)}
           openHistory={() => setIsHistoryOpen(true)}
           openAuth={() => setIsAuthOpen(true)}
           user={user}
+          onApiKeyNeeded={() => setIsApiKeyOpen(true)}
         />
         <HistoryPanel isOpen={isHistoryOpen} onClose={() => setIsHistoryOpen(false)} />
         <AuthModal isOpen={isAuthOpen} onClose={() => setIsAuthOpen(false)} />
+        {user && (
+          <ApiKeyModal
+            isOpen={isApiKeyOpen}
+            onClose={() => setIsApiKeyOpen(false)}
+            userId={user.id}
+          />
+        )}
         <Routes>
           <Route
             path="/"
@@ -208,6 +234,7 @@ function App() {
           />
         </Routes>
         <Analytics />
+      </ApiKeyProvider>
       </div>
     </Router>
   );

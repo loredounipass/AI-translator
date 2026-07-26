@@ -43,12 +43,6 @@ module.exports = function (app) {
 
     console.log("[setupProxy] PROXYING:", req.method, req.url);
 
-    const apiKey = process.env.NVIDIA_API_KEY;
-    if (!apiKey) {
-      res.status(500).json({ error: "NVIDIA_API_KEY not configured" });
-      return;
-    }
-
     // --- Rate Limiting ---
     const now = Date.now();
     while (requestTimestamps.length > 0 && requestTimestamps[0] < now - RATE_LIMIT_WINDOW) {
@@ -62,11 +56,30 @@ module.exports = function (app) {
 
     const processRequest = async (bodyBuffer) => {
       const bodyStr = bodyBuffer.toString();
-      const cacheKey = generateCacheKey(bodyStr);
+
+      let apiKey = "";
+      let cleanBody = bodyStr;
+      try {
+        const parsedBody = JSON.parse(bodyStr);
+        apiKey = parsedBody.apiKey || "";
+        if (apiKey) {
+          const { apiKey: _, ...rest } = parsedBody;
+          cleanBody = JSON.stringify(rest);
+        }
+      } catch (e) {
+        // Ignored
+      }
+
+      if (!apiKey) {
+        res.status(401).json({ error: "API key requerida — proporciona tu propia key de NVIDIA" });
+        return;
+      }
+
+      const cacheKey = generateCacheKey(cleanBody);
       
       let isStreaming = false;
       try {
-        const parsedBody = JSON.parse(bodyStr);
+        const parsedBody = JSON.parse(cleanBody);
         isStreaming = parsedBody.stream === true;
       } catch (e) {
         // Ignored
@@ -112,7 +125,7 @@ module.exports = function (app) {
           host: "integrate.api.nvidia.com",
           Authorization: `Bearer ${apiKey}`,
           "Content-Type": req.headers["content-type"] || "application/json",
-          "Content-Length": Buffer.byteLength(bodyBuffer),
+          "Content-Length": Buffer.byteLength(cleanBody),
         },
       };
 
@@ -133,7 +146,7 @@ module.exports = function (app) {
             res.status(500).json({ error: "Proxy streaming error" });
           }
         });
-        proxyReq.end(bodyBuffer);
+        proxyReq.end(cleanBody);
         return;
       }
 
@@ -169,7 +182,7 @@ module.exports = function (app) {
         });
 
         proxyReq.on("error", reject);
-        proxyReq.end(bodyBuffer);
+        proxyReq.end(cleanBody);
       });
 
       // Store promise for concurrent identical requests
