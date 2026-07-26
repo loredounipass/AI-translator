@@ -185,3 +185,44 @@ body {
   background-color: #475569 !important; /* slate-600 */
   color: #f8fafc !important; /* slate-50 */
 }
+
+/* Auth Modal input autofill override */
+input:-webkit-autofill,
+input:-webkit-autofill:hover,
+input:-webkit-autofill:focus {
+  -webkit-box-shadow: 0 0 0 30px white inset !important;
+  -webkit-text-fill-color: #1e293b !important;
+}
+
+.dark input:-webkit-autofill,
+.dark input:-webkit-autofill:hover,
+.dark input:-webkit-autofill:focus {
+  -webkit-box-shadow: 0 0 0 30px #1e293b inset !important;
+  -webkit-text-fill-color: #e2e8f0 !important;
+}
+
+/* Phone code select */
+.phone-code-select .ant-select-selector {
+  background: transparent !important;
+  border: 1px solid #e2e8f0 !important;
+  border-radius: 8px !important;
+  padding: 3px 6px !important;
+  height: 42px !important;
+  display: flex !important;
+  align-items: center !important;
+}
+
+.dark .phone-code-select .ant-select-selector {
+  background: transparent !important;
+  border-color: #334155 !important;
+}
+
+.phone-code-select .ant-select-selection-item {
+  font-size: 13px !important;
+  font-weight: 500 !important;
+}
+
+.phone-code-select .ant-select-arrow {
+  color: #94a3b8 !important;
+  font-size: 10px !important;
+}
