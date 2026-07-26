@@ -178,7 +178,7 @@ const Header = ({
               </option>
             ))}
             <option disabled>──────────</option>
-            <option value="__settings__">⚙️ API Settings</option>
+            <option value="__settings__">API Keys</option>
           </select>
         </div>
       </div>
