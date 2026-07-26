@@ -1,6 +1,22 @@
 import { supabase } from "./supabaseClient";
 
+export interface ApiKeyRow {
+  provider: string;
+  api_key: string;
+  created_at: string;
+  updated_at: string;
+}
+
 export const apiKeyService = {
+  async getAll(userId: string): Promise<ApiKeyRow[]> {
+    const { data, error } = await supabase
+      .from("user_api_keys")
+      .select("provider, api_key, created_at, updated_at")
+      .eq("user_id", userId);
+    if (error) return [];
+    return data || [];
+  },
+
   async get(userId: string, provider: string): Promise<string | null> {
     const { data, error } = await supabase
       .from("user_api_keys")

@@ -1,17 +1,29 @@
 import React, { createContext, useContext, useState, useCallback, useEffect } from "react";
-import { apiKeyService } from "../utils/apiKeyService";
+import { apiKeyService, type ApiKeyRow } from "../utils/apiKeyService";
 import { useAuth } from "hooks/useAuth";
+
+export const API_PROVIDERS = [
+  { id: "nvidia", name: "NVIDIA", keyPrefix: "nvapi-", docUrl: "https://build.nvidia.com/" },
+  { id: "openai", name: "OpenAI", keyPrefix: "sk-", docUrl: "https://platform.openai.com/api-keys" },
+  { id: "anthropic", name: "Anthropic", keyPrefix: "sk-ant-", docUrl: "https://console.anthropic.com/settings/keys" },
+] as const;
+
+export type ProviderId = (typeof API_PROVIDERS)[number]["id"];
 
 interface ApiKeyContextValue {
   getKey: (provider: string) => string | null;
   setKey: (provider: string, key: string) => void;
+  removeKey: (provider: string) => void;
   fetchKeys: () => Promise<void>;
+  allKeys: Record<string, string>;
 }
 
 const ApiKeyContext = createContext<ApiKeyContextValue>({
   getKey: () => null,
   setKey: () => {},
+  removeKey: () => {},
   fetchKeys: async () => {},
+  allKeys: {},
 });
 
 export const ApiKeyProvider = ({ children }: { children: React.ReactNode }) => {
@@ -23,8 +35,12 @@ export const ApiKeyProvider = ({ children }: { children: React.ReactNode }) => {
       setKeys({});
       return;
     }
-    const nvidiaKey = await apiKeyService.get(user.id, "nvidia");
-    setKeys((prev) => ({ ...prev, nvidia: nvidiaKey || "" }));
+    const rows = await apiKeyService.getAll(user.id);
+    const mapped: Record<string, string> = {};
+    for (const row of rows) {
+      mapped[row.provider] = row.api_key;
+    }
+    setKeys(mapped);
   }, [user]);
 
   useEffect(() => {
@@ -43,8 +59,19 @@ export const ApiKeyProvider = ({ children }: { children: React.ReactNode }) => {
     []
   );
 
+  const removeKey = useCallback(
+    (provider: string) => {
+      setKeys((prev) => {
+        const next = { ...prev };
+        delete next[provider];
+        return next;
+      });
+    },
+    []
+  );
+
   return (
-    <ApiKeyContext.Provider value={{ getKey, setKey, fetchKeys }}>
+    <ApiKeyContext.Provider value={{ getKey, setKey, removeKey, fetchKeys, allKeys: keys }}>
       {children}
     </ApiKeyContext.Provider>
   );

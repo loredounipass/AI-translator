@@ -7,6 +7,7 @@ import TranslatedText from "components/TranslatedText";
 import HistoryPanel from "./components/HistoryPanel";
 import AuthModal from "./components/AuthModal";
 import ApiKeyModal from "./components/ApiKeyModal";
+import ApiSettingsModal from "./components/ApiSettingsModal";
 import UserAvatar from "./components/UserAvatar";
 import { AI_MODELS, DEFAULT_MODEL } from "utils/constants";
 import { Analytics } from "@vercel/analytics/react";
@@ -114,7 +115,7 @@ const Header = ({
           </div>
 
           {user ? (
-            <UserAvatar user={user} />
+            <UserAvatar user={user} onOpenApiSettings={() => setIsApiSettingsOpen(true)} />
           ) : (
             <div className="relative group">
               <button
@@ -185,6 +186,7 @@ function App() {
   const [isHistoryOpen, setIsHistoryOpen] = useState(false);
   const [isAuthOpen, setIsAuthOpen] = useState(false);
   const [isApiKeyOpen, setIsApiKeyOpen] = useState(false);
+  const [isApiSettingsOpen, setIsApiSettingsOpen] = useState(false);
   const { user } = useAuth();
 
   useEffect(() => {
@@ -215,6 +217,13 @@ function App() {
           <ApiKeyModal
             isOpen={isApiKeyOpen}
             onClose={() => setIsApiKeyOpen(false)}
+            userId={user.id}
+          />
+        )}
+        {user && (
+          <ApiSettingsModal
+            isOpen={isApiSettingsOpen}
+            onClose={() => setIsApiSettingsOpen(false)}
             userId={user.id}
           />
         )}
