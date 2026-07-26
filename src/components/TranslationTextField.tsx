@@ -263,6 +263,7 @@ const TranslationTextField = () => {
     }
   }, [resetVADState, teardownAudioResources]);
 
+  const isSettingUpRef = React.useRef<boolean>(false);
   const startVADRef = React.useRef<(() => void) | null>(null);
 
   const setupAudioProcessing = React.useCallback(async (deviceId: string | null) => {
@@ -282,6 +283,8 @@ const TranslationTextField = () => {
       await audioCtx.resume();
     }
 
+    if (audioContextRef.current !== audioCtx || audioCtx.state === 'closed') return;
+
     try {
       const constraints: MediaStreamConstraints = {
         audio: {
@@ -292,6 +295,12 @@ const TranslationTextField = () => {
         }
       };
       const stream = await navigator.mediaDevices.getUserMedia(constraints);
+
+      if (audioContextRef.current !== audioCtx || audioCtx.state === 'closed') {
+        stream.getTracks().forEach(t => t.stop());
+        return;
+      }
+
       mediaStreamRef.current = stream;
 
       const source = audioCtx.createMediaStreamSource(stream);
@@ -313,12 +322,16 @@ const TranslationTextField = () => {
   }, [resetVADState, teardownAudioResources]);
 
   const ensureAudioStreamActive = React.useCallback(async () => {
+    if (isSettingUpRef.current) return;
+    isSettingUpRef.current = true;
     try {
       if (!mediaStreamRef.current) {
         await setupAudioProcessing(selectedDeviceId);
       }
     } catch (e) {
       console.warn('No se pudo activar captura de audio:', e);
+    } finally {
+      isSettingUpRef.current = false;
     }
   }, [selectedDeviceId, setupAudioProcessing]);
 
