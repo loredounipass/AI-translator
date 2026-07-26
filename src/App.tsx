@@ -49,6 +49,7 @@ const Header = ({
   openAuth,
   user,
   onApiKeyNeeded,
+  onOpenApiSettings,
 }: {
   isDark: boolean;
   toggleDark: () => void;
@@ -56,6 +57,7 @@ const Header = ({
   openAuth: () => void;
   user: User | null;
   onApiKeyNeeded: () => void;
+  onOpenApiSettings: () => void;
 }) => {
   const [searchParams, setSearchParams] = useSearchParams();
   const currentModel = searchParams.get("model") || DEFAULT_MODEL;
@@ -115,7 +117,7 @@ const Header = ({
           </div>
 
           {user ? (
-            <UserAvatar user={user} onOpenApiSettings={() => setIsApiSettingsOpen(true)} />
+            <UserAvatar user={user} onOpenApiSettings={onOpenApiSettings} />
           ) : (
             <div className="relative group">
               <button
@@ -210,6 +212,7 @@ function App() {
           openAuth={() => setIsAuthOpen(true)}
           user={user}
           onApiKeyNeeded={() => setIsApiKeyOpen(true)}
+          onOpenApiSettings={() => setIsApiSettingsOpen(true)}
         />
         <HistoryPanel isOpen={isHistoryOpen} onClose={() => setIsHistoryOpen(false)} />
         <AuthModal isOpen={isAuthOpen} onClose={() => setIsAuthOpen(false)} />
