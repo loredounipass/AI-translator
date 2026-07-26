@@ -64,6 +64,14 @@ const Header = ({
   const { getKey } = useApiKey();
 
   const handleModelChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    if (e.target.value === "__settings__") {
+      onOpenApiSettings();
+      setTimeout(() => {
+        const el = e.target as HTMLSelectElement;
+        el.value = currentModel;
+      }, 0);
+      return;
+    }
     const provider = "nvidia";
     if (!user) {
       openAuth();
@@ -169,6 +177,8 @@ const Header = ({
                 {model.name}
               </option>
             ))}
+            <option disabled>──────────</option>
+            <option value="__settings__">⚙️ API Settings</option>
           </select>
         </div>
       </div>
