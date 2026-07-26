@@ -6,7 +6,7 @@ import {
   DEFAULT_SOURCE_LANGUAGE, 
   DEFAULT_TARGET_LANGUAGE 
 } from "utils/constants";
-import { REGIONES_POR_IDIOMA, getSavedRegion, syncSaveRegion } from "../utils/mapeoLocales";
+import { REGIONES_POR_IDIOMA, getSavedRegion, saveRegion } from "../utils/mapeoLocales";
 import { SwitchIcon } from "../assets/SwitchIcon";
 import { useAuth } from "hooks/useAuth";
 
@@ -67,7 +67,7 @@ const LanguagesBar = () => {
     });
   };
 
-  const handleChangeSourceLang = (value: string) => {
+  const handleChangeSourceLang = async (value: string) => {
     if (value === targetLang) {
       switchLangsHandler();
       return;
@@ -85,7 +85,7 @@ const LanguagesBar = () => {
         else params.delete("sr");
         return params;
       });
-      if (nuevoSr) syncSaveRegion(value, nuevoSr, user?.id);
+      if (nuevoSr && user) await saveRegion(value, nuevoSr, user.id);
     }
   };
 

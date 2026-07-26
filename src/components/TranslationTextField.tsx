@@ -6,7 +6,7 @@ import { useSearchParams } from "react-router-dom";
 import MicIcon from "assets/MicIcon";
 import PauseIcon from "assets/PauseIcon";
 import { DEFAULT_SOURCE_LANGUAGE } from "utils/constants";
-import { MAPEO_LOCALES, REGIONES_POR_IDIOMA, REGION_A_IDIOMA_BASE, normalizarLocale, filtrarRegiones, localeSoportado, syncSaveRegion } from "../utils/mapeoLocales";
+import { MAPEO_LOCALES, REGIONES_POR_IDIOMA, REGION_A_IDIOMA_BASE, normalizarLocale, filtrarRegiones, localeSoportado, saveRegion } from "../utils/mapeoLocales";
 import { useAuth } from "hooks/useAuth";
 import {
   vadCheckInterval,
@@ -164,6 +164,15 @@ const TranslationTextField = () => {
   }, [urlTextParam, text]);
 
   const handleChangeRegion = async (value: string) => {
+    if (!user) {
+      notification.warning({
+        message: 'Authentication required',
+        description: 'You must be authenticated to change dialect.',
+        placement: 'topRight',
+        duration: 4,
+      });
+      return;
+    }
     const locale = MAPEO_LOCALES[value] || value;
     const slBase = REGION_A_IDIOMA_BASE[sl] || sl;
     if (!localeSoportado(locale)) {
@@ -174,14 +183,14 @@ const TranslationTextField = () => {
         placement: 'topRight',
         duration: 4,
       });
-      await syncSaveRegion(slBase, fallback, user?.id);
+      await saveRegion(slBase, fallback, user.id);
       setURLSearchParams(params => {
         params.set("sr", fallback);
         return params;
       });
       return;
     }
-    await syncSaveRegion(slBase, value, user?.id);
+    await saveRegion(slBase, value, user.id);
     setURLSearchParams(params => {
       params.set("sr", value);
       return params;

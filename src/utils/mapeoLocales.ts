@@ -126,45 +126,26 @@ export const REGION_A_IDIOMA_BASE: Record<string, string> = {
   zh: 'zh', taiwan: 'zh',
 };
 
-const STORAGE_KEY = 'source_regions';
+const regionCache: Record<string, string> = {};
 
 export const getSavedRegion = (base: string): string | null => {
-  try {
-    const saved = localStorage.getItem(STORAGE_KEY);
-    if (!saved) return null;
-    const regions: Record<string, string> = JSON.parse(saved);
-    const code = regions[base];
-    if (!code) return null;
-    return REGION_A_IDIOMA_BASE[code] === base ? code : null;
-  } catch { return null; }
+  const code = regionCache[base];
+  if (!code) return null;
+  return REGION_A_IDIOMA_BASE[code] === base ? code : null;
 };
 
-export const saveRegion = (base: string, code: string): void => {
-  try {
-    const saved = localStorage.getItem(STORAGE_KEY);
-    const regions: Record<string, string> = saved ? JSON.parse(saved) : {};
-    regions[base] = code;
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(regions));
-  } catch { /* localStorage not available */ }
-};
-
-export const syncSaveRegion = async (base: string, code: string, userId?: string | null): Promise<void> => {
-  saveRegion(base, code);
-  if (userId) {
-    const { regionService } = await import("./regionService");
-    await regionService.upsertRegion(userId, base, code);
-  }
+export const saveRegion = async (base: string, code: string, userId: string): Promise<void> => {
+  regionCache[base] = code;
+  const { regionService } = await import("./regionService");
+  await regionService.upsertRegion(userId, base, code);
 };
 
 export const syncRegionsFromSupabase = async (userId: string): Promise<void> => {
   try {
     const { regionService } = await import("./regionService");
     const regions = await regionService.getAll(userId);
-    const saved = localStorage.getItem(STORAGE_KEY);
-    const localRegions: Record<string, string> = saved ? JSON.parse(saved) : {};
     for (const r of regions) {
-      localRegions[r.base_lang] = r.region_code;
+      regionCache[r.base_lang] = r.region_code;
     }
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(localRegions));
   } catch { /* silently fail */ }
 };
