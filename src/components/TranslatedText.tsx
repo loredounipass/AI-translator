@@ -56,6 +56,7 @@ const TranslatedText = () => {
   const abortControllerRef = React.useRef<AbortController | null>(null);
   const currentTextRef = React.useRef(text);
   const requestIdRef = React.useRef(0);
+  const lastSavedKeyRef = React.useRef("");
   const { user } = useAuth();
   const userRef = React.useRef(user);
   userRef.current = user;
@@ -92,6 +93,9 @@ const TranslatedText = () => {
         setTranslatedText(cleaned ? [cleaned] : []);
 
         if (cleaned && value.trim() && userRef.current) {
+          const key = `${value.trim()}|${sourceLang}|${targetLang}`;
+          if (lastSavedKeyRef.current === key) return;
+          lastSavedKeyRef.current = key;
           window.setTimeout(() => {
             historyService.add(userRef.current!.id, value.trim(), cleaned, sourceLang, targetLang);
             window.dispatchEvent(new Event("historyUpdated"));
