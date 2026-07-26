@@ -48,6 +48,7 @@ const AuthModal = ({ isOpen, onClose }: AuthModalProps) => {
     const [phoneNumber, setPhoneNumber] = useState("");
     const [showPassword, setShowPassword] = useState(false);
     const [submitting, setSubmitting] = useState(false);
+    const [registeredEmail, setRegisteredEmail] = useState<string | null>(null);
     const { registerWithEmail, loginWithEmail } = useAuth();
 
     const resetForm = () => {
@@ -58,6 +59,7 @@ const AuthModal = ({ isOpen, onClose }: AuthModalProps) => {
         setCountryKey(DEFAULT_COUNTRY_KEY);
         setPhoneNumber("");
         setSubmitting(false);
+        setRegisteredEmail(null);
     };
 
     const handleClose = () => {
@@ -69,6 +71,7 @@ const AuthModal = ({ isOpen, onClose }: AuthModalProps) => {
         setMode((prev) => (prev === "login" ? "register" : "login"));
         setEmail("");
         setPassword("");
+        setRegisteredEmail(null);
     };
 
     const handleEmailSubmit = async (e: React.FormEvent) => {
@@ -79,21 +82,24 @@ const AuthModal = ({ isOpen, onClose }: AuthModalProps) => {
             return;
         }
 
-        if (password.length < 6) {
-            message.warning("La contraseña debe tener al menos 6 caracteres");
+        if (password.length < 8) {
+            message.warning("La contraseña debe tener al menos 8 caracteres");
             return;
         }
 
         setSubmitting(true);
 
         let error: string | null = null;
+        let needsVerification = false;
 
         if (mode === "login") {
             ({ error } = await loginWithEmail(email, password));
         } else {
             const selectedCode = COUNTRY_CODES.find((c) => c.uniqueKey === countryKey);
             const phone = phoneNumber && selectedCode ? `${selectedCode.code}${phoneNumber}` : "";
-            ({ error } = await registerWithEmail(email, password, { firstName, lastName, phone }));
+            const result = await registerWithEmail(email, password, { firstName, lastName, phone });
+            error = result.error;
+            needsVerification = result.needsVerification ?? false;
         }
 
         setSubmitting(false);
@@ -103,16 +109,13 @@ const AuthModal = ({ isOpen, onClose }: AuthModalProps) => {
             return;
         }
 
-        message.success(
-            mode === "login"
-                ? AUTH_MESSAGES.LOGIN_SUCCESS
-                : AUTH_MESSAGES.REGISTER_SUCCESS
-        );
-
-        if (mode === "register") {
-            message.info(AUTH_MESSAGES.VERIFICATION_EMAIL);
+        if (mode === "register" && needsVerification) {
+            setRegisteredEmail(email);
+            message.success(AUTH_MESSAGES.REGISTER_SUCCESS);
+            return;
         }
 
+        message.success(AUTH_MESSAGES.LOGIN_SUCCESS);
         handleClose();
     };
 
@@ -150,6 +153,28 @@ const AuthModal = ({ isOpen, onClose }: AuthModalProps) => {
                     </div>
 
                     <div className="p-5 space-y-4">
+                        {registeredEmail ? (
+                            <div className="text-center py-6 space-y-4">
+                                <div className="w-16 h-16 mx-auto bg-blue-50 dark:bg-blue-900/20 rounded-full flex items-center justify-center">
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-blue-500 dark:text-blue-400">
+                                        <rect x="3" y="4" width="18" height="16" rx="2" />
+                                        <path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7" />
+                                    </svg>
+                                </div>
+                                <h3 className="text-lg font-semibold text-slate-800 dark:text-slate-100">Verifica tu correo</h3>
+                                <p className="text-sm text-slate-500 dark:text-slate-400 leading-relaxed">
+                                    Enviamos un enlace de verificación a <strong className="text-slate-700 dark:text-slate-300">{registeredEmail}</strong>.
+                                    Revisa tu bandeja de entrada y haz clic en el enlace para activar tu cuenta.
+                                </p>
+                                <button
+                                    onClick={handleClose}
+                                    className="px-6 py-2 rounded-lg bg-slate-800 dark:bg-slate-200 text-white dark:text-slate-900 text-sm font-medium hover:bg-slate-700 dark:hover:bg-slate-300 transition-colors"
+                                >
+                                    Entendido
+                                </button>
+                            </div>
+                        ) : (
+                        <>
                         <form onSubmit={handleEmailSubmit} className="space-y-3">
                             {mode === "register" && (
                                 <>
@@ -299,6 +324,8 @@ const AuthModal = ({ isOpen, onClose }: AuthModalProps) => {
                                 </>
                             )}
                         </p>
+                        </>
+                    )}
                     </div>
                 </div>
             </div>

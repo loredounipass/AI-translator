@@ -24,11 +24,19 @@ CREATE POLICY "Users can view their own profile"
 CREATE POLICY "Users can update their own profile"
   ON public.user_profiles
   FOR UPDATE
+  USING (auth.uid() = id)
+  WITH CHECK (auth.uid() = id);
+
+CREATE POLICY "Users can delete their own profile"
+  ON public.user_profiles
+  FOR DELETE
   USING (auth.uid() = id);
 
 -- Create a trigger to automatically create a profile on signup
 CREATE OR REPLACE FUNCTION public.handle_new_user()
-RETURNS TRIGGER AS $$
+RETURNS TRIGGER
+SECURITY DEFINER SET search_path = public
+AS $$
 BEGIN
   INSERT INTO public.user_profiles (id, email, full_name, first_name, last_name, phone, avatar_url, provider)
   VALUES (
@@ -43,7 +51,7 @@ BEGIN
   );
   RETURN NEW;
 END;
-$$ LANGUAGE plpgsql SECURITY DEFINER;
+$$ LANGUAGE plpgsql;
 
 -- Drop trigger if exists and recreate
 DROP TRIGGER IF EXISTS on_auth_user_created ON auth.users;

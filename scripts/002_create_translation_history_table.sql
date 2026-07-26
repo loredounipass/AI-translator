@@ -27,7 +27,8 @@ CREATE POLICY "Users can insert their own history"
 CREATE POLICY "Users can update their own history"
   ON public.translation_history
   FOR UPDATE
-  USING (auth.uid() = user_id);
+  USING (auth.uid() = user_id)
+  WITH CHECK (auth.uid() = user_id);
 
 CREATE POLICY "Users can delete their own history"
   ON public.translation_history

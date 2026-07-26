@@ -7,6 +7,7 @@ interface AuthState {
     session: Session | null;
     user: User | null;
     loading: boolean;
+    needsEmailVerification: boolean;
 }
 
 export const useAuth = () => {
@@ -14,6 +15,7 @@ export const useAuth = () => {
         session: null,
         user: null,
         loading: true,
+        needsEmailVerification: false,
     });
 
     useEffect(() => {
@@ -22,6 +24,7 @@ export const useAuth = () => {
                 session,
                 user: session?.user ?? null,
                 loading: false,
+                needsEmailVerification: session?.user?.email_confirmed_at ? false : !!session?.user,
             });
         });
 
@@ -32,6 +35,7 @@ export const useAuth = () => {
                 session,
                 user: session?.user ?? null,
                 loading: false,
+                needsEmailVerification: session?.user?.email_confirmed_at ? false : !!session?.user,
             });
         });
 
@@ -43,8 +47,8 @@ export const useAuth = () => {
             email: string,
             password: string,
             metadata?: { firstName?: string; lastName?: string; phone?: string }
-        ): Promise<{ error: string | null }> => {
-            const { error } = await supabase.auth.signUp({
+        ): Promise<{ error: string | null; needsVerification?: boolean }> => {
+            const { data, error } = await supabase.auth.signUp({
                 email,
                 password,
                 options: {
@@ -57,11 +61,12 @@ export const useAuth = () => {
                 },
             });
 
-            if (!error) {
-                return { error: null };
+            if (error) {
+                return { error: mapSupabaseError(error) };
             }
 
-            return { error: mapSupabaseError(error) };
+            const needsVerification = !data.user?.email_confirmed_at;
+            return { error: null, needsVerification };
         },
         []
     );
@@ -73,23 +78,24 @@ export const useAuth = () => {
                 password,
             });
 
-            if (!error) {
-                return { error: null };
+            if (error) {
+                return { error: mapSupabaseError(error) };
             }
 
-            return { error: mapSupabaseError(error) };
+            return { error: null };
         },
         []
     );
 
     const logout = useCallback(async () => {
-        await supabase.auth.signOut();
+        await supabase.auth.signOut({ scope: "global" });
     }, []);
 
     return {
         user: state.user,
         session: state.session,
         loading: state.loading,
+        needsEmailVerification: state.needsEmailVerification,
         registerWithEmail,
         loginWithEmail,
         logout,
@@ -99,21 +105,15 @@ export const useAuth = () => {
 function mapSupabaseError(error: AuthError): string {
     const message = error.message.toLowerCase();
 
-    if (message.includes("email already registered")) {
-        return AUTH_ERRORS.EMAIL_IN_USE;
-    }
     if (message.includes("invalid login credentials")) {
         return AUTH_ERRORS.INVALID_CREDENTIALS;
     }
     if (message.includes("password") && message.includes("characters")) {
         return AUTH_ERRORS.WEAK_PASSWORD;
     }
-    if (message.includes("user not found")) {
-        return AUTH_ERRORS.USER_NOT_FOUND;
-    }
-    if (message.includes("network")) {
+    if (message.includes("network") || message.includes("fetch")) {
         return AUTH_ERRORS.NETWORK_ERROR;
     }
-
+    // Generic message for all other errors (prevents email enumeration)
     return AUTH_ERRORS.UNKNOWN;
 }
