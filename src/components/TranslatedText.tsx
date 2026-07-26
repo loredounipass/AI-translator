@@ -57,6 +57,8 @@ const TranslatedText = () => {
   const currentTextRef = React.useRef(text);
   const requestIdRef = React.useRef(0);
   const { user } = useAuth();
+  const userRef = React.useRef(user);
+  userRef.current = user;
 
   const translateHandler = React.useCallback(async (value: string, targetLang: string, sourceLang: string, mId: string) => {
     if (!value || value !== currentTextRef.current) {
@@ -89,9 +91,9 @@ const TranslatedText = () => {
         const cleaned = cleanText(translated);
         setTranslatedText(cleaned ? [cleaned] : []);
 
-        if (cleaned && value.trim() && user) {
+        if (cleaned && value.trim() && userRef.current) {
           window.setTimeout(() => {
-            historyService.add(user.id, value.trim(), cleaned, sl, tl);
+            historyService.add(userRef.current!.id, value.trim(), cleaned, sourceLang, targetLang);
             window.dispatchEvent(new Event("historyUpdated"));
           }, 0);
         }
