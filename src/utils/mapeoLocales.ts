@@ -147,3 +147,24 @@ export const saveRegion = (base: string, code: string): void => {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(regions));
   } catch { /* localStorage not available */ }
 };
+
+export const syncSaveRegion = async (base: string, code: string, userId?: string | null): Promise<void> => {
+  saveRegion(base, code);
+  if (userId) {
+    const { regionService } = await import("./regionService");
+    await regionService.upsertRegion(userId, base, code);
+  }
+};
+
+export const syncRegionsFromSupabase = async (userId: string): Promise<void> => {
+  try {
+    const { regionService } = await import("./regionService");
+    const regions = await regionService.getAll(userId);
+    const saved = localStorage.getItem(STORAGE_KEY);
+    const localRegions: Record<string, string> = saved ? JSON.parse(saved) : {};
+    for (const r of regions) {
+      localRegions[r.base_lang] = r.region_code;
+    }
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(localRegions));
+  } catch { /* silently fail */ }
+};

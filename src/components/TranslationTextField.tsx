@@ -6,7 +6,8 @@ import { useSearchParams } from "react-router-dom";
 import MicIcon from "assets/MicIcon";
 import PauseIcon from "assets/PauseIcon";
 import { DEFAULT_SOURCE_LANGUAGE } from "utils/constants";
-import { MAPEO_LOCALES, REGIONES_POR_IDIOMA, REGION_A_IDIOMA_BASE, normalizarLocale, filtrarRegiones, localeSoportado, saveRegion } from "../utils/mapeoLocales";
+import { MAPEO_LOCALES, REGIONES_POR_IDIOMA, REGION_A_IDIOMA_BASE, normalizarLocale, filtrarRegiones, localeSoportado, syncSaveRegion } from "../utils/mapeoLocales";
+import { useAuth } from "hooks/useAuth";
 import {
   vadCheckInterval,
   silenceHoldCount,
@@ -29,6 +30,7 @@ const TranslationTextField = () => {
   const regionActual = sr && REGION_A_IDIOMA_BASE[sr] === slBase && regionesFiltradas?.some(r => r.code === sr)
     ? sr
     : (REGION_A_IDIOMA_BASE[sl] && regionesFiltradas?.some(r => r.code === sl) ? sl : regionPorDefecto);
+  const { user } = useAuth();
   const [isProcessing, setIsProcessing] = React.useState(false);
   const [selectedDeviceId, setSelectedDeviceId] = React.useState<string | null>(null);
   const audioContextRef = React.useRef<AudioContext | null>(null);
@@ -161,7 +163,7 @@ const TranslationTextField = () => {
     }
   }, [urlTextParam, text]);
 
-  const handleChangeRegion = (value: string) => {
+  const handleChangeRegion = async (value: string) => {
     const locale = MAPEO_LOCALES[value] || value;
     const slBase = REGION_A_IDIOMA_BASE[sl] || sl;
     if (!localeSoportado(locale)) {
@@ -172,14 +174,14 @@ const TranslationTextField = () => {
         placement: 'topRight',
         duration: 4,
       });
-      saveRegion(slBase, fallback);
+      await syncSaveRegion(slBase, fallback, user?.id);
       setURLSearchParams(params => {
         params.set("sr", fallback);
         return params;
       });
       return;
     }
-    saveRegion(slBase, value);
+    await syncSaveRegion(slBase, value, user?.id);
     setURLSearchParams(params => {
       params.set("sr", value);
       return params;

@@ -6,10 +6,12 @@ import {
   DEFAULT_SOURCE_LANGUAGE, 
   DEFAULT_TARGET_LANGUAGE 
 } from "utils/constants";
-import { REGIONES_POR_IDIOMA, getSavedRegion, saveRegion } from "../utils/mapeoLocales";
+import { REGIONES_POR_IDIOMA, getSavedRegion, syncSaveRegion } from "../utils/mapeoLocales";
 import { SwitchIcon } from "../assets/SwitchIcon";
+import { useAuth } from "hooks/useAuth";
 
 const LanguagesBar = () => {
+  const { user } = useAuth();
   const translatedTextRef = React.useRef("");
 
   React.useEffect(() => {
@@ -83,7 +85,7 @@ const LanguagesBar = () => {
         else params.delete("sr");
         return params;
       });
-      if (nuevoSr) saveRegion(value, nuevoSr);
+      if (nuevoSr) syncSaveRegion(value, nuevoSr, user?.id);
     }
   };
 
@@ -105,6 +107,12 @@ const LanguagesBar = () => {
     },
     [setLangParam]
   );
+
+  React.useEffect(() => {
+    if (user) {
+      import("../utils/mapeoLocales").then(m => m.syncRegionsFromSupabase(user.id));
+    }
+  }, [user]);
 
   React.useEffect(() => {
     if (!searchParams.get("sl")) {
