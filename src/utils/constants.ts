@@ -20,9 +20,9 @@ export const AI_MODELS: Record<string, AIModel> = {
     apiProvider: "nvidia",
     free: true,
   },
-  "nvidia-nemotron": {
-    id: "nvidia/nemotron-3-nano-omni-30b-a3b-reasoning",
-    name: "Nemotron 3 Nano Omni",
+  "nvidia-riva": {
+    id: "nvidia/riva-translate-1.6b",
+    name: "Riva Translate 1.6B",
     provider: "NVIDIA",
     apiProvider: "nvidia",
     free: true,
