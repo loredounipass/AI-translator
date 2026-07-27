@@ -328,6 +328,14 @@ export const translate = async (
       if (axios.isCancel(error)) throw error;
       if (error instanceof DOMException) throw error;
 
+      const isAuthError =
+        (axios.isAxiosError(error) && error.response?.status === 401) ||
+        (error instanceof Error && /HTTP Error: 40[13]/.test(error.message));
+
+      if (isAuthError) {
+        throw new Error("AUTH_ERROR: Invalid or missing API key (401)");
+      }
+
       if (axios.isAxiosError(error)) {
         const status = error.response?.status;
         if (status === 429 || (status && status >= 500 && status < 600)) {
