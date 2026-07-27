@@ -60,11 +60,13 @@ const TranslatedText = () => {
   const currentTextRef = React.useRef(text);
   const requestIdRef = React.useRef(0);
   const lastSavedKeyRef = React.useRef("");
-  const { user } = useAuth();
+  const { user, loading: authLoading } = useAuth();
   const userRef = React.useRef(user);
   userRef.current = user;
   const { getKey } = useApiKey();
   const apiKey = getKey(apiProvider);
+  const apiKeyRef = React.useRef(apiKey);
+  apiKeyRef.current = apiKey;
 
   const translateHandler = React.useCallback(async (value: string, targetLang: string, sourceLang: string, mId: string) => {
     if (!value || value !== currentTextRef.current) {
@@ -172,12 +174,14 @@ const TranslatedText = () => {
       return;
     }
 
-    if (!user) {
+    if (authLoading) return;
+
+    if (!userRef.current) {
       setTranslatedText(["<< Translation Error — You must sign in >>"]);
       return;
     }
 
-    if (!apiKey) {
+    if (!apiKeyRef.current) {
       setTranslatedText(["<< Translation Error — You must add an API key >>"]);
       return;
     }
@@ -191,7 +195,7 @@ const TranslatedText = () => {
         abortControllerRef.current.abort();
       }
     };
-  }, [text, tl, sl, modelId, debouncedTranslateHandler]);
+  }, [text, tl, sl, modelId, debouncedTranslateHandler, user, apiKey, apiProvider, authLoading]);
 
   React.useEffect(() => {
     const event = new CustomEvent("translatedTextChanged", {
