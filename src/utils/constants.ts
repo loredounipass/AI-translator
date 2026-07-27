@@ -20,9 +20,9 @@ export const AI_MODELS: Record<string, AIModel> = {
     apiProvider: "nvidia",
     free: true,
   },
-  "nvidia-megatron": {
-    id: "nvidia/megatron-1b-nmt",
-    name: "Megatron 1B NMT",
+  "nvidia-nemotron": {
+    id: "nvidia/nemotron-3-nano-30b-a3b",
+    name: "Nemotron 3 Nano 30B (3B active)",
     provider: "NVIDIA",
     apiProvider: "nvidia",
     free: true,
@@ -50,4 +50,4 @@ export const AI_MODELS: Record<string, AIModel> = {
   },
 };
 
-export const DEFAULT_MODEL = "nvidia-megatron";
+export const DEFAULT_MODEL = "nvidia-nemotron";
