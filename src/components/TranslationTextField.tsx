@@ -1,5 +1,5 @@
 import React from "react";
-import { notification, Select } from "antd";
+import { Select } from "antd";
 import CloseIcon from "../assets/CloseIcon";
 import SpeechRecognition, { useSpeechRecognition } from "react-speech-recognition";
 import { useSearchParams } from "react-router-dom";
@@ -164,25 +164,11 @@ const TranslationTextField = () => {
   }, [urlTextParam, text]);
 
   const handleChangeRegion = async (value: string) => {
-    if (!user) {
-      notification.warning({
-        message: 'Authentication required',
-        description: 'You must be authenticated to change dialect.',
-        placement: 'topRight',
-        duration: 4,
-      });
-      return;
-    }
+    if (!user) return;
     const locale = MAPEO_LOCALES[value] || value;
     const slBase = REGION_A_IDIOMA_BASE[sl] || sl;
     if (!localeSoportado(locale)) {
       const fallback = regionesActuales?.[0]?.code ?? slBase;
-      notification.error({
-        message: 'Unsupported Dialect',
-        description: `"${locale}" is not supported by your browser. Reverted to Neutral.`,
-        placement: 'topRight',
-        duration: 4,
-      });
       await saveRegion(slBase, fallback, user.id);
       setURLSearchParams(params => {
         params.set("sr", fallback);
@@ -234,12 +220,10 @@ const TranslationTextField = () => {
         if (!keepMicOnRef.current) await cleanupAudioProcessing();
       } else {
         if (!keepMicOnRef.current) {
-          notification.error({ message: 'Microphone Required', description: 'Microphone must be active', placement: 'topRight', duration: 3 });
           setIsProcessing(false);
           return;
         }
         if (isMicrophoneAvailable === false) {
-          notification.error({ message: 'Microphone Access', description: 'Please allow microphone access', placement: 'topRight', duration: 3 });
           setIsProcessing(false);
           return;
         }

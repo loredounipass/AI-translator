@@ -75,10 +75,7 @@ const ApiSettingsModal = ({ isOpen, onClose, userId }: ApiSettingsModalProps) =>
 
   const handleSave = async (provider: string) => {
     const trimmed = inputValue.trim();
-    if (!trimmed) {
-      message.warning("Ingresa la API key");
-      return;
-    }
+    if (!trimmed) return;
     setSaving(true);
     try {
       await apiKeyService.upsert(userId, provider, trimmed);
@@ -87,8 +84,8 @@ const ApiSettingsModal = ({ isOpen, onClose, userId }: ApiSettingsModalProps) =>
       setEditProvider(null);
       setInputValue("");
       setShowInput(false);
-    } catch {
-      message.error("Error al guardar la API key");
+    } catch (err) {
+      message.error((err as Error).message);
     } finally {
       setSaving(false);
     }
@@ -105,8 +102,8 @@ const ApiSettingsModal = ({ isOpen, onClose, userId }: ApiSettingsModalProps) =>
         setInputValue("");
         setShowInput(false);
       }
-    } catch {
-      message.error("Error al eliminar la API key");
+    } catch (err) {
+      message.error((err as Error).message);
     } finally {
       setSaving(false);
     }

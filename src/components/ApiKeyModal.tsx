@@ -41,10 +41,7 @@ const ApiKeyModal = ({ isOpen, onClose, userId, provider = "nvidia" }: ApiKeyMod
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
     const trimmed = apiKey.trim();
-    if (!trimmed) {
-      message.warning("Ingresa tu API key");
-      return;
-    }
+    if (!trimmed) return;
 
     setSaving(true);
     try {
@@ -53,8 +50,8 @@ const ApiKeyModal = ({ isOpen, onClose, userId, provider = "nvidia" }: ApiKeyMod
       message.success(`API key de ${API_PROVIDERS.find((p) => p.id === provider)?.name || provider} guardada`);
       setApiKey("");
       onClose();
-    } catch {
-      message.error("Error al guardar la API key");
+    } catch (err) {
+      message.error((err as Error).message);
     } finally {
       setSaving(false);
     }

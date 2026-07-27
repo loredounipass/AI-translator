@@ -34,7 +34,7 @@ export const ApiKeyProvider = ({ children }: { children: React.ReactNode }) => {
   const { user } = useAuth();
   const [keys, setKeys] = useState<Record<string, string>>({});
   const [keysLoaded, setKeysLoaded] = useState(false);
-  const [keysLoading, setKeysLoading] = useState(false);
+  const [keysLoading, setKeysLoading] = useState(true); // true desde el inicio para bloquear hasta que la carga real termine
 
   const fetchKeys = useCallback(async () => {
     setKeysLoading(true);

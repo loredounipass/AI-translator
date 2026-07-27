@@ -115,11 +115,7 @@ const TranslatedText = () => {
       if (axios.isCancel(error)) return;
       if (!(error instanceof DOMException)) {
         if (currentRequestId === requestIdRef.current) {
-          const errMsg = (error as Error).message;
-          const msg = errMsg.includes("AUTH_ERROR") || errMsg.includes("401")
-            ? "<< Translation Error — You must add an API key >>"
-            : "<< Translation Error >>";
-          setTranslatedText([msg]);
+          setTranslatedText([]);
         }
       }
     } finally {
@@ -149,7 +145,6 @@ const TranslatedText = () => {
       copyTimeoutRef.current = window.setTimeout(() => setCopied(false), 2000);
     } catch (error) {
       console.error("Copy error:", error);
-      alert("Could not copy text");
     }
   };
 
@@ -177,14 +172,14 @@ const TranslatedText = () => {
     if (authLoading) return;
 
     if (!userRef.current) {
-      setTranslatedText(["<< Translation Error — You must sign in >>"]);
+      setTranslatedText([]);
       return;
     }
 
     if (keysLoading || !keysLoaded) return;
 
     if (!apiKeyRef.current) {
-      setTranslatedText(["<< Translation Error — You must add an API key >>"]);
+      setTranslatedText([]);
       return;
     }
 

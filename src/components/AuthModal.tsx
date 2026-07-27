@@ -77,16 +77,6 @@ const AuthModal = ({ isOpen, onClose }: AuthModalProps) => {
     const handleEmailSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
 
-        if (!email || !password) {
-            message.warning("Completa todos los campos obligatorios");
-            return;
-        }
-
-        if (password.length < 8) {
-            message.warning("La contraseña debe tener al menos 8 caracteres");
-            return;
-        }
-
         setSubmitting(true);
 
         let error: string | null = null;
