@@ -210,6 +210,12 @@ function App() {
     }
   }, [isDark]);
 
+  useEffect(() => {
+    fetch("/api/health")
+      .then((r) => r.json().then((d) => console.log("[health] API function reachable:", d)))
+      .catch((err) => console.log("[health] API function UNREACHABLE:", err.message));
+  }, []);
+
   return (
     <Router>
       <div className="min-h-screen bg-slate-50 dark:bg-slate-900 transition-colors duration-200 overflow-x-hidden">

@@ -197,7 +197,17 @@ export const translate = async (
         });
 
         if (!fetchResponse.ok) {
-          console.log("[translate] Streaming fetch failed, status:", fetchResponse.status);
+          let errorBody = "";
+          try { errorBody = await fetchResponse.text(); } catch {}
+          console.log("[translate] Fetch failed", {
+            status: fetchResponse.status,
+            statusText: fetchResponse.statusText,
+            headers: Object.fromEntries(fetchResponse.headers.entries()),
+            body: errorBody.slice(0, 500),
+            url: NVIDIA_API_URL,
+            hasApiKey: !!options?.apiKey,
+            model: modelId,
+          });
           throw new Error(`HTTP Error: ${fetchResponse.status}`);
         }
 
@@ -334,10 +344,10 @@ export const translate = async (
         (error instanceof Error && /HTTP Error: 40[13]/.test(error.message));
 
       if (isAuthError) {
-        const errMsg = axios.isAxiosError(error)
-          ? `HTTP ${error.response?.status}`
-          : (error as Error).message;
-        console.log("[translate] Auth error:", errMsg);
+        const errDetails = axios.isAxiosError(error)
+          ? { status: error.response?.status, data: error.response?.data }
+          : { message: (error as Error).message };
+        console.log("[translate] Auth error:", errDetails);
         throw new Error("AUTH_ERROR: Invalid or missing API key (401)");
       }
 

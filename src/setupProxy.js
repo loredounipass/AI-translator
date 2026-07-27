@@ -36,6 +36,10 @@ const cleanupCache = () => {
 module.exports = function (app) {
   console.log("[setupProxy] Express app received, registering middleware");
 
+  app.get("/api/health", (req, res) => {
+    res.json({ status: "ok", timestamp: Date.now() });
+  });
+
   app.use(async (req, res, next) => {
     if (!req.url.startsWith("/api/nvidia")) {
       return next();
