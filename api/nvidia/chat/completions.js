@@ -37,7 +37,9 @@ module.exports = async (req, res) => {
   }
 
   const apiKey = (req.body && req.body.apiKey) || "";
+  console.log("[completions] Request received, apiKey present:", !!apiKey, "stream:", req.body?.stream);
   if (!apiKey) {
+    console.log("[completions] Missing apiKey in request body");
     return res.status(401).json({ error: "API key requerida — proporciona tu propia key de NVIDIA" });
   }
 
@@ -69,13 +71,16 @@ module.exports = async (req, res) => {
         "Content-Length": Buffer.byteLength(bodyStr),
       },
     };
+    console.log("[completions] Streaming request to NVIDIA");
 
     const proxyReq = https.request(options, (proxyRes) => {
+      console.log("[completions] NVIDIA stream response status:", proxyRes.statusCode);
       res.writeHead(proxyRes.statusCode, proxyRes.headers);
       proxyRes.pipe(res);
     });
 
-    proxyReq.on("error", () => {
+    proxyReq.on("error", (err) => {
+      console.log("[completions] Stream proxy error:", err.message);
       if (!res.headersSent) {
         res.status(500).json({ error: "Proxy stream error" });
       }
@@ -106,6 +111,7 @@ module.exports = async (req, res) => {
   }
 
   // --- Make API Request ---
+  console.log("[completions] Non-streaming request to NVIDIA");
   const requestPromise = new Promise((resolve, reject) => {
     const bodyStr = JSON.stringify(cleanBody);
 
@@ -122,6 +128,7 @@ module.exports = async (req, res) => {
     };
 
     const proxyReq = https.request(options, (proxyRes) => {
+      console.log("[completions] NVIDIA response status:", proxyRes.statusCode);
       const chunks = [];
       proxyRes.on("data", (chunk) => chunks.push(chunk));
       proxyRes.on("end", () => {
@@ -145,12 +152,16 @@ module.exports = async (req, res) => {
           
           resolve({ statusCode: proxyRes.statusCode, data });
         } catch (err) {
+          console.log("[completions] Error parsing NVIDIA response:", err.message);
           reject(err);
         }
       });
     });
 
-    proxyReq.on("error", reject);
+    proxyReq.on("error", (err) => {
+      console.log("[completions] Request to NVIDIA failed:", err.message);
+      reject(err);
+    });
     proxyReq.end(bodyStr);
   });
 
@@ -160,9 +171,11 @@ module.exports = async (req, res) => {
   try {
     const response = await requestPromise;
     pendingRequests.delete(cacheKey);
+    console.log("[completions] Returning response to client, status:", response.statusCode);
     return res.status(response.statusCode).json(response.data);
-  } catch {
+  } catch (err) {
     pendingRequests.delete(cacheKey);
+    console.log("[completions] Proxy error:", err.message);
     return res.status(500).json({ error: "Proxy error" });
   }
 };

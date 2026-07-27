@@ -109,7 +109,7 @@ const TranslatedText = () => {
     } catch (error) {
       if (axios.isCancel(error)) return;
       if (!(error instanceof DOMException)) {
-        console.error("Translation error");
+        console.log("[TranslatedText] Error caught:", (error as Error).message);
         if (currentRequestId === requestIdRef.current) {
           const errMsg = (error as Error).message;
           const msg = errMsg.includes("AUTH_ERROR") || errMsg.includes("401")

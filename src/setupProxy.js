@@ -71,6 +71,7 @@ module.exports = function (app) {
       }
 
       if (!apiKey) {
+        console.log("[setupProxy] Missing apiKey in request body");
         res.status(401).json({ error: "API key requerida — proporciona tu propia key de NVIDIA" });
         return;
       }

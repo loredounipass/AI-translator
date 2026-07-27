@@ -197,6 +197,7 @@ export const translate = async (
         });
 
         if (!fetchResponse.ok) {
+          console.log("[translate] Streaming fetch failed, status:", fetchResponse.status);
           throw new Error(`HTTP Error: ${fetchResponse.status}`);
         }
 
@@ -333,6 +334,10 @@ export const translate = async (
         (error instanceof Error && /HTTP Error: 40[13]/.test(error.message));
 
       if (isAuthError) {
+        const errMsg = axios.isAxiosError(error)
+          ? `HTTP ${error.response?.status}`
+          : (error as Error).message;
+        console.log("[translate] Auth error:", errMsg);
         throw new Error("AUTH_ERROR: Invalid or missing API key (401)");
       }
 
@@ -348,13 +353,14 @@ export const translate = async (
         continue;
       }
 
+      console.log("[translate] Non-retriable error:", (error as Error).message);
       throw new Error(`Error en traducción AI: ${(error as Error).message}`);
     }
   }
 
-  throw new Error(
-    `Error en traducción AI (after ${MAX_RETRIES} retries): ${(lastError as Error).message}`
-  );
+  const finalMsg = `Error en traducción AI (after ${MAX_RETRIES} retries): ${(lastError as Error).message}`;
+  console.log("[translate] All retries exhausted:", finalMsg);
+  throw new Error(finalMsg);
 };
 
 export const translateMultiple = async (
