@@ -16,6 +16,7 @@ interface ApiKeyContextValue {
   removeKey: (provider: string) => void;
   fetchKeys: () => Promise<void>;
   allKeys: Record<string, string>;
+  keysLoaded: boolean;
 }
 
 const ApiKeyContext = createContext<ApiKeyContextValue>({
@@ -24,15 +25,18 @@ const ApiKeyContext = createContext<ApiKeyContextValue>({
   removeKey: () => {},
   fetchKeys: async () => {},
   allKeys: {},
+  keysLoaded: false,
 });
 
 export const ApiKeyProvider = ({ children }: { children: React.ReactNode }) => {
   const { user } = useAuth();
   const [keys, setKeys] = useState<Record<string, string>>({});
+  const [keysLoaded, setKeysLoaded] = useState(false);
 
   const fetchKeys = useCallback(async () => {
     if (!user) {
       setKeys({});
+      setKeysLoaded(true);
       return;
     }
     const rows = await apiKeyService.getAll(user.id);
@@ -41,6 +45,7 @@ export const ApiKeyProvider = ({ children }: { children: React.ReactNode }) => {
       mapped[row.provider] = row.api_key;
     }
     setKeys(mapped);
+    setKeysLoaded(true);
   }, [user]);
 
   useEffect(() => {
@@ -71,7 +76,7 @@ export const ApiKeyProvider = ({ children }: { children: React.ReactNode }) => {
   );
 
   return (
-    <ApiKeyContext.Provider value={{ getKey, setKey, removeKey, fetchKeys, allKeys: keys }}>
+    <ApiKeyContext.Provider value={{ getKey, setKey, removeKey, fetchKeys, allKeys: keys, keysLoaded }}>
       {children}
     </ApiKeyContext.Provider>
   );

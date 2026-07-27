@@ -63,7 +63,7 @@ const TranslatedText = () => {
   const { user, loading: authLoading } = useAuth();
   const userRef = React.useRef(user);
   userRef.current = user;
-  const { getKey } = useApiKey();
+  const { getKey, keysLoaded } = useApiKey();
   const apiKey = getKey(apiProvider);
   const apiKeyRef = React.useRef(apiKey);
   apiKeyRef.current = apiKey;
@@ -87,7 +87,7 @@ const TranslatedText = () => {
 
       const translated = await translate(targetLang, sourceLang, value, mId, {
         signal: abortControllerRef.current.signal,
-        apiKey: apiKey || undefined,
+        apiKey: apiKeyRef.current || undefined,
         provider: apiProvider,
         onData: (text) => {
           const cleaned = cleanText(text);
@@ -181,6 +181,8 @@ const TranslatedText = () => {
       return;
     }
 
+    if (!keysLoaded) return;
+
     if (!apiKeyRef.current) {
       setTranslatedText(["<< Translation Error — You must add an API key >>"]);
       return;
@@ -195,7 +197,7 @@ const TranslatedText = () => {
         abortControllerRef.current.abort();
       }
     };
-  }, [text, tl, sl, modelId, debouncedTranslateHandler, user, apiKey, apiProvider, authLoading]);
+  }, [text, tl, sl, modelId, debouncedTranslateHandler, user, apiKey, apiProvider, authLoading, keysLoaded]);
 
   React.useEffect(() => {
     const event = new CustomEvent("translatedTextChanged", {
