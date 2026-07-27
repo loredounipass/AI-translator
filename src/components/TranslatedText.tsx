@@ -169,6 +169,16 @@ const TranslatedText = () => {
       return;
     }
 
+    if (!user) {
+      setTranslatedText(["<< Translation Error — You must sign in >>"]);
+      return;
+    }
+
+    if (!apiKey) {
+      setTranslatedText(["<< Translation Error — You must add an API key >>"]);
+      return;
+    }
+
     // Always re-translate when text, target lang, source lang, or model change
     debouncedTranslateHandler(text, tl, sl, modelId);
 
