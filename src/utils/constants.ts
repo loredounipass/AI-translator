@@ -34,12 +34,12 @@ export const AI_MODELS: Record<string, AIModel> = {
     apiProvider: "nvidia",
     free: true,
   },
-  "nvidia-canary": {
-    id: "nvidia/canary-1b-asr",
-    name: "Canary 1B ASR",
+  "nvidia-riva": {
+    id: "nvidia/riva-translate-4b-instruct-v1.1",
+    name: "Riva Translate 4B v1.1",
     provider: "NVIDIA",
     apiProvider: "nvidia",
-    free: true,
+    free: false,
   },
   "nvidia-deepseek": {
     id: "deepseek-ai/deepseek-v4-flash",
