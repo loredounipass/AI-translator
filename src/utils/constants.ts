@@ -21,6 +21,14 @@ export const AI_MODELS: Record<string, AIModel> = {
     free: true,
   },
 
+  "nvidia-mixtral": {
+    id: "mistralai/mixtral-8x7b-instruct",
+    name: "Mixtral 8x7B Instruct v0.1",
+    provider: "Mistral AI",
+    apiProvider: "nvidia",
+    free: true,
+  },
+
   "nvidia-llama-3.2": {
     id: "meta/llama-3.2-3b-instruct",
     name: "Llama 3.2 3B",
