@@ -20,6 +20,15 @@ export const AI_MODELS: Record<string, AIModel> = {
     apiProvider: "nvidia",
     free: true,
   },
+
+  "nvidia-llama-3.2": {
+    id: "meta/llama-3.2-3b-instruct",
+    name: "Llama 3.2 3B",
+    provider: "Meta",
+    apiProvider: "nvidia",
+    free: true,
+  },
+
   "nvidia-nemotron": {
     id: "nvidia/nemotron-3-nano-30b-a3b",
     name: "Nemotron 3 Nano 30B (3B active)",
