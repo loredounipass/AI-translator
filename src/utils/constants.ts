@@ -20,13 +20,6 @@ export const AI_MODELS: Record<string, AIModel> = {
     apiProvider: "nvidia",
     free: true,
   },
-  "nvidia-mistral": {
-    id: "mistralai/mistral-small-4-119b-2603",
-    name: "Mistral Small 4 119B",
-    provider: "Mistral AI",
-    apiProvider: "nvidia",
-    free: true,
-  },
   "nvidia-nemotron": {
     id: "nvidia/nemotron-3-nano-30b-a3b",
     name: "Nemotron 3 Nano 30B (3B active)",
