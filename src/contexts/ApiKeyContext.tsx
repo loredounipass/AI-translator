@@ -38,6 +38,7 @@ export const ApiKeyProvider = ({ children }: { children: React.ReactNode }) => {
 
   const fetchKeys = useCallback(async () => {
     setKeysLoading(true);
+    setKeysLoaded(false);
     if (!user) {
       setKeys({});
       setKeysLoaded(true);
