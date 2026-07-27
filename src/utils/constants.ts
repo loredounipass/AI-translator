@@ -20,9 +20,9 @@ export const AI_MODELS: Record<string, AIModel> = {
     apiProvider: "nvidia",
     free: true,
   },
-  "nvidia-riva": {
-    id: "nvidia/riva-translate-1.6b",
-    name: "Riva Translate 1.6B",
+  "nvidia-megatron": {
+    id: "nvidia/megatron-1b-nmt",
+    name: "Megatron 1B NMT",
     provider: "NVIDIA",
     apiProvider: "nvidia",
     free: true,
@@ -34,10 +34,10 @@ export const AI_MODELS: Record<string, AIModel> = {
     apiProvider: "nvidia",
     free: true,
   },
-  "nvidia-mistral": {
-    id: "mistralai/mistral-medium-3.5-128b",
-    name: "Mistral Medium 3.5 128B",
-    provider: "Mistral AI",
+  "nvidia-canary": {
+    id: "nvidia/canary-1b-asr",
+    name: "Canary 1B ASR",
+    provider: "NVIDIA",
     apiProvider: "nvidia",
     free: true,
   },
