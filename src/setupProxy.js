@@ -41,7 +41,7 @@ module.exports = function (app) {
   });
 
   app.use(async (req, res, next) => {
-    if (!req.url.startsWith("/api/nvidia")) {
+    if (!req.url.startsWith("/api/nvidia") && !req.url.startsWith("/api/completions")) {
       return next();
     }
 
@@ -116,7 +116,7 @@ module.exports = function (app) {
 
       console.log(`[setupProxy] Cache MISS, forwarding to NVIDIA API (Streaming: ${isStreaming})`);
 
-      if (req.url !== "/api/nvidia/chat/completions") {
+      if (req.url !== "/api/nvidia/chat/completions" && req.url !== "/api/completions") {
         res.status(404).json({ error: "Not found" });
         return;
       }

@@ -3,7 +3,7 @@ import { LRUCache } from "lru-cache";
 import { GLOSSARY } from "./glossary";
 import { INTERPETERAI_TRAINING_MODULE } from "./interpreter.guide";
 
-const NVIDIA_API_URL = "/api/nvidia/chat/completions";
+const NVIDIA_API_URL = "/api/completions";
 
 const MAX_RETRIES = 3;
 const BASE_DELAY = 1000;
