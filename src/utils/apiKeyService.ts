@@ -13,7 +13,10 @@ export const apiKeyService = {
       .from("user_api_keys")
       .select("provider, api_key, created_at, updated_at")
       .eq("user_id", userId);
-    if (error) return [];
+    if (error) {
+      console.error("[apiKeyService] getAll error:", error.message);
+      return [];
+    }
     return data || [];
   },
 
@@ -24,7 +27,11 @@ export const apiKeyService = {
       .eq("user_id", userId)
       .eq("provider", provider)
       .single();
-    if (error || !data) return null;
+    if (error) {
+      console.error("[apiKeyService] get error:", error.message);
+      return null;
+    }
+    if (!data) return null;
     return data.api_key;
   },
 
@@ -35,7 +42,7 @@ export const apiKeyService = {
         { user_id: userId, provider, api_key: apiKey },
         { onConflict: "user_id, provider" }
       );
-    if (error) throw new Error("Error al guardar la API key");
+    if (error) throw new Error(`Error al guardar la API key: ${error.message}`);
   },
 
   async remove(userId: string, provider: string): Promise<void> {

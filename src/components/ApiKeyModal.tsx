@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { message } from "antd";
 import { apiKeyService } from "../utils/apiKeyService";
-import { useApiKey } from "../contexts/ApiKeyContext";
+import { API_PROVIDERS, useApiKey } from "../contexts/ApiKeyContext";
 
 interface ApiKeyModalProps {
   isOpen: boolean;
@@ -32,10 +32,6 @@ const EyeIcon = ({ visible }: { visible: boolean }) => (
   </svg>
 );
 
-const providerLabel: Record<string, string> = {
-  nvidia: "NVIDIA",
-};
-
 const ApiKeyModal = ({ isOpen, onClose, userId, provider = "nvidia" }: ApiKeyModalProps) => {
   const [apiKey, setApiKey] = useState("");
   const [showKey, setShowKey] = useState(false);
@@ -54,7 +50,7 @@ const ApiKeyModal = ({ isOpen, onClose, userId, provider = "nvidia" }: ApiKeyMod
     try {
       await apiKeyService.upsert(userId, provider, trimmed);
       setKey(provider, trimmed);
-      message.success(`API key de ${providerLabel[provider] || provider} guardada`);
+      message.success(`API key de ${API_PROVIDERS.find((p) => p.id === provider)?.name || provider} guardada`);
       setApiKey("");
       onClose();
     } catch {
@@ -77,7 +73,7 @@ const ApiKeyModal = ({ isOpen, onClose, userId, provider = "nvidia" }: ApiKeyMod
         <div className="bg-white dark:bg-slate-900 rounded-2xl shadow-2xl border border-slate-200 dark:border-slate-700 w-full max-w-md overflow-hidden animate-fadeIn">
           <div className="flex items-center justify-between p-5 pb-0">
             <h2 className="text-lg font-semibold text-slate-800 dark:text-slate-100">
-              API Key — {providerLabel[provider] || provider}
+              API Key — {API_PROVIDERS.find((p) => p.id === provider)?.name || provider}
             </h2>
             <button
               onClick={onClose}
@@ -92,7 +88,7 @@ const ApiKeyModal = ({ isOpen, onClose, userId, provider = "nvidia" }: ApiKeyMod
           </div>
           <form onSubmit={handleSave} className="p-5 space-y-4">
             <p className="text-sm text-slate-500 dark:text-slate-400 leading-relaxed">
-              Este modelo requiere una API key de <strong className="text-slate-700 dark:text-slate-300">{providerLabel[provider] || provider}</strong>.
+              Este modelo requiere una API key de <strong className="text-slate-700 dark:text-slate-300">{API_PROVIDERS.find((p) => p.id === provider)?.name || provider}</strong>.
               Ingresa tu clave para usar tus propios recursos.
             </p>
             <div className="relative">
@@ -103,7 +99,7 @@ const ApiKeyModal = ({ isOpen, onClose, userId, provider = "nvidia" }: ApiKeyMod
                 type={showKey ? "text" : "password"}
                 value={apiKey}
                 onChange={(e) => setApiKey(e.target.value)}
-                placeholder={`nvapi-...`}
+                placeholder={`${API_PROVIDERS.find((p) => p.id === provider)?.keyPrefix || "key"}...`}
                 className="w-full pl-10 pr-10 py-2.5 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-200 placeholder-slate-400 dark:placeholder-slate-500 text-sm outline-none focus:border-blue-400 dark:focus:border-blue-500 transition-colors font-mono"
                 autoComplete="off"
               />

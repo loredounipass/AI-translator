@@ -200,7 +200,17 @@ function App() {
   const [isApiKeyOpen, setIsApiKeyOpen] = useState(false);
   const [pendingProvider, setPendingProvider] = useState("nvidia");
   const [isApiSettingsOpen, setIsApiSettingsOpen] = useState(false);
-  const { user } = useAuth();
+  const { user, loading: authLoading } = useAuth();
+
+  const prevUserRef = React.useRef(user);
+  useEffect(() => {
+    if (prevUserRef.current && !user) {
+      setIsApiKeyOpen(false);
+      setIsApiSettingsOpen(false);
+      setIsHistoryOpen(false);
+    }
+    prevUserRef.current = user;
+  }, [user]);
 
   useEffect(() => {
     if (isDark) {
