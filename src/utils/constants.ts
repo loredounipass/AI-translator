@@ -50,4 +50,4 @@ export const AI_MODELS: Record<string, AIModel> = {
   },
 };
 
-export const DEFAULT_MODEL = "nvidia-deepseek";
+export const DEFAULT_MODEL = "nvidia-megatron";
