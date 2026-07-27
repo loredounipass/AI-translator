@@ -139,7 +139,7 @@ export const translate = async (
   sourceLang: string,
   text: string,
   modelId: string,
-  options?: { signal?: AbortSignal; onData?: (text: string) => void; apiKey?: string }
+  options?: { signal?: AbortSignal; onData?: (text: string) => void; apiKey?: string; provider?: string }
 ): Promise<string> => {
   const cleanedText = text.trim();
   if (!cleanedText) throw new Error("El texto a traducir no puede estar vacío.");
@@ -192,22 +192,12 @@ export const translate = async (
             max_tokens: 4096,
             stream: true,
             apiKey: options?.apiKey,
+            provider: options?.provider,
           }),
           signal: options?.signal,
         });
 
         if (!fetchResponse.ok) {
-          let errorBody = "";
-          try { errorBody = await fetchResponse.text(); } catch {}
-          console.log("[translate] Fetch failed", {
-            status: fetchResponse.status,
-            statusText: fetchResponse.statusText,
-            headers: Object.fromEntries(fetchResponse.headers.entries()),
-            body: errorBody.slice(0, 500),
-            url: NVIDIA_API_URL,
-            hasApiKey: !!options?.apiKey,
-            model: modelId,
-          });
           throw new Error(`HTTP Error: ${fetchResponse.status}`);
         }
 
@@ -303,6 +293,7 @@ export const translate = async (
             max_tokens: 4096,
             stream: false,
             apiKey: options?.apiKey,
+            provider: options?.provider,
           },
           {
             headers: {
@@ -344,10 +335,6 @@ export const translate = async (
         (error instanceof Error && /HTTP Error: 40[13]/.test(error.message));
 
       if (isAuthError) {
-        const errDetails = axios.isAxiosError(error)
-          ? { status: error.response?.status, data: error.response?.data }
-          : { message: (error as Error).message };
-        console.log("[translate] Auth error:", errDetails);
         throw new Error("AUTH_ERROR: Invalid or missing API key (401)");
       }
 
@@ -363,14 +350,11 @@ export const translate = async (
         continue;
       }
 
-      console.log("[translate] Non-retriable error:", (error as Error).message);
       throw new Error(`Error en traducción AI: ${(error as Error).message}`);
     }
   }
 
-  const finalMsg = `Error en traducción AI (after ${MAX_RETRIES} retries): ${(lastError as Error).message}`;
-  console.log("[translate] All retries exhausted:", finalMsg);
-  throw new Error(finalMsg);
+  throw new Error(`Error en traducción AI (after ${MAX_RETRIES} retries): ${(lastError as Error).message}`);
 };
 
 export const translateMultiple = async (

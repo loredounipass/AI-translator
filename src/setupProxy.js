@@ -1,4 +1,4 @@
-console.log("[setupProxy] LOADED - setting up NVIDIA proxy with Cache & Rate Limit...");
+
 
 const https = require("https");
 const crypto = require("crypto");
@@ -34,7 +34,6 @@ const cleanupCache = () => {
 };
 
 module.exports = function (app) {
-  console.log("[setupProxy] Express app received, registering middleware");
 
   app.get("/api/health", (req, res) => {
     res.json({ status: "ok", timestamp: Date.now() });
@@ -44,8 +43,6 @@ module.exports = function (app) {
     if (!req.url.startsWith("/api/nvidia") && !req.url.startsWith("/api/completions")) {
       return next();
     }
-
-    console.log("[setupProxy] PROXYING:", req.method, req.url);
 
     // --- Rate Limiting ---
     const now = Date.now();
@@ -75,7 +72,6 @@ module.exports = function (app) {
       }
 
       if (!apiKey) {
-        console.log("[setupProxy] Missing apiKey in request body");
         res.status(401).json({ error: "API key requerida — proporciona tu propia key de NVIDIA" });
         return;
       }
@@ -95,7 +91,6 @@ module.exports = function (app) {
       if (!isStreaming) {
         // Return from Cache
         if (cache.has(cacheKey)) {
-          console.log("[setupProxy] Cache HIT for:", req.url);
           const cachedResponse = cache.get(cacheKey);
           res.status(cachedResponse.statusCode).json(cachedResponse.data);
           return;
@@ -103,7 +98,6 @@ module.exports = function (app) {
 
         // Wait for Pending Request (Coalescing)
         if (pendingRequests.has(cacheKey)) {
-          console.log("[setupProxy] Coalescing request for:", req.url);
           try {
             const response = await pendingRequests.get(cacheKey);
             res.status(response.statusCode).json(response.data);
@@ -113,8 +107,6 @@ module.exports = function (app) {
           return;
         }
       }
-
-      console.log(`[setupProxy] Cache MISS, forwarding to NVIDIA API (Streaming: ${isStreaming})`);
 
       if (req.url !== "/api/nvidia/chat/completions" && req.url !== "/api/completions") {
         res.status(404).json({ error: "Not found" });
@@ -206,10 +198,8 @@ module.exports = function (app) {
     };
 
     if (req.body) {
-      console.log("[setupProxy] Using pre-parsed body");
       processRequest(Buffer.from(JSON.stringify(req.body)));
     } else {
-      console.log("[setupProxy] Reading raw body");
       const chunks = [];
       req.on("data", (chunk) => chunks.push(chunk));
       req.on("end", () => {

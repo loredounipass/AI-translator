@@ -50,7 +50,9 @@ const TranslatedText = () => {
   const tl = searchParams.get("tl") || DEFAULT_TARGET_LANGUAGE;
   const sl = searchParams.get("sl") || DEFAULT_SOURCE_LANGUAGE;
   const modelKey = searchParams.get("model") || DEFAULT_MODEL;
-  const modelId = AI_MODELS[modelKey as keyof typeof AI_MODELS]?.id || AI_MODELS[DEFAULT_MODEL as keyof typeof AI_MODELS].id;
+  const config = AI_MODELS[modelKey as keyof typeof AI_MODELS] || AI_MODELS[DEFAULT_MODEL as keyof typeof AI_MODELS];
+  const modelId = config.id;
+  const apiProvider = config.apiProvider;
   const isRTL = ["ar", "fa", "ur"].includes(tl);
   const [translatedText, setTranslatedText] = React.useState<string[]>([]);
   const [isTranslating, setIsTranslating] = React.useState(false);
@@ -62,7 +64,7 @@ const TranslatedText = () => {
   const userRef = React.useRef(user);
   userRef.current = user;
   const { getKey } = useApiKey();
-  const apiKey = getKey("nvidia");
+  const apiKey = getKey(apiProvider);
 
   const translateHandler = React.useCallback(async (value: string, targetLang: string, sourceLang: string, mId: string) => {
     if (!value || value !== currentTextRef.current) {
@@ -84,6 +86,7 @@ const TranslatedText = () => {
       const translated = await translate(targetLang, sourceLang, value, mId, {
         signal: abortControllerRef.current.signal,
         apiKey: apiKey || undefined,
+        provider: apiProvider,
         onData: (text) => {
           const cleaned = cleanText(text);
           if (cleaned) {
@@ -109,7 +112,6 @@ const TranslatedText = () => {
     } catch (error) {
       if (axios.isCancel(error)) return;
       if (!(error instanceof DOMException)) {
-        console.log("[TranslatedText] Error caught:", (error as Error).message);
         if (currentRequestId === requestIdRef.current) {
           const errMsg = (error as Error).message;
           const msg = errMsg.includes("AUTH_ERROR") || errMsg.includes("401")
@@ -123,7 +125,7 @@ const TranslatedText = () => {
         setIsTranslating(false);
       }
     }
-  }, [setTranslatedText, apiKey]);
+  }, [setTranslatedText, apiKey, apiProvider]);
 
   const copyHandler = async () => {
     try {

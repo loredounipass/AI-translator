@@ -9,6 +9,28 @@ const RATE_LIMIT_MAX = 50;
 const RATE_LIMIT_WINDOW = 60000;
 const requestTimestamps = [];
 
+const PROVIDERS = {
+  nvidia: {
+    hostname: "integrate.api.nvidia.com",
+    path: "/v1/chat/completions",
+    authHeader: (key) => `Bearer ${key}`,
+    authHeaderName: "Authorization",
+  },
+  openai: {
+    hostname: "api.openai.com",
+    path: "/v1/chat/completions",
+    authHeader: (key) => `Bearer ${key}`,
+    authHeaderName: "Authorization",
+  },
+  anthropic: {
+    hostname: "api.anthropic.com",
+    path: "/v1/messages",
+    authHeader: (key) => key,
+    authHeaderName: "x-api-key",
+    extraHeaders: { "anthropic-version": "2023-06-01" },
+  },
+};
+
 const generateCacheKey = (bodyObj) => {
   return crypto.createHash("sha256").update(JSON.stringify(bodyObj || {})).digest("hex");
 };
@@ -25,21 +47,25 @@ const cleanupCache = () => {
 };
 
 module.exports = async (req, res) => {
-  console.log("[completions] Called, method:", req.method);
-
   if (req.method !== "POST") {
     return res.status(405).json({ error: "Method not allowed" });
   }
 
   const apiKey = (req.body && req.body.apiKey) || "";
-  console.log("[completions] apiKey present:", !!apiKey, "stream:", req.body?.stream);
+  const provider = (req.body && req.body.provider) || "nvidia";
+
   if (!apiKey) {
-    console.log("[completions] Missing apiKey");
-    return res.status(401).json({ error: "API key requerida" });
+    return res.status(401).json({ error: `API key requerida para ${provider}` });
+  }
+
+  const providerConfig = PROVIDERS[provider];
+  if (!providerConfig) {
+    return res.status(400).json({ error: `Provider desconocido: ${provider}` });
   }
 
   const cleanBody = { ...req.body };
   delete cleanBody.apiKey;
+  delete cleanBody.provider;
 
   const now = Date.now();
   while (requestTimestamps.length > 0 && requestTimestamps[0] < now - RATE_LIMIT_WINDOW) {
@@ -50,27 +76,30 @@ module.exports = async (req, res) => {
   }
   requestTimestamps.push(now);
 
-  if (cleanBody.stream === true) {
+  const isStreaming = cleanBody.stream === true;
+
+  if (isStreaming) {
     const bodyStr = JSON.stringify(cleanBody);
-    const options = {
-      hostname: "integrate.api.nvidia.com",
-      path: "/v1/chat/completions",
-      method: "POST",
-      headers: {
-        host: "integrate.api.nvidia.com",
-        Authorization: `Bearer ${apiKey}`,
-        "Content-Type": "application/json",
-        "Content-Length": Buffer.byteLength(bodyStr),
-      },
+    const headers = {
+      host: providerConfig.hostname,
+      [providerConfig.authHeaderName]: providerConfig.authHeader(apiKey),
+      "Content-Type": "application/json",
+      "Content-Length": Buffer.byteLength(bodyStr),
+      ...(providerConfig.extraHeaders || {}),
     };
-    console.log("[completions] Streaming to NVIDIA");
+
+    const options = {
+      hostname: providerConfig.hostname,
+      path: providerConfig.path,
+      method: "POST",
+      headers,
+    };
+
     const proxyReq = https.request(options, (proxyRes) => {
-      console.log("[completions] NVIDIA stream status:", proxyRes.statusCode);
       res.writeHead(proxyRes.statusCode, proxyRes.headers);
       proxyRes.pipe(res);
     });
     proxyReq.on("error", (err) => {
-      console.log("[completions] Stream error:", err.message);
       if (!res.headersSent) res.status(500).json({ error: "Proxy stream error" });
     });
     proxyReq.end(bodyStr);
@@ -94,23 +123,24 @@ module.exports = async (req, res) => {
     }
   }
 
-  console.log("[completions] Non-streaming to NVIDIA");
   const requestPromise = new Promise((resolve, reject) => {
     const bodyStr = JSON.stringify(cleanBody);
+    const headers = {
+      host: providerConfig.hostname,
+      [providerConfig.authHeaderName]: providerConfig.authHeader(apiKey),
+      "Content-Type": "application/json",
+      "Content-Length": Buffer.byteLength(bodyStr),
+      ...(providerConfig.extraHeaders || {}),
+    };
+
     const options = {
-      hostname: "integrate.api.nvidia.com",
-      path: "/v1/chat/completions",
+      hostname: providerConfig.hostname,
+      path: providerConfig.path,
       method: "POST",
-      headers: {
-        host: "integrate.api.nvidia.com",
-        Authorization: `Bearer ${apiKey}`,
-        "Content-Type": "application/json",
-        "Content-Length": Buffer.byteLength(bodyStr),
-      },
+      headers,
     };
 
     const proxyReq = https.request(options, (proxyRes) => {
-      console.log("[completions] NVIDIA status:", proxyRes.statusCode);
       const chunks = [];
       proxyRes.on("data", (chunk) => chunks.push(chunk));
       proxyRes.on("end", () => {
@@ -124,16 +154,12 @@ module.exports = async (req, res) => {
             try { data = JSON.parse(proxyBody.toString()); } catch { data = proxyBody.toString(); }
           }
           resolve({ statusCode: proxyRes.statusCode, data });
-        } catch (err) {
-          console.log("[completions] Parse error:", err.message);
-          reject(err);
+        } catch {
+          reject(new Error("Parse error"));
         }
       });
     });
-    proxyReq.on("error", (err) => {
-      console.log("[completions] Request error:", err.message);
-      reject(err);
-    });
+    proxyReq.on("error", reject);
     proxyReq.end(bodyStr);
   });
 
@@ -141,11 +167,9 @@ module.exports = async (req, res) => {
   try {
     const response = await requestPromise;
     pendingRequests.delete(cacheKey);
-    console.log("[completions] Response status:", response.statusCode);
     return res.status(response.statusCode).json(response.data);
-  } catch (err) {
+  } catch {
     pendingRequests.delete(cacheKey);
-    console.log("[completions] Proxy error:", err.message);
     return res.status(500).json({ error: "Proxy error" });
   }
 };

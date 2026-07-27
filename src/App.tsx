@@ -56,7 +56,7 @@ const Header = ({
   openHistory: () => void;
   openAuth: () => void;
   user: User | null;
-  onApiKeyNeeded: () => void;
+  onApiKeyNeeded: (provider: string) => void;
   onOpenApiSettings: () => void;
 }) => {
   const [searchParams, setSearchParams] = useSearchParams();
@@ -72,14 +72,15 @@ const Header = ({
       }, 0);
       return;
     }
-    const provider = "nvidia";
+    const modelConfig = AI_MODELS[e.target.value as keyof typeof AI_MODELS];
+    const provider = modelConfig?.apiProvider || "nvidia";
     if (!user) {
       openAuth();
       return;
     }
     const hasKey = getKey(provider);
     if (!hasKey) {
-      onApiKeyNeeded();
+      onApiKeyNeeded(provider);
       return;
     }
     const newParams = new URLSearchParams(searchParams);
@@ -197,6 +198,7 @@ function App() {
   const [isHistoryOpen, setIsHistoryOpen] = useState(false);
   const [isAuthOpen, setIsAuthOpen] = useState(false);
   const [isApiKeyOpen, setIsApiKeyOpen] = useState(false);
+  const [pendingProvider, setPendingProvider] = useState("nvidia");
   const [isApiSettingsOpen, setIsApiSettingsOpen] = useState(false);
   const { user } = useAuth();
 
@@ -211,9 +213,7 @@ function App() {
   }, [isDark]);
 
   useEffect(() => {
-    fetch("/api/health")
-      .then((r) => r.json().then((d) => console.log("[health] API function reachable:", d)))
-      .catch((err) => console.log("[health] API function UNREACHABLE:", err.message));
+    fetch("/api/health").then(r => r.json()).catch(() => {});
   }, []);
 
   return (
@@ -226,7 +226,7 @@ function App() {
           openHistory={() => setIsHistoryOpen(true)}
           openAuth={() => setIsAuthOpen(true)}
           user={user}
-          onApiKeyNeeded={() => setIsApiKeyOpen(true)}
+          onApiKeyNeeded={(provider) => { setPendingProvider(provider); setIsApiKeyOpen(true); }}
           onOpenApiSettings={() => setIsApiSettingsOpen(true)}
         />
         <HistoryPanel isOpen={isHistoryOpen} onClose={() => setIsHistoryOpen(false)} />
@@ -236,6 +236,7 @@ function App() {
             isOpen={isApiKeyOpen}
             onClose={() => setIsApiKeyOpen(false)}
             userId={user.id}
+            provider={pendingProvider}
           />
         )}
         {user && (
