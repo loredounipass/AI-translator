@@ -68,6 +68,8 @@ const TranslatedText = () => {
   const apiKey = getKey(apiProvider);
   const apiKeyRef = React.useRef(apiKey);
   apiKeyRef.current = apiKey;
+  const authNotifiedRef = React.useRef(false);
+  const apiKeyNotifiedRef = React.useRef(false);
 
   const translateHandler = React.useCallback(async (value: string, targetLang: string, sourceLang: string, mId: string) => {
     if (!value || value !== currentTextRef.current) {
@@ -173,28 +175,38 @@ const TranslatedText = () => {
     if (authLoading) return;
 
     if (!userRef.current) {
-      notification.warning({
-        message: "Authentication required",
-        description: "You must be authenticated to use the translation agent.",
-        placement: "topRight",
-        duration: 4,
-      });
+      if (!authNotifiedRef.current) {
+        authNotifiedRef.current = true;
+        notification.warning({
+          message: "Authentication required",
+          description: "You must be authenticated to use the translation agent.",
+          placement: "topRight",
+          duration: 4,
+        });
+      }
       setTranslatedText([]);
       return;
     }
+
+    authNotifiedRef.current = false;
 
     if (keysLoading || !keysLoaded) return;
 
     if (!apiKeyRef.current) {
-      notification.warning({
-        message: "API key required",
-        description: "You must add an API key from your preferred provider.",
-        placement: "topRight",
-        duration: 5,
-      });
+      if (!apiKeyNotifiedRef.current) {
+        apiKeyNotifiedRef.current = true;
+        notification.warning({
+          message: "API key required",
+          description: "You must add an API key from your preferred provider.",
+          placement: "topRight",
+          duration: 5,
+        });
+      }
       setTranslatedText([]);
       return;
     }
+
+    apiKeyNotifiedRef.current = false;
 
     // Always re-translate when text, target lang, source lang, or model change
     debouncedTranslateHandler(text, tl, sl, modelId);
