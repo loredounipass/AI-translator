@@ -228,7 +228,7 @@ function App() {
     fetch("/api/health").then(r => r.json()).catch(() => {});
   }, []);
 
-  const toastTimerRef = React.useRef<ReturnType<typeof setTimeout>>();
+  const toastTimerRef = React.useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
 
   useEffect(() => {
     const toast = sessionStorage.getItem("app_toast");
