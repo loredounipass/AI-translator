@@ -105,8 +105,9 @@ const AuthModal = ({ isOpen, onClose }: AuthModalProps) => {
             return;
         }
 
-        message.success(AUTH_MESSAGES.LOGIN_SUCCESS);
+        message.success(`Welcome back, ${email}`);
         handleClose();
+        setTimeout(() => window.location.reload(), 200);
     };
 
     if (!isOpen) return null;
