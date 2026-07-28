@@ -5,19 +5,6 @@ import { INTERPETERAI_TRAINING_MODULE } from "./interpreter.guide";
 
 const NVIDIA_API_URL = "/api/completions";
 
-const MODEL_API_URLS: Record<string, string> = {
-  mistral: "/api/mixtral",
-  minimax: "/api/minimax",
-};
-
-const getApiUrl = (modelId: string): string => {
-  const lower = modelId.toLowerCase();
-  for (const [pattern, url] of Object.entries(MODEL_API_URLS)) {
-    if (lower.includes(pattern)) return url;
-  }
-  return NVIDIA_API_URL;
-};
-
 const MAX_RETRIES = 3;
 const BASE_DELAY = 1000;
 
@@ -195,7 +182,7 @@ export const translate = async (
 
     try {
       if (options?.onData) {
-        const fetchResponse = await fetch(getApiUrl(modelId), {
+        const fetchResponse = await fetch(NVIDIA_API_URL, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
@@ -298,7 +285,7 @@ export const translate = async (
         return translated;
       } else {
         const response = await axios.post(
-          getApiUrl(modelId),
+          NVIDIA_API_URL,
           {
             model: modelId,
             messages,
