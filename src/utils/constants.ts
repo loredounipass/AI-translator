@@ -55,6 +55,15 @@ export const AI_MODELS: Record<string, AIModel> = {
     apiProvider: "nvidia",
     free: true,
   },
+
+  "nvidia-minimax": {
+    id: "minimaxai/minimax-m2.7",
+    name: "MiniMax M2.7",
+    provider: "MiniMax",
+    apiProvider: "nvidia",
+    free: true,
+  }
+
   // "nvidia-deepseek": {
   //   id: "deepseek-ai/deepseek-v4-flash",
   //   name: "DeepSeek V4 Flash",
