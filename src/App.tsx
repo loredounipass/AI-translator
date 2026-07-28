@@ -97,7 +97,7 @@ const Header = ({
           <div className="font-semibold text-sm sm:text-base md:text-xl text-slate-800 dark:text-slate-100 tracking-tight">
             interpreter AI
           </div>
-          <img src="/favicon.ico" alt="Interpreter AI icon" className="w-6 h-6 sm:w-8 sm:h-8 md:w-10 md:h-10 object-contain" />
+          <img src="/favicon.ico" alt="Interpreter AI icon" className="w-5 h-5 sm:w-7 sm:h-7 md:w-9 md:h-9 object-contain" />
         </div>
 
         <div className="flex items-center gap-1 sm:gap-2">
