@@ -1,16 +1,10 @@
-const CACHE_NAME = 'gta-cache-v1';
-const OFFLINE_URL = '/';
+const CACHE_NAME = 'int-cache-v2';
 
 self.addEventListener('install', (event) => {
   self.skipWaiting();
   event.waitUntil(
     caches.open(CACHE_NAME).then((cache) => {
-      return cache.addAll([
-        OFFLINE_URL,
-        '/index.html',
-      ]).catch(() => {
-        // ignore
-      });
+      return cache.addAll(['/']).catch(() => {});
     })
   );
 });
@@ -18,12 +12,7 @@ self.addEventListener('install', (event) => {
 self.addEventListener('activate', (event) => {
   event.waitUntil(
     caches.keys().then((keys) =>
-      Promise.all(
-        keys.map((key) => {
-          if (key !== CACHE_NAME) return caches.delete(key);
-          return null;
-        })
-      )
+      Promise.all(keys.map((key) => caches.delete(key)))
     )
   );
   self.clients.claim();
@@ -31,19 +20,17 @@ self.addEventListener('activate', (event) => {
 
 self.addEventListener('fetch', (event) => {
   if (event.request.method !== 'GET') return;
-
   if (event.request.url.includes('/api/')) return;
 
   event.respondWith(
-    caches.match(event.request).then((cached) => {
-      if (cached) return cached;
-      return fetch(event.request).then((response) => {
+    fetch(event.request)
+      .then((response) => {
         if (response && response.status === 200 && response.type === 'basic') {
-          const responseClone = response.clone();
-          caches.open(CACHE_NAME).then((cache) => cache.put(event.request, responseClone));
+          const clone = response.clone();
+          caches.open(CACHE_NAME).then((cache) => cache.put(event.request, clone));
         }
         return response;
-      }).catch(() => caches.match(OFFLINE_URL));
-    })
+      })
+      .catch(() => caches.match(event.request))
   );
 });
