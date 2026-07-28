@@ -72,7 +72,7 @@ export const useAuth = () => {
     );
 
     const loginWithEmail = useCallback(
-        async (email: string, password: string): Promise<{ error: string | null; user?: User }> => {
+        async (email: string, password: string): Promise<{ error: string | null; displayName?: string }> => {
             const { data, error } = await supabase.auth.signInWithPassword({
                 email,
                 password,
@@ -82,7 +82,20 @@ export const useAuth = () => {
                 return { error: mapSupabaseError(error) };
             }
 
-            return { error: null, user: data.user };
+            const userId = data.user?.id;
+            let displayName: string | undefined;
+            if (userId) {
+                const { data: profile } = await supabase
+                    .from("user_profiles")
+                    .select("first_name, last_name")
+                    .eq("id", userId)
+                    .single();
+                if (profile?.first_name) {
+                    displayName = `${profile.first_name}${profile.last_name ? ` ${profile.last_name}` : ""}`;
+                }
+            }
+
+            return { error: null, displayName };
         },
         []
     );
