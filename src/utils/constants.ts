@@ -62,6 +62,13 @@ export const AI_MODELS: Record<string, AIModel> = {
     provider: "MiniMax",
     apiProvider: "nvidia",
     free: true,
+  },
+  "nvidia-mistral-small-4": {
+    id: "mistralai/mistral-small-4-119b-2603",
+    name: "Mistral Small 4 (119B)",
+    provider: "Mistral AI",
+    apiProvider: "nvidia",
+    free: true,
   }
 
   // "nvidia-deepseek": {
