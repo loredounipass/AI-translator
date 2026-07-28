@@ -72,8 +72,8 @@ export const useAuth = () => {
     );
 
     const loginWithEmail = useCallback(
-        async (email: string, password: string): Promise<{ error: string | null }> => {
-            const { error } = await supabase.auth.signInWithPassword({
+        async (email: string, password: string): Promise<{ error: string | null; user?: User }> => {
+            const { data, error } = await supabase.auth.signInWithPassword({
                 email,
                 password,
             });
@@ -82,7 +82,7 @@ export const useAuth = () => {
                 return { error: mapSupabaseError(error) };
             }
 
-            return { error: null };
+            return { error: null, user: data.user };
         },
         []
     );

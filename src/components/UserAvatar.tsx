@@ -8,6 +8,7 @@ interface UserAvatarProps {
 }
 
 const md5 = (s: string): string => {
+  const utf8 = new TextEncoder().encode(s);
   const ch = (n: number) => ("0" + ((n >>> 0) & 0xff).toString(16)).slice(-2);
   const rot = (n: number, b: number) => (n << b) | (n >>> (32 - b));
   const add = (a: number, b: number) => (a + b) | 0;
@@ -17,9 +18,8 @@ const md5 = (s: string): string => {
   const I = (x: number, y: number, z: number) => y ^ (x | ~z);
   const K = [0xd76aa478, 0xe8c7b756, 0x242070db, 0xc1bdceee, 0xf57c0faf, 0x4787c62a, 0xa8304613, 0xfd469501, 0x698098d8, 0x8b44f7af, 0xffff5bb1, 0x895cd7be, 0x6b901122, 0xfd987193, 0xa679438e, 0x49b40821, 0xf61e2562, 0xc040b340, 0x265e5a51, 0xe9b6c7aa, 0xd62f105d, 0x02441453, 0xd8a1e681, 0xe7d3fbc8, 0x21e1cde6, 0xc33707d6, 0xf4d50d87, 0x455a14ed, 0xa9e3e905, 0xfcefa3f8, 0x676f02d9, 0x8d2a4c8a, 0xfffa3942, 0x8771f681, 0x6d9d6122, 0xfde5380c, 0xa4beea44, 0x4bdecfa9, 0xf6bb4b60, 0xbebfbc70, 0x289b7ec6, 0xeaa127fa, 0xd4ef3085, 0x04881d05, 0xd9d4d039, 0xe6db99e5, 0x1fa27cf8, 0xc4ac5665, 0xf4292244, 0x432aff97, 0xab9423a7, 0xfc93a039, 0x655b59c3, 0x8f0ccc92, 0xffeff47d, 0x85845dd1, 0x6fa87e4f, 0xfe2ce6e0, 0xa3014314, 0x4e0811a1, 0xf7537e82, 0xbd3af235, 0x2ad7d2bb, 0xeb86d391];
   const S = [7, 12, 17, 22, 7, 12, 17, 22, 7, 12, 17, 22, 7, 12, 17, 22, 5, 9, 14, 20, 5, 9, 14, 20, 5, 9, 14, 20, 5, 9, 14, 20, 4, 11, 16, 23, 4, 11, 16, 23, 4, 11, 16, 23, 4, 11, 16, 23, 6, 10, 15, 21, 6, 10, 15, 21, 6, 10, 15, 21, 6, 10, 15, 21];
-  const bits = (s: string): number[] => { const b: number[] = []; for (let i = 0; i < s.length; i++) b.push(s.charCodeAt(i)); return b; };
-  const pad = (b: number[]): string => { const n = b.length * 8; b.push(0x80); while ((b.length * 8) % 512 !== 448) b.push(0); b.push(...bits(String.fromCharCode(...[n & 0xff, (n >>> 8) & 0xff, (n >>> 16) & 0xff, (n >>> 24) & 0xff, 0, 0, 0, 0]))); return String.fromCharCode(...b); };
-  const data = pad([...bits(unescape(encodeURIComponent(s)))]);
+  const pad = (b: number[]): string => { const n = b.length * 8; const p: number[] = [...b, 0x80]; while ((p.length * 8) % 512 !== 448) p.push(0); p.push(n & 0xff, (n >>> 8) & 0xff, (n >>> 16) & 0xff, (n >>> 24) & 0xff, 0, 0, 0, 0); return String.fromCharCode(...p); };
+  const data = pad([...utf8]);
   let a0 = 0x67452301, b0 = 0xefcdab89, c0 = 0x98badcfe, d0 = 0x10325476;
   for (let i = 0; i < data.length; i += 64) {
     const w: number[] = [];
@@ -52,7 +52,7 @@ const UserAvatar = ({ user, onOpenApiSettings }: UserAvatarProps) => {
     const avatarUrl = typeof rawAvatarUrl === "string" && rawAvatarUrl.startsWith("https://")
         ? rawAvatarUrl
         : !imgError && user.email
-            ? `https://www.gravatar.com/avatar/${md5(user.email.trim().toLowerCase())}?s=200&d=mp`
+            ? `https://www.gravatar.com/avatar/${md5(user.email.trim().toLowerCase())}?s=200&d=identicon`
             : null;
     const userName =
         user.user_metadata?.full_name ||
@@ -88,7 +88,7 @@ const UserAvatar = ({ user, onOpenApiSettings }: UserAvatarProps) => {
                     <img
                         src={avatarUrl}
                         alt={userName}
-                        className="w-full h-full object-cover"
+                        className="w-full h-full object-cover bg-slate-200 dark:bg-slate-600"
                         referrerPolicy="no-referrer"
                         onError={() => setImgError(true)}
                     />

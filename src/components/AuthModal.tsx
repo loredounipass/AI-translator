@@ -81,9 +81,12 @@ const AuthModal = ({ isOpen, onClose }: AuthModalProps) => {
 
         let error: string | null = null;
         let needsVerification = false;
+        let loggedInUser: import("@supabase/supabase-js").User | undefined;
 
         if (mode === "login") {
-            ({ error } = await loginWithEmail(email, password));
+            const result = await loginWithEmail(email, password);
+            error = result.error;
+            loggedInUser = result.user;
         } else {
             const selectedCode = COUNTRY_CODES.find((c) => c.uniqueKey === countryKey);
             const phone = phoneNumber && selectedCode ? `${selectedCode.code}${phoneNumber}` : "";
@@ -105,7 +108,8 @@ const AuthModal = ({ isOpen, onClose }: AuthModalProps) => {
             return;
         }
 
-        sessionStorage.setItem("app_toast", `Welcome back, ${email}`);
+        const name = loggedInUser?.user_metadata?.full_name || loggedInUser?.user_metadata?.name || loggedInUser?.email?.split("@")[0] || "User";
+        sessionStorage.setItem("app_toast", `Welcome back, ${name}`);
         handleClose();
         window.location.reload();
     };
