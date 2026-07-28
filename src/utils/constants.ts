@@ -20,15 +20,6 @@ export const AI_MODELS: Record<string, AIModel> = {
     apiProvider: "nvidia",
     free: true,
   },
-
-  "nvidia-mixtral": {
-    id: "mistralai/mixtral-8x7b-instruct",
-    name: "Mixtral 8x7B Instruct v0.1",
-    provider: "Mistral AI",
-    apiProvider: "nvidia",
-    free: true,
-  },
-
   "nvidia-llama-3.2": {
     id: "meta/llama-3.2-3b-instruct",
     name: "Llama 3.2 3B",
@@ -36,7 +27,6 @@ export const AI_MODELS: Record<string, AIModel> = {
     apiProvider: "nvidia",
     free: true,
   },
-
   "nvidia-nemotron": {
     id: "nvidia/nemotron-3-nano-30b-a3b",
     name: "Nemotron 3 Nano 30B (3B active)",
@@ -58,13 +48,20 @@ export const AI_MODELS: Record<string, AIModel> = {
     apiProvider: "nvidia",
     free: false,
   },
-  "nvidia-deepseek": {
-    id: "deepseek-ai/deepseek-v4-flash",
-    name: "DeepSeek V4 Flash",
-    provider: "DeepSeek",
+  "nvidia-riva-v2": {
+    id: "nvidia/riva-translate-4b-instruct-v2",
+    name: "Riva Translate 4B v2",
+    provider: "NVIDIA",
     apiProvider: "nvidia",
     free: true,
   },
+  // "nvidia-deepseek": {
+  //   id: "deepseek-ai/deepseek-v4-flash",
+  //   name: "DeepSeek V4 Flash",
+  //   provider: "DeepSeek",
+  //   apiProvider: "nvidia",
+  //   free: true,
+  // },
 };
 
 export const DEFAULT_MODEL = "nvidia-nemotron";
