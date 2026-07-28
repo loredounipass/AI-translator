@@ -230,7 +230,10 @@ function App() {
   useEffect(() => {
     const toast = sessionStorage.getItem("app_toast");
     if (!toast) return;
-    if (authLoading) return;
+
+    if (toast === "logged_in" && (authLoading || !user)) return;
+    if (toast === "logged_out" && authLoading) return;
+
     sessionStorage.removeItem("app_toast");
 
     if (toast === "logged_in") {
