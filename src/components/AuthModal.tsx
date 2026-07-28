@@ -81,12 +81,9 @@ const AuthModal = ({ isOpen, onClose }: AuthModalProps) => {
 
         let error: string | null = null;
         let needsVerification = false;
-        let displayName: string | undefined;
 
         if (mode === "login") {
-            const result = await loginWithEmail(email, password);
-            error = result.error;
-            displayName = result.displayName;
+            ({ error } = await loginWithEmail(email, password));
         } else {
             const selectedCode = COUNTRY_CODES.find((c) => c.uniqueKey === countryKey);
             const phone = phoneNumber && selectedCode ? `${selectedCode.code}${phoneNumber}` : "";
@@ -108,8 +105,7 @@ const AuthModal = ({ isOpen, onClose }: AuthModalProps) => {
             return;
         }
 
-        const name = displayName || email.split("@")[0] || "User";
-        sessionStorage.setItem("app_toast", `Welcome back, ${name}`);
+        sessionStorage.setItem("app_toast", "logged_in");
         handleClose();
         window.location.reload();
     };

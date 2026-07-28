@@ -228,12 +228,19 @@ function App() {
   }, []);
 
   useEffect(() => {
-    const msg = sessionStorage.getItem("app_toast");
-    if (msg) {
-      sessionStorage.removeItem("app_toast");
-      message.success(msg);
+    const toast = sessionStorage.getItem("app_toast");
+    if (!toast) return;
+    if (authLoading) return;
+    sessionStorage.removeItem("app_toast");
+
+    if (toast === "logged_in") {
+      const metadata = user?.user_metadata;
+      const name = metadata?.full_name || metadata?.name || undefined;
+      message.success(name ? `Welcome back, ${name}` : "Welcome back");
+    } else if (toast === "logged_out") {
+      message.success("You have been logged out.");
     }
-  }, []);
+  }, [authLoading, user]);
 
   return (
     <Router>
