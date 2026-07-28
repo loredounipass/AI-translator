@@ -228,22 +228,36 @@ function App() {
     fetch("/api/health").then(r => r.json()).catch(() => {});
   }, []);
 
+  const toastTimerRef = React.useRef<ReturnType<typeof setTimeout>>();
+
   useEffect(() => {
     const toast = sessionStorage.getItem("app_toast");
     if (!toast) return;
 
-    if (toast === "logged_in" && (authLoading || !user)) return;
+    if (toast === "logged_in" && (authLoading || !user)) {
+      clearTimeout(toastTimerRef.current);
+      return;
+    }
     if (toast === "logged_out" && authLoading) return;
 
     sessionStorage.removeItem("app_toast");
 
-    if (toast === "logged_in") {
-      const metadata = user?.user_metadata;
-      const name = metadata?.full_name || metadata?.name || undefined;
-      message.success(name ? `Welcome back, ${name}` : "Welcome back");
-    } else if (toast === "logged_out") {
-      message.success("You have been logged out.");
+    const show = () => {
+      if (toast === "logged_in") {
+        const metadata = user?.user_metadata;
+        const name = metadata?.full_name || metadata?.name;
+        message.success(name ? `Welcome back, ${name}` : "Welcome back");
+      } else {
+        message.success("You have been logged out.");
+      }
+    };
+
+    if (toast === "logged_in" && !user) {
+      toastTimerRef.current = setTimeout(show, 800);
+      return;
     }
+
+    show();
   }, [authLoading, user]);
 
   useEffect(() => {
