@@ -92,17 +92,17 @@ const Header = ({
 
   return (
     <>
-      <div className="fixed top-0 left-0 w-full p-4 md:top-4 md:p-0 md:px-8 flex flex-col sm:flex-row items-center justify-between gap-3 z-50 select-none cursor-default bg-white/90 dark:bg-slate-900/90 md:bg-transparent md:dark:bg-transparent backdrop-blur-md md:backdrop-blur-none border-b border-slate-200 dark:border-slate-800 md:border-none md:dark:border-none shadow-sm md:shadow-none transition-all">
-        <div className="flex items-center gap-3">
-          <div className="font-semibold text-lg md:text-xl text-slate-800 dark:text-slate-100 tracking-tight">
+      <div className="fixed top-0 left-0 w-full p-2 sm:p-4 md:top-4 md:p-0 md:px-8 flex flex-col sm:flex-row items-center justify-between gap-1 sm:gap-3 z-50 select-none cursor-default bg-white/90 dark:bg-slate-900/90 md:bg-transparent md:dark:bg-transparent backdrop-blur-md md:backdrop-blur-none border-b border-slate-200 dark:border-slate-800 md:border-none md:dark:border-none shadow-sm md:shadow-none transition-all">
+        <div className="flex items-center gap-2 sm:gap-3">
+          <div className="font-semibold text-sm sm:text-base md:text-xl text-slate-800 dark:text-slate-100 tracking-tight">
             interpreter AI
           </div>
-          <img src="/favicon.ico" alt="Interpreter AI icon" className="w-10 h-10 object-contain" />
+          <img src="/favicon.ico" alt="Interpreter AI icon" className="w-6 h-6 sm:w-8 sm:h-8 md:w-10 md:h-10 object-contain" />
         </div>
 
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-1 sm:gap-2">
           <div className="relative flex items-center gap-1.5 group">
-            <span className="text-xs text-slate-500 dark:text-slate-400 font-medium tracking-wide">AI model</span>
+            <span className="hidden sm:inline text-xs text-slate-500 dark:text-slate-400 font-medium tracking-wide">AI model</span>
             <div className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-300 cursor-help transition-colors">
               <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                 <circle cx="12" cy="12" r="10"></circle>
@@ -298,7 +298,7 @@ function App() {
           <Route
             path="/"
             element={
-              <div className="text-center text-[#111111] dark:text-slate-100 h-[calc(100vh-8rem)] md:h-[calc(90vh-1rem)] w-[95%] md:w-[97%] bg-white dark:bg-slate-800 rounded-2xl mx-auto mt-28 md:mt-[10vh] overflow-hidden flex flex-col font-sans shadow-lg border border-slate-200/50 dark:border-slate-700/50 transition-colors duration-200">
+              <div className="text-center text-[#111111] dark:text-slate-100 h-[calc(100vh-4rem)] sm:h-[calc(100vh-8rem)] md:h-[calc(90vh-1rem)] w-[95%] md:w-[97%] bg-white dark:bg-slate-800 rounded-2xl mx-auto mt-16 sm:mt-20 md:mt-[10vh] overflow-hidden flex flex-col font-sans shadow-lg border border-slate-200/50 dark:border-slate-700/50 transition-colors duration-200">
                 <LanguagesBar />
                 <div className="flex-1 flex flex-col md:flex-row overflow-hidden">
                   <TranslationTextField />
