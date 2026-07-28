@@ -186,6 +186,12 @@ const TranslatedText = () => {
     if (keysLoading || !keysLoaded) return;
 
     if (!apiKeyRef.current) {
+      notification.warning({
+        message: "API key required",
+        description: "You must add an API key from your preferred provider.",
+        placement: "topRight",
+        duration: 5,
+      });
       setTranslatedText([]);
       return;
     }
