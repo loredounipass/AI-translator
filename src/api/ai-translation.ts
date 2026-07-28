@@ -5,6 +5,21 @@ import { INTERPETERAI_TRAINING_MODULE } from "./interpreter.guide";
 
 const NVIDIA_API_URL = "/api/completions";
 
+const MODEL_API_URLS: Record<string, string> = {
+  mistral: "https://integrate.api.nvidia.com/v1/chat/completions",
+  minimax: "https://integrate.api.nvidia.com/v1",
+};
+
+const getApiUrl = (modelId: string): string => {
+  const lower = modelId.toLowerCase();
+  for (const [pattern, url] of Object.entries(MODEL_API_URLS)) {
+    if (lower.includes(pattern)) return url;
+  }
+  return NVIDIA_API_URL;
+};
+
+const isDirectApiCall = (modelId: string): boolean => getApiUrl(modelId) !== NVIDIA_API_URL;
+
 const MAX_RETRIES = 3;
 const BASE_DELAY = 1000;
 
@@ -182,18 +197,27 @@ export const translate = async (
 
     try {
       if (options?.onData) {
-        const fetchResponse = await fetch(NVIDIA_API_URL, {
+        const apiUrl = getApiUrl(modelId);
+        const directCall = isDirectApiCall(modelId);
+        const headers: Record<string, string> = { "Content-Type": "application/json" };
+        if (directCall && options?.apiKey) {
+          headers["Authorization"] = `Bearer ${options.apiKey}`;
+        }
+        const body: Record<string, unknown> = {
+          model: modelId,
+          messages,
+          temperature: dynamicTemperature,
+          max_tokens: 4096,
+          stream: true,
+        };
+        if (!directCall) {
+          (body as any).apiKey = options?.apiKey;
+          (body as any).provider = options?.provider;
+        }
+        const fetchResponse = await fetch(apiUrl, {
           method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            model: modelId,
-            messages: messages,
-            temperature: dynamicTemperature,
-            max_tokens: 4096,
-            stream: true,
-            apiKey: options?.apiKey,
-            provider: options?.provider,
-          }),
+          headers,
+          body: JSON.stringify(body),
           signal: options?.signal,
         });
 
@@ -284,24 +308,27 @@ export const translate = async (
         translationCache.set(cacheKey, translated);
         return translated;
       } else {
-        const response = await axios.post(
-          NVIDIA_API_URL,
-          {
-            model: modelId,
-            messages: messages,
-            temperature: dynamicTemperature,
-            max_tokens: 4096,
-            stream: false,
-            apiKey: options?.apiKey,
-            provider: options?.provider,
-          },
-          {
-            headers: {
-              "Content-Type": "application/json",
-            },
-            signal: options?.signal,
-          }
-        );
+        const apiUrl = getApiUrl(modelId);
+        const directCall = isDirectApiCall(modelId);
+        const headers: Record<string, string> = { "Content-Type": "application/json" };
+        if (directCall && options?.apiKey) {
+          headers["Authorization"] = `Bearer ${options.apiKey}`;
+        }
+        const body: Record<string, unknown> = {
+          model: modelId,
+          messages,
+          temperature: dynamicTemperature,
+          max_tokens: 4096,
+          stream: false,
+        };
+        if (!directCall) {
+          (body as any).apiKey = options?.apiKey;
+          (body as any).provider = options?.provider;
+        }
+        const response = await axios.post(apiUrl, body, {
+          headers,
+          signal: options?.signal,
+        });
 
         const rawContent = response.data?.choices?.[0]?.message?.content?.trim();
         if (!rawContent) throw new Error("No se recibió traducción del modelo");
