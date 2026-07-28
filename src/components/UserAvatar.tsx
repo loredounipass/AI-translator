@@ -1,7 +1,6 @@
 import { useState, useRef, useEffect } from "react";
 import type { User } from "@supabase/supabase-js";
 import { useAuth } from "hooks/useAuth";
-import { message } from "antd";
 
 interface UserAvatarProps {
     user: User;
@@ -126,8 +125,8 @@ const UserAvatar = ({ user, onOpenApiSettings }: UserAvatarProps) => {
                             onClick={() => {
                                 logout();
                                 setOpen(false);
-                                message.success("You have been logged out.");
-                                setTimeout(() => window.location.reload(), 200);
+                                sessionStorage.setItem("app_toast", "You have been logged out.");
+                                window.location.reload();
                             }}
                             className="w-full flex items-center gap-2 px-3 py-2 text-sm text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-colors"
                         >
