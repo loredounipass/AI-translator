@@ -1,6 +1,7 @@
 import React from "react";
 import { useSearchParams } from "react-router-dom";
 import axios from "axios";
+import { notification } from "antd";
 import { translate } from "api/ai-translation";
 import CopyIcon from "assets/CopyIcon";
 import { DEFAULT_SOURCE_LANGUAGE, DEFAULT_TARGET_LANGUAGE, DEFAULT_MODEL, AI_MODELS } from "utils/constants";
@@ -172,6 +173,12 @@ const TranslatedText = () => {
     if (authLoading) return;
 
     if (!userRef.current) {
+      notification.warning({
+        message: "Authentication required",
+        description: "You must be authenticated to use the translation agent.",
+        placement: "topRight",
+        duration: 4,
+      });
       setTranslatedText([]);
       return;
     }
