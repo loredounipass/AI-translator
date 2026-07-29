@@ -1,4 +1,5 @@
 const https = require("https");
+const { Readable } = require("stream");
 
 const allowedOrigins = [
   "https://interpreter1-sooty.vercel.app",
@@ -7,160 +8,113 @@ const allowedOrigins = [
   "http://localhost:3002",
 ];
 
+function setCors(res, origin) {
+  if (allowedOrigins.includes(origin)) {
+    res.setHeader("Access-Control-Allow-Origin", origin);
+  } else if (origin) {
+    res.setHeader("Access-Control-Allow-Origin", "*");
+  }
+  res.setHeader("Access-Control-Allow-Methods", "POST, OPTIONS");
+  res.setHeader("Access-Control-Allow-Headers", "Content-Type, Authorization");
+}
+
 module.exports = async (req, res) => {
-  const requestId = "req-" + Date.now().toString(36);
-  console.log(`[${requestId}] ===== ASR Request Received =====`);
-  console.log(`[${requestId}] Method:`, req.method);
-  console.log(`[${requestId}] Content-Type:`, req.headers["content-type"] || "not set");
-  console.log(`[${requestId}] Origin:`, req.headers.origin || "not set");
+  const origin = req.headers.origin || "";
+  setCors(res, origin);
+
+  if (req.method === "OPTIONS") {
+    return res.status(200).end();
+  }
+
+  if (req.method !== "POST") {
+    return res.status(405).json({ error: "Method not allowed" });
+  }
 
   try {
-    const origin = req.headers.origin || "";
-    if (allowedOrigins.includes(origin)) {
-      res.setHeader("Access-Control-Allow-Origin", origin);
-    } else if (origin) {
-      res.setHeader("Access-Control-Allow-Origin", "*");
-    }
-    res.setHeader("Access-Control-Allow-Methods", "POST, OPTIONS");
-    res.setHeader("Access-Control-Allow-Headers", "Content-Type, Authorization");
-
-    if (req.method === "OPTIONS") {
-      console.log(`[${requestId}] OPTIONS preflight — returning 200`);
-      return res.status(200).end();
-    }
-
-    if (req.method !== "POST") {
-      console.log(`[${requestId}] Method not allowed:`, req.method);
-      return res.status(405).json({ error: "Method not allowed" });
-    }
-
     const contentType = req.headers["content-type"] || "";
-    let apiKey = "";
-    let audio = "";
-    let language = "multi";
-    let mime = "audio/wav";
-
-    console.log(`[${requestId}] Content-Type:`, contentType);
+    let bodyObj;
 
     if (contentType.includes("application/json")) {
-      console.log(`[${requestId}] Parsing JSON body`);
-      try {
-        let body;
-        if (typeof req.body === "string") {
-          console.log(`[${requestId}] req.body is a string, parsing JSON...`);
-          body = JSON.parse(req.body);
-        } else if (req.body && typeof req.body === "object") {
-          console.log(`[${requestId}] req.body is already a parsed object`);
-          body = req.body;
-        } else {
-          console.log(`[${requestId}] ERROR: req.body is empty/undefined/null`);
-          return res.status(400).json({ error: "Empty request body" });
-        }
-        console.log(`[${requestId}] Parsed body keys:`, Object.keys(body));
-        apiKey = body.apiKey || "";
-        audio = body.audio || "";
-        language = body.language || "multi";
-        mime = body.mime || "audio/wav";
-        console.log(`[${requestId}] apiKey present:`, !!apiKey, "audio present:", !!audio, "language:", language, "mime:", mime);
-      } catch (e) {
-        console.error(`[${requestId}] ERROR parsing JSON body:`, e.message);
-        return res.status(400).json({ error: "Invalid JSON body: " + e.message });
-      }
-    } else {
-      console.log(`[${requestId}] Non-JSON content-type, trying fallback form-data parsing`);
-      const boundary = contentType.includes("boundary=")
-        ? contentType.split("boundary=")[1].split(";")[0]
-        : null;
-
-      if (!boundary) {
-        console.log(`[${requestId}] ERROR: No boundary found in content-type`);
-        return res.status(400).json({ error: "Unsupported content-type and no boundary found" });
-      }
-
-      const body = req.body || "";
-      const parts = body.split("--" + boundary);
-      console.log(`[${requestId}] Form-data parts found:`, parts.length);
-
-      for (const part of parts) {
-        if (part.includes('name="apiKey"')) {
-          const match = part.match(/name="apiKey"(?:[^]*?)\r\n\r\n([^\r\n]*)/);
-          if (match) apiKey = match[1];
-        } else if (part.includes('name="audio"')) {
-          const match = part.match(/name="audio"(?:[^]*?)\r\n\r\n([^\r\n]*)/);
-          if (match) audio = match[1];
-        } else if (part.includes('name="language"')) {
-          const match = part.match(/name="language"(?:[^]*?)\r\n\r\n([^\r\n]*)/);
-          if (match) language = match[1];
+      bodyObj =
+        typeof req.body === "string" && req.body.length > 0
+          ? JSON.parse(req.body)
+          : req.body && typeof req.body === "object"
+          ? req.body
+          : null;
+    } else if (contentType.includes("multipart/form-data")) {
+      const boundary = contentType.includes("boundary=") ? contentType.split("boundary=")[1].split(";")[0] : null;
+      if (boundary) {
+        const raw = req.body || "";
+        const parts = raw.split("--" + boundary);
+        bodyObj = { apiKey: "", audio: "", language: "multi", mime: "audio/wav" };
+        for (const part of parts) {
+          if (part.includes('name="apiKey"')) {
+            const m = part.match(/name="apiKey"(?:[^]*?)\r\n\r\n([^\r\n]*)/);
+            if (m) bodyObj.apiKey = m[1];
+          } else if (part.includes('name="audio"')) {
+            const m = part.match(/name="audio"(?:[^]*?)\r\n\r\n([^\r\n]*)/);
+            if (m) bodyObj.audio = m[1];
+          } else if (part.includes('name="language"')) {
+            const m = part.match(/name="language"(?:[^]*?)\r\n\r\n([^\r\n]*)/);
+            if (m) bodyObj.language = m[1];
+          } else if (part.includes('name="mime"')) {
+            const m = part.match(/name="mime"(?:[^]*?)\r\n\r\n([^\r\n]*)/);
+            if (m) bodyObj.mime = m[1];
+          }
         }
       }
-      console.log(`[${requestId}] After form-data parse: apiKey=${!!apiKey}, audio=${!!audio}, language=${language}`);
     }
 
-    if (!apiKey) {
-      console.log(`[${requestId}] ERROR: No API key provided`);
+    if (!bodyObj) {
+      return res.status(400).json({ error: "Unable to parse request body" });
+    }
+
+    bodyObj._type = "asr";
+
+    console.log("[asr] Forwarding ASR request to completions handler, mime:", bodyObj.mime || "not set");
+
+    const provider = "nvidia";
+    if (!bodyObj.apiKey) {
       return res.status(401).json({ error: "NVIDIA API key requerida para ASR" });
     }
-    console.log(`[${requestId}] API key present: true (first 8 chars: ${apiKey.substring(0, 8)})`);
 
+    const { audio, language, mime } = bodyObj;
     if (!audio) {
-      console.log(`[${requestId}] ERROR: No audio data provided`);
-      return res.status(400).json({ error: "audio es requerido" });
-    }
-    console.log(`[${requestId}] Audio data present: true, length:`, audio.length);
-
-    const lang = language || "multi";
-    const contentType = mime;
-    const ext = contentType.includes("webm") ? "webm" : contentType.includes("ogg") ? "ogg" : "wav";
-    console.log(`[${requestId}] Language:`, lang, "mime:", contentType, "ext:", ext);
-
-    console.log(`[${requestId}] Decoding base64 audio...`);
-    let audioBuffer;
-    try {
-      audioBuffer = Buffer.from(audio, "base64");
-      console.log(`[${requestId}] Audio buffer size:`, audioBuffer.length, "bytes");
-    } catch (e) {
-      console.error(`[${requestId}] ERROR decoding base64 audio:`, e.message);
-      return res.status(400).json({ error: "Unable to decode audio data: " + e.message });
+      return res.status(400).json({ error: "audio (base64) es requerido" });
     }
 
+    const audioBuffer = Buffer.from(audio, "base64");
     const boundary = "----ASR" + Date.now().toString(36);
-    console.log(`[${requestId}] Building multipart request to NVIDIA, ext:`, ext);
+    const lang = language || "multi";
+    const contentType = mime || "audio/wav";
+    const ext = contentType.includes("webm") ? "webm" : contentType.includes("ogg") ? "ogg" : "wav";
 
     let body = "";
     body += `--${boundary}\r\nContent-Disposition: form-data; name="model"\r\n\r\nnvidia/parakeet-1.1b-rnnt-multilingual-asr\r\n`;
     body += `--${boundary}\r\nContent-Disposition: form-data; name="language"\r\n\r\n${lang}\r\n`;
     body += `--${boundary}\r\nContent-Disposition: form-data; name="file"; filename="audio.${ext}"\r\nContent-Type: ${contentType}\r\n\r\n`;
     const bodyBuffer = Buffer.concat([Buffer.from(body, "utf-8"), audioBuffer, Buffer.from(`\r\n--${boundary}--\r\n`, "utf-8")]);
-    console.log(`[${requestId}] Multipart body total size:`, bodyBuffer.length);
 
     const options = {
       hostname: "integrate.api.nvidia.com",
       path: "/v1/audio/transcriptions",
       method: "POST",
       headers: {
-        Authorization: `Bearer ${apiKey}`,
+        Authorization: `Bearer ${bodyObj.apiKey}`,
         "Content-Type": `multipart/form-data; boundary=${boundary}`,
         "Content-Length": bodyBuffer.length,
-        "User-Agent": "AI-translator/1.0",
       },
     };
 
-    console.log(`[${requestId}] Sending request to NVIDIA API...`);
     const { statusCode, raw } = await new Promise((resolve, reject) => {
       const proxyReq = https.request(options, (proxyRes) => {
-        console.log(`[${requestId}] NVIDIA API response status:`, proxyRes.statusCode);
         const chunks = [];
         proxyRes.on("data", (c) => chunks.push(c));
         proxyRes.on("end", () => {
-          const rawStr = Buffer.concat(chunks).toString();
-          console.log(`[${requestId}] NVIDIA response raw (first 500):`, rawStr.substring(0, 500));
-          resolve({ statusCode: proxyRes.statusCode, raw: rawStr });
+          resolve({ statusCode: proxyRes.statusCode, raw: Buffer.concat(chunks).toString() });
         });
       });
-      proxyReq.on("error", (err) => {
-        console.error(`[${requestId}] NVIDIA request error:`, err.message);
-        reject(err);
-      });
+      proxyReq.on("error", reject);
       proxyReq.setTimeout(15000, () => {
         proxyReq.destroy();
         reject(new Error("ASR request timed out"));
@@ -168,20 +122,12 @@ module.exports = async (req, res) => {
       proxyReq.end(bodyBuffer);
     });
 
-    console.log(`[${requestId}] NVIDIA API status:`, statusCode);
-    console.log(`[${requestId}] Attempting JSON parse of NVIDIA response...`);
-
     try {
-      const jsonData = JSON.parse(raw);
-      console.log(`[${requestId}] JSON parsed successfully. Keys:`, Object.keys(jsonData));
-      return res.status(statusCode).json(jsonData);
-    } catch (e) {
-      console.error(`[${requestId}] ERROR: NVIDIA response is not valid JSON:`, raw.substring(0, 500));
+      return res.status(statusCode).json(JSON.parse(raw));
+    } catch {
       return res.status(statusCode).send(raw);
     }
   } catch (err) {
-    console.error(`[${requestId}] UNCAUGHT ERROR in ASR handler:`, err.message);
-    console.error(`[${requestId}] Stack:`, err.stack);
     return res.status(502).json({ error: "ASR proxy error: " + (err instanceof Error ? err.message : String(err)) });
   }
 };
