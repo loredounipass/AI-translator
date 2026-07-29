@@ -24,9 +24,16 @@ export const useAiSpeechToText = (
 
   const toggleAiStt = useCallback(() => setAiStt(!isAiStt), [isAiStt, setAiStt]);
 
+  const stopRecording = useCallback(() => {
+    if (mediaRecorderRef.current?.state !== "inactive") mediaRecorderRef.current?.stop();
+    if (streamRef.current) { streamRef.current.getTracks().forEach((t) => t.stop()); streamRef.current = null; }
+    mediaRecorderRef.current = null;
+    setIsRecording(false);
+  }, []);
+
   const sendAudioChunk = useCallback(async (blob: Blob) => {
     const apiKey = getKey("nvidia");
-    if (!apiKey) { setError("No NVIDIA API key"); return; }
+    if (!apiKey) { setError("No NVIDIA API key"); stopRecording(); return; }
     setIsProcessing(true);
     try {
       const buffer = await blob.arrayBuffer();
@@ -35,19 +42,26 @@ export const useAiSpeechToText = (
       for (let i = 0; i < bytes.length; i++) binary += String.fromCharCode(bytes[i]);
       const base64 = btoa(binary);
 
-      const lang = _sourceLang || "multi";
+      const lang = "multi";
+      const mime = blob.type;
 
       const res = await fetch("/api/asr", {
         method: "POST",
         headers: { "Content-Type": "application/json", "x-nvidia-api-key": apiKey },
-        body: JSON.stringify({ audio: base64, language: lang }),
+        body: JSON.stringify({ audio: base64, language: lang, mime }),
       });
 
       const data = await res.json();
-      if (data.text) onChunk(data.text);
+      if (data.text) {
+        setError(null);
+        onChunk(data.text);
+      } else {
+        setError(data.detail || data.error || "ASR request failed");
+        stopRecording();
+      }
     } catch { setError("ASR request failed"); }
     finally { setIsProcessing(false); }
-  }, [getKey, onChunk, _sourceLang]);
+  }, [getKey, onChunk, stopRecording]);
 
   const startRecording = useCallback(async () => {
     setError(null);
@@ -70,13 +84,6 @@ export const useAiSpeechToText = (
       setIsRecording(true);
     } catch { setError("Microphone access denied"); }
   }, [sendAudioChunk]);
-
-  const stopRecording = useCallback(() => {
-    if (mediaRecorderRef.current?.state !== "inactive") mediaRecorderRef.current?.stop();
-    if (streamRef.current) { streamRef.current.getTracks().forEach((t) => t.stop()); streamRef.current = null; }
-    mediaRecorderRef.current = null;
-    setIsRecording(false);
-  }, []);
 
   useEffect(() => () => stopRecording(), [stopRecording]);
 

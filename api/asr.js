@@ -10,7 +10,7 @@ module.exports = async (req, res) => {
     return res.status(401).json({ error: "NVIDIA API key requerida" });
   }
 
-  const { audio, language } = req.body || {};
+  const { audio, language, mime } = req.body || {};
   if (!audio) {
     return res.status(400).json({ error: "audio (base64) es requerido" });
   }
@@ -18,12 +18,14 @@ module.exports = async (req, res) => {
   const audioBuffer = Buffer.from(audio, "base64");
   const boundary = "----ASR" + Date.now().toString(36);
   const lang = language || "multi";
+  const model = "nvidia/parakeet-1.1b-rnnt-multilingual-asr";
+  const contentType = mime || "audio/wav";
+  const ext = contentType.includes("webm") ? "webm" : contentType.includes("ogg") ? "ogg" : "wav";
 
   let body = "";
-  if (lang) {
-    body += `--${boundary}\r\nContent-Disposition: form-data; name="language"\r\n\r\n${lang}\r\n`;
-  }
-  body += `--${boundary}\r\nContent-Disposition: form-data; name="file"; filename="audio.wav"\r\nContent-Type: audio/wav\r\n\r\n`;
+  body += `--${boundary}\r\nContent-Disposition: form-data; name="model"\r\n\r\n${model}\r\n`;
+  body += `--${boundary}\r\nContent-Disposition: form-data; name="language"\r\n\r\n${lang}\r\n`;
+  body += `--${boundary}\r\nContent-Disposition: form-data; name="file"; filename="audio.${ext}"\r\nContent-Type: ${contentType}\r\n\r\n`;
   const bodyBuffer = Buffer.concat([
     Buffer.from(body, "utf-8"),
     audioBuffer,
@@ -48,15 +50,15 @@ module.exports = async (req, res) => {
       const raw = Buffer.concat(chunks).toString();
       try {
         const data = JSON.parse(raw);
-        res.status(proxyRes.statusCode).json(data);
+        return res.status(proxyRes.statusCode).json(data);
       } catch {
-        res.status(proxyRes.statusCode).send(raw);
+        return res.status(proxyRes.statusCode).send(raw);
       }
     });
   });
 
   proxyReq.on("error", (err) => {
-    res.status(500).json({ error: "ASR proxy error: " + err.message });
+    return res.status(502).json({ error: "ASR proxy error: " + err.message });
   });
 
   proxyReq.end(bodyBuffer);
