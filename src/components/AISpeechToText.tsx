@@ -1,4 +1,5 @@
 import React from "react";
+import { Select } from "antd";
 import MicIcon from "../assets/MicIcon";
 import PauseIcon from "../assets/PauseIcon";
 
@@ -10,7 +11,13 @@ interface AISpeechToTextProps {
   error: string | null;
   onStartRecording: () => void;
   onStopRecording: () => void;
+  selectedModel: string;
+  onModelChange: (model: string) => void;
 }
+
+const AI_MODELS = [
+  { value: "nvidia/nemotron-3-nano-omni-30b-a3b-reasoning", label: "Nemotron Omni 30B" },
+];
 
 const AISpeechToText = ({
   aiEnabled,
@@ -20,6 +27,8 @@ const AISpeechToText = ({
   error,
   onStartRecording,
   onStopRecording,
+  selectedModel,
+  onModelChange,
 }: AISpeechToTextProps) => {
   return (
     <div className="flex items-center gap-2">
@@ -50,6 +59,18 @@ const AISpeechToText = ({
       <span className="text-[#333] dark:text-slate-300 text-xs whitespace-nowrap">
         AI STT
       </span>
+      
+      {aiEnabled && (
+        <Select
+          value={selectedModel}
+          onChange={onModelChange}
+          options={AI_MODELS}
+          size="small"
+          className="w-40 ml-1 text-xs"
+          popupMatchSelectWidth={false}
+          disabled={isRecording || isProcessing}
+        />
+      )}
 
       {aiEnabled && (
         <>

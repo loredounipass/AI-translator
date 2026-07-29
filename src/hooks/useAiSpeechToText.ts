@@ -60,6 +60,9 @@ export const useAiSpeechToText = (
   const [isAiStt, setIsAiStt] = useState(() => {
     try { return localStorage.getItem(STORAGE_KEY) === "true"; } catch { return false; }
   });
+  const [selectedModel, setSelectedModel] = useState(() => {
+    try { return localStorage.getItem("aiSttModel") || "nvidia/nemotron-3-nano-omni-30b-a3b-reasoning"; } catch { return "nvidia/nemotron-3-nano-omni-30b-a3b-reasoning"; }
+  });
   const [isRecording, setIsRecording] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -70,6 +73,11 @@ export const useAiSpeechToText = (
   const setAiStt = useCallback((value: boolean) => {
     setIsAiStt(value);
     try { localStorage.setItem(STORAGE_KEY, value ? "true" : "false"); } catch {}
+  }, []);
+
+  const handleSetModel = useCallback((model: string) => {
+    setSelectedModel(model);
+    try { localStorage.setItem("aiSttModel", model); } catch {}
   }, []);
 
   const toggleAiStt = useCallback(() => setAiStt(!isAiStt), [isAiStt, setAiStt]);
@@ -101,7 +109,7 @@ export const useAiSpeechToText = (
       const res = await fetch("/api/completions", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ _type: "asr", apiKey, audio: base64, language: "multi", mime: mimeType, model: "nvidia/nemotron-3-nano-omni-30b-a3b-reasoning" }),
+        body: JSON.stringify({ _type: "asr", apiKey, audio: base64, language: "multi", mime: mimeType, model: selectedModel }),
       });
 
       console.log("[useAiSpeechToText:sendAudioChunk] Respuesta del servidor — status:", res.status, "ok:", res.ok);
@@ -143,7 +151,7 @@ export const useAiSpeechToText = (
       console.log("[useAiSpeechToText:sendAudioChunk] Finalizado — isProcessing=false");
       setIsProcessing(false);
     }
-  }, [getKey, onChunk, stopRecording]);
+  }, [getKey, onChunk, stopRecording, selectedModel]);
 
   const startRecording = useCallback(async () => {
     setError(null);
@@ -173,5 +181,5 @@ export const useAiSpeechToText = (
 
   useEffect(() => () => stopRecording(), [stopRecording]);
 
-  return { isAiStt, setAiStt, toggleAiStt, isRecording, isProcessing, error, startRecording, stopRecording };
+  return { isAiStt, setAiStt, toggleAiStt, isRecording, isProcessing, error, startRecording, stopRecording, selectedModel, setSelectedModel: handleSetModel };
 };

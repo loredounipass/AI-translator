@@ -529,6 +529,8 @@ const TranslationTextField = () => {
           error={aiStt.error}
           onStartRecording={aiStt.startRecording}
           onStopRecording={aiStt.stopRecording}
+          selectedModel={aiStt.selectedModel}
+          onModelChange={aiStt.setSelectedModel}
         />
         {!aiStt.isAiStt && browserSupportsSpeechRecognition && (
           <div className="flex items-center gap-2">
