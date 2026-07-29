@@ -38,6 +38,7 @@ module.exports = async (req, res) => {
     let apiKey = "";
     let audio = "";
     let language = "multi";
+    let mime = "audio/wav";
 
     console.log(`[${requestId}] Content-Type:`, contentType);
 
@@ -59,7 +60,8 @@ module.exports = async (req, res) => {
         apiKey = body.apiKey || "";
         audio = body.audio || "";
         language = body.language || "multi";
-        console.log(`[${requestId}] apiKey present:`, !!apiKey, "audio present:", !!audio, "language:", language);
+        mime = body.mime || "audio/wav";
+        console.log(`[${requestId}] apiKey present:`, !!apiKey, "audio present:", !!audio, "language:", language, "mime:", mime);
       } catch (e) {
         console.error(`[${requestId}] ERROR parsing JSON body:`, e.message);
         return res.status(400).json({ error: "Invalid JSON body: " + e.message });
@@ -107,7 +109,9 @@ module.exports = async (req, res) => {
     console.log(`[${requestId}] Audio data present: true, length:`, audio.length);
 
     const lang = language || "multi";
-    console.log(`[${requestId}] Language:`, lang);
+    const contentType = mime;
+    const ext = contentType.includes("webm") ? "webm" : contentType.includes("ogg") ? "ogg" : "wav";
+    console.log(`[${requestId}] Language:`, lang, "mime:", contentType, "ext:", ext);
 
     console.log(`[${requestId}] Decoding base64 audio...`);
     let audioBuffer;
@@ -120,25 +124,13 @@ module.exports = async (req, res) => {
     }
 
     const boundary = "----ASR" + Date.now().toString(36);
-    console.log(`[${requestId}] Building multipart request to NVIDIA with boundary:`, boundary);
+    console.log(`[${requestId}] Building multipart request to NVIDIA, ext:`, ext);
 
-    const headers = [
-      `--${boundary}`,
-      'Content-Disposition: form-data; name="model"',
-      "",
-      "nvidia/parakeet-1.1b-rnnt-multilingual-asr",
-      `--${boundary}`,
-      'Content-Disposition: form-data; name="language"',
-      "",
-      lang,
-      `--${boundary}`,
-      'Content-Disposition: form-data; name="file"; filename="audio.wav"',
-      "Content-Type: audio/wav",
-      "",
-    ].join("\r\n");
-
-    const closing = `\r\n--${boundary}--\r\n`;
-    const bodyBuffer = Buffer.concat([Buffer.from(headers, "utf-8"), audioBuffer, Buffer.from(closing, "utf-8")]);
+    let body = "";
+    body += `--${boundary}\r\nContent-Disposition: form-data; name="model"\r\n\r\nnvidia/parakeet-1.1b-rnnt-multilingual-asr\r\n`;
+    body += `--${boundary}\r\nContent-Disposition: form-data; name="language"\r\n\r\n${lang}\r\n`;
+    body += `--${boundary}\r\nContent-Disposition: form-data; name="file"; filename="audio.${ext}"\r\nContent-Type: ${contentType}\r\n\r\n`;
+    const bodyBuffer = Buffer.concat([Buffer.from(body, "utf-8"), audioBuffer, Buffer.from(`\r\n--${boundary}--\r\n`, "utf-8")]);
     console.log(`[${requestId}] Multipart body total size:`, bodyBuffer.length);
 
     const options = {

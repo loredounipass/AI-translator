@@ -1,9 +1,18 @@
 {
   "rewrites": [
-    { "source": "/api/(.*)", "destination": "/api/$1" },
+    { "source": "/api/asr", "destination": "/api/asr.js" },
+    { "source": "/api/completions", "destination": "/api/completions.js" },
     { "source": "/(.*)", "destination": "/index.html" }
   ],
   "headers": [
+    {
+      "source": "/api/(.*)",
+      "headers": [
+        { "key": "Access-Control-Allow-Origin", "value": "*" },
+        { "key": "Access-Control-Allow-Methods", "value": "POST, OPTIONS" },
+        { "key": "Access-Control-Allow-Headers", "value": "Content-Type, Authorization" }
+      ]
+    },
     {
       "source": "/(.*)",
       "headers": [
@@ -16,8 +25,7 @@
     }
   ],
   "functions": {
-    "api/asr.js": {
-      "maxDuration": 30
-    }
+    "api/asr.js": { "maxDuration": 30 },
+    "api/completions.js": { "maxDuration": 60 }
   }
 }
