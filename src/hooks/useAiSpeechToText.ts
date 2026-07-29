@@ -13,7 +13,8 @@ const STORAGE_KEY = "aiSttEnabled";
  * cleans up the temporary AudioContext.
  */
 const blobToWavBase64 = async (blob: Blob): Promise<string> => {
-  const audioContext = new (window.AudioContext || (window as any).webkitAudioContext)();
+  const AudioCtx = (window.AudioContext || (window as any).webkitAudioContext) as any;
+  const audioContext = new AudioCtx({ sampleRate: 16000 });
   try {
     const arrayBuffer = await blob.arrayBuffer();
     const audioBuffer = await audioContext.decodeAudioData(arrayBuffer);
@@ -325,7 +326,15 @@ export const useAiSpeechToText = (
   const startRecording = useCallback(async () => {
     setError(null);
     try {
-      const micStream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      const micStream = await navigator.mediaDevices.getUserMedia({
+        audio: {
+          sampleRate: 16000,
+          channelCount: 1,
+          echoCancellation: true,
+          noiseSuppression: true,
+          autoGainControl: true
+        }
+      });
       streamRef.current = micStream;
 
       let finalStream = micStream;
@@ -338,7 +347,16 @@ export const useAiSpeechToText = (
           const isStreamActive = displayStream && displayStream.getTracks().some(t => t.readyState === 'live');
 
           if (!isStreamActive) {
-            displayStream = await navigator.mediaDevices.getDisplayMedia({ audio: true, video: true });
+            displayStream = await navigator.mediaDevices.getDisplayMedia({
+              audio: {
+                sampleRate: 16000,
+                channelCount: 1,
+                echoCancellation: false,
+                noiseSuppression: false,
+                autoGainControl: false
+              },
+              video: true
+            });
             displayStreamRef.current = displayStream;
           }
 
@@ -347,7 +365,7 @@ export const useAiSpeechToText = (
           } else if (displayStream) {
             // Mix the two streams
             const AudioCtx = (window as any).AudioContext || (window as any).webkitAudioContext;
-            const mixCtx = new AudioCtx();
+            const mixCtx = new AudioCtx({ sampleRate: 16000 });
             mixAudioContextRef.current = mixCtx;
             
             if (mixCtx.state === 'suspended') {
