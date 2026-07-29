@@ -212,7 +212,19 @@ CRITICAL RULES:
                 data = JSON.parse(proxyBody.toString());
                 
                 if (isAsr && data.choices && data.choices[0]) {
-                  data = { text: (data.choices[0].message?.content || "").trim() };
+                  let transcribed = (data.choices[0].message?.content || "").trim();
+                  
+                  // Filter out AI meta-commentary
+                  const metaPatterns = [
+                    /^we need to/i, /^the user gave/i, /^there'?s no speech/i,
+                    /^no (?:speech|audio|sound)/i, /return empty string/i,
+                    /not provided/i, /no audio content/i, /no transcri/i,
+                    /I (?:can'?t|cannot|don'?t) (?:hear|detect|find)/i,
+                    /the audio (?:is|appears|seems) (?:empty|silent|blank)/i,
+                  ];
+                  if (metaPatterns.some(p => p.test(transcribed))) transcribed = "";
+                  
+                  data = { text: transcribed };
                 }
                 
                 // Store successful requests in cache

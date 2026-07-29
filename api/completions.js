@@ -157,7 +157,26 @@ CRITICAL RULES:
 
       // Extract transcribed text from chat completion response
       if (statusCode === 200 && parsed.choices && parsed.choices[0]) {
-        const transcribedText = (parsed.choices[0].message?.content || "").trim();
+        let transcribedText = (parsed.choices[0].message?.content || "").trim();
+        
+        // Filter out AI meta-commentary (model "thinking out loud" instead of transcribing)
+        const metaPatterns = [
+          /^we need to/i,
+          /^the user gave/i,
+          /^there'?s no speech/i,
+          /^no (?:speech|audio|sound)/i,
+          /return empty string/i,
+          /not provided/i,
+          /no audio content/i,
+          /no transcri/i,
+          /I (?:can'?t|cannot|don'?t) (?:hear|detect|find)/i,
+          /the audio (?:is|appears|seems) (?:empty|silent|blank)/i,
+        ];
+        
+        if (metaPatterns.some(p => p.test(transcribedText))) {
+          transcribedText = "";
+        }
+        
         return res.status(200).json({ text: transcribedText });
       }
 
