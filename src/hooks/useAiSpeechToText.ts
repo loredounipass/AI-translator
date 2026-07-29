@@ -54,12 +54,11 @@ export const useAiSpeechToText = (
       const lang = "multi";
       const mime = blob.type;
 
-      console.log("[useAiSpeechToText:sendAudioChunk] Enviando POST a /api/completions con lang=" + lang + " mime=" + mime);
-      const res = await fetch("/api/completions", {
+      console.log("[useAiSpeechToText:sendAudioChunk] Enviando POST a /api/asr con lang=" + lang + " mime=" + mime);
+      const res = await fetch("/api/asr", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          _type: "asr",
           apiKey,
           audio: base64,
           language: lang,

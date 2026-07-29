@@ -79,19 +79,34 @@ module.exports = async (req, res) => {
     ]);
 
     try {
-      const nvidiaRes = await fetch("https://integrate.api.nvidia.com/v1/audio/transcriptions", {
+      const options = {
+        hostname: "integrate.api.nvidia.com",
+        path: "/v1/audio/transcriptions",
         method: "POST",
         headers: {
           Authorization: `Bearer ${apiKey}`,
           "Content-Type": `multipart/form-data; boundary=${boundary}`,
+          "Content-Length": bodyBuffer.length,
         },
-        body: bodyBuffer,
+      };
+
+      const { statusCode, raw } = await new Promise((resolve, reject) => {
+        const proxyReq = https.request(options, (proxyRes) => {
+          const chunks = [];
+          proxyRes.on("data", (c) => chunks.push(c));
+          proxyRes.on("end", () => {
+            resolve({ statusCode: proxyRes.statusCode, raw: Buffer.concat(chunks).toString() });
+          });
+        });
+        proxyReq.on("error", reject);
+        proxyReq.setTimeout(15000, () => { proxyReq.destroy(); reject(new Error("ASR request timed out")); });
+        proxyReq.end(bodyBuffer);
       });
-      const body = await nvidiaRes.text();
-      try { return res.status(nvidiaRes.status).json(JSON.parse(body)); }
-      catch { return res.status(nvidiaRes.status).send(body); }
+
+      try { return res.status(statusCode).json(JSON.parse(raw)); }
+      catch { return res.status(statusCode).send(raw); }
     } catch (err) {
-      return res.status(502).json({ error: "ASR proxy error: " + err.message });
+      return res.status(502).json({ error: "ASR proxy error: " + (err instanceof Error ? err.message : String(err)) });
     }
   }
 
