@@ -7,6 +7,15 @@ const allowedOrigins = [
   "http://localhost:3002",
 ];
 
+const https = require("https");
+
+const allowedOrigins = [
+  "https://interpreter1-sooty.vercel.app",
+  "http://localhost:3000",
+  "http://localhost:3001",
+  "http://localhost:3002",
+];
+
 module.exports = async (req, res) => {
   try {
     const origin = req.headers.origin || "";
