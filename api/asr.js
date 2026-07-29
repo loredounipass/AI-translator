@@ -40,28 +40,36 @@ module.exports = async (req, res) => {
       } catch (e) {
         return res.status(400).json({ error: "Invalid JSON body" });
       }
-    } else if (contentType.includes('multipart/form-data')) {
+    } else {
       const boundary = contentType.includes('boundary=') 
         ? contentType.split('boundary=')[1].split(';')[0]
-        : `----ASR${Date.now().toString(36)}`;
+        : null;
 
-      const parts = req.body.split(`\r\n`);
+      const body = req.body;
+      const sections = body.split(new RegExp(`(--${boundary}|\r\n\r\n)`));
       let inSection = null;
-      for (let i = 0; i < parts.length; i++) {
-        if (parts[i].includes('Content-Disposition:')) {
-          if (parts[i].includes('name="apiKey"')) inSection = 'apiKey';
-          else if (parts[i].includes('name="audio"')) inSection = 'audio';
-          else if (parts[i].includes('name="language"')) inSection = 'language';
-          else inSection = null;
-        } else if (inSection) {
-          if (inSection === 'apiKey') apiKey = parts[i];
-          else if (inSection === 'audio') audio = parts[i];
-          else if (inSection === 'language') language = parts[i];
+      for (let i = 1; i < sections.length; i++) {
+        const section = sections[i];
+        if (!section) continue;
+        
+        const lines = section.split('\r\n');
+        if (lines[0].includes('Content-Disposition:')) {
+          if (lines[0].includes('name="apiKey"')) {
+            inSection = 'apiKey';
+          } else if (lines[0].includes('name="audio"')) {
+            inSection = 'audio';
+          } else if (lines[0].includes('name="language"')) {
+            inSection = 'language';
+          } else {
+            inSection = null;
+          }
+        } else if (inSection && lines.length > 0 && lines[0]) {
+          if (inSection === 'apiKey') apiKey = lines[0];
+          else if (inSection === 'audio') audio = lines[0];
+          else if (inSection === 'language') language = lines[0];
           inSection = null;
         }
       }
-    } else {
-      return res.status(400).json({ error: "Unsupported content-type: " + contentType });
     }
 
     if (!apiKey) {
