@@ -77,38 +77,51 @@ module.exports = async (req, res) => {
       return res.status(401).json({ error: "NVIDIA API key requerida para ASR" });
     }
 
-   const model = req.body.model || "nvidia/parakeet-1.1b-rnnt-multilingual-asr";
+    const model = req.body.model || "microsoft/phi-4-multimodal-instruct";
 
-   const { audio, language, mime } = req.body;
-   if (!audio) {
-     return res.status(400).json({ error: "audio (base64) es requerido" });
-   }
+    const { audio, language, mime } = req.body;
+    if (!audio) {
+      return res.status(400).json({ error: "audio (base64) es requerido" });
+    }
 
-   const audioBuffer = Buffer.from(audio, "base64");
-   const boundary = "----ASR" + Date.now().toString(36);
-   const lang = language || "multi";
-   const contentType = mime || "audio/wav";
-   const ext = contentType.includes("webm") ? "webm" : contentType.includes("ogg") ? "ogg" : "wav";
+    const lang = language || "multi";
+    const contentType = mime || "audio/wav";
 
-   let body = "";
-   body += `--${boundary}\r\nContent-Disposition: form-data; name="model"\r\n\r\n${model}\r\n`;
-    body += `--${boundary}\r\nContent-Disposition: form-data; name="language"\r\n\r\n${lang}\r\n`;
-    body += `--${boundary}\r\nContent-Disposition: form-data; name="file"; filename="audio.${ext}"\r\nContent-Type: ${contentType}\r\n\r\n`;
-    const bodyBuffer = Buffer.concat([
-      Buffer.from(body, "utf-8"),
-      audioBuffer,
-      Buffer.from(`\r\n--${boundary}--\r\n`, "utf-8"),
-    ]);
+    // Use multimodal chat completions endpoint (cloud-compatible)
+    const langInstruction = lang === "multi"
+      ? "Detect the language automatically."
+      : `The audio is in ${lang}.`;
+
+    const chatBody = JSON.stringify({
+      model,
+      messages: [
+        {
+          role: "system",
+          content: `You are a speech-to-text transcription engine. Transcribe the audio exactly as spoken. Output ONLY the transcribed text, nothing else. No explanations, no formatting, no quotes. ${langInstruction}`
+        },
+        {
+          role: "user",
+          content: [
+            {
+              type: "audio_url",
+              audio_url: { url: `data:${contentType};base64,${audio}` }
+            }
+          ]
+        }
+      ],
+      max_tokens: 1024,
+      temperature: 0
+    });
 
     try {
       const options = {
         hostname: "integrate.api.nvidia.com",
-        path: "/v1/audio/transcriptions",
+        path: "/v1/chat/completions",
         method: "POST",
         headers: {
           Authorization: `Bearer ${apiKey}`,
-          "Content-Type": `multipart/form-data; boundary=${boundary}`,
-          "Content-Length": bodyBuffer.length,
+          "Content-Type": "application/json",
+          "Content-Length": Buffer.byteLength(chatBody),
         },
       };
 
@@ -121,12 +134,22 @@ module.exports = async (req, res) => {
           });
         });
         proxyReq.on("error", reject);
-        proxyReq.setTimeout(15000, () => { proxyReq.destroy(); reject(new Error("ASR request timed out")); });
-        proxyReq.end(bodyBuffer);
+        proxyReq.setTimeout(30000, () => { proxyReq.destroy(); reject(new Error("ASR request timed out")); });
+        proxyReq.end(chatBody);
       });
 
-      try { return res.status(statusCode).json(JSON.parse(raw)); }
-      catch { return res.status(statusCode).send(raw); }
+      let parsed;
+      try { parsed = JSON.parse(raw); } catch {
+        return res.status(statusCode).send(raw);
+      }
+
+      // Extract transcribed text from chat completion response
+      if (statusCode === 200 && parsed.choices && parsed.choices[0]) {
+        const transcribedText = (parsed.choices[0].message?.content || "").trim();
+        return res.status(200).json({ text: transcribedText });
+      }
+
+      return res.status(statusCode).json(parsed);
     } catch (err) {
       return res.status(502).json({ error: "ASR proxy error: " + (err instanceof Error ? err.message : String(err)) });
     }
