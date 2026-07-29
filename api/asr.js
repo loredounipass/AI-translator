@@ -48,6 +48,16 @@ module.exports = async (req, res) => {
         const proxyReq = https.request(options, (proxyRes) => {
           const chunks = [];
           proxyRes.on("data", (c) => chunks.push(c));
+          proxyRes.on("close", () => {
+            if (chunks.length === 0 && proxyRes.statusCode === undefined) {
+              reject(new Error("Connection closed without response"));
+            } else {
+              resolve({
+                statusCode: proxyRes.statusCode || 0,
+                raw: Buffer.concat(chunks).toString(),
+              });
+            }
+          });
           proxyRes.on("end", () => {
             resolve({
               statusCode: proxyRes.statusCode,
@@ -56,9 +66,12 @@ module.exports = async (req, res) => {
           });
         });
         proxyReq.on("error", (err) => reject(new Error("HTTPS error: " + err.message)));
-        proxyReq.setTimeout(20000, () => {
-          proxyReq.destroy();
-          reject(new Error("ASR request timed out after 20s"));
+        proxyReq.on("socket", (socket) => {
+          socket.on("error", (err) => reject(new Error("Socket error: " + err.message)));
+          socket.setTimeout(20000, () => {
+            socket.destroy();
+            reject(new Error("Socket timeout"));
+          });
         });
         proxyReq.end(bodyBuffer);
       });
