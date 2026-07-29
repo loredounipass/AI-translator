@@ -9,6 +9,8 @@ interface AISpeechToTextProps {
   isRecording: boolean;
   isProcessing: boolean;
   isVoiceActive: boolean;
+  captureSystemAudio: boolean;
+  onToggleSystemAudio: () => void;
   error: string | null;
   onStartRecording: () => void;
   onStopRecording: () => void;
@@ -26,6 +28,8 @@ const AISpeechToText = ({
   isRecording,
   isProcessing,
   isVoiceActive,
+  captureSystemAudio,
+  onToggleSystemAudio,
   error,
   onStartRecording,
   onStopRecording,
@@ -72,6 +76,19 @@ const AISpeechToText = ({
           popupMatchSelectWidth={false}
           disabled={isRecording || isProcessing}
         />
+      )}
+
+      {aiEnabled && (
+        <label className="flex items-center gap-1 cursor-pointer ml-1 text-xs text-[#333] dark:text-slate-300 hover:text-blue-500 transition-colors" title="Capturar audio interno de Zoom/Llamadas">
+          <input 
+            type="checkbox" 
+            checked={captureSystemAudio} 
+            onChange={onToggleSystemAudio} 
+            disabled={isRecording || isProcessing}
+            className="cursor-pointer"
+          />
+          Mix System Audio
+        </label>
       )}
 
       {aiEnabled && (

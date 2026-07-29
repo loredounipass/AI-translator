@@ -108,10 +108,13 @@ export const useAiSpeechToText = (
   const [isRecording, setIsRecording] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
   const [isVoiceActive, setIsVoiceActive] = useState(false);
+  const [captureSystemAudio, setCaptureSystemAudio] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const streamRef = useRef<MediaStream | null>(null);
+  const displayStreamRef = useRef<MediaStream | null>(null);
+  const mixAudioContextRef = useRef<AudioContext | null>(null);
   const { getKey } = useApiKey();
 
   // VAD refs
@@ -203,6 +206,11 @@ export const useAiSpeechToText = (
       try { audioContextRef.current.close(); } catch {}
       audioContextRef.current = null;
     }
+    
+    if (mixAudioContextRef.current) {
+      try { mixAudioContextRef.current.close(); } catch {}
+      mixAudioContextRef.current = null;
+    }
 
     // Stop MediaRecorder — this triggers ondataavailable with the full recording
     const recorder = mediaRecorderRef.current;
@@ -215,6 +223,11 @@ export const useAiSpeechToText = (
       streamRef.current.getTracks().forEach((t) => t.stop());
       streamRef.current = null;
     }
+    if (displayStreamRef.current) {
+      displayStreamRef.current.getTracks().forEach((t) => t.stop());
+      displayStreamRef.current = null;
+    }
+    
     mediaRecorderRef.current = null;
     setIsRecording(false);
   }, [stopVAD]);
@@ -311,8 +324,37 @@ export const useAiSpeechToText = (
   const startRecording = useCallback(async () => {
     setError(null);
     try {
-      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-      streamRef.current = stream;
+      const micStream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      streamRef.current = micStream;
+      
+      let finalStream = micStream;
+      
+      // If system audio capture is requested, try to mix it
+      if (captureSystemAudio) {
+        try {
+          const displayStream = await navigator.mediaDevices.getDisplayMedia({ audio: true, video: true });
+          displayStreamRef.current = displayStream;
+          
+          if (displayStream.getAudioTracks().length === 0) {
+            message.warning("No compartiste el audio del sistema. Grabando solo micrófono.");
+          } else {
+            // Mix the two streams
+            const AudioCtx = (window as any).AudioContext || (window as any).webkitAudioContext;
+            const mixCtx = new AudioCtx();
+            mixAudioContextRef.current = mixCtx;
+            
+            const dest = mixCtx.createMediaStreamDestination();
+            
+            mixCtx.createMediaStreamSource(micStream).connect(dest);
+            mixCtx.createMediaStreamSource(displayStream).connect(dest);
+            
+            finalStream = dest.stream;
+          }
+        } catch (err) {
+          console.warn("Failed to get display media:", err);
+          message.warning("Captura de sistema cancelada o fallida. Grabando solo micrófono.");
+        }
+      }
 
       // Choose best available MIME type
       let mimeType = "audio/webm;codecs=opus";
@@ -323,7 +365,7 @@ export const useAiSpeechToText = (
       const recorderOptions: MediaRecorderOptions = {};
       if (mimeType) recorderOptions.mimeType = mimeType;
 
-      const recorder = new MediaRecorder(stream, recorderOptions);
+      const recorder = new MediaRecorder(finalStream, recorderOptions);
       mediaRecorderRef.current = recorder;
 
       // Only fires when recorder.stop() is called (no timeslice)
@@ -339,15 +381,15 @@ export const useAiSpeechToText = (
       recorder.start();
       setIsRecording(true);
 
-      // Start VAD for voice detection feedback
-      startVAD(stream);
+      // Start VAD on the final mixed stream
+      startVAD(finalStream);
 
       console.log("[AI-STT:start] Recording started (continuous, send on stop), mime:", mimeType || "default");
     } catch {
       setError("Microphone access denied");
       message.error("No se pudo acceder al micrófono");
     }
-  }, [sendAudioChunk, startVAD]);
+  }, [sendAudioChunk, startVAD, captureSystemAudio]);
 
   // If AI STT is toggled off while recording, stop
   useEffect(() => {
@@ -360,6 +402,7 @@ export const useAiSpeechToText = (
   return {
     isAiStt, setAiStt, toggleAiStt,
     isRecording, isProcessing, isVoiceActive,
+    captureSystemAudio, setCaptureSystemAudio,
     error, startRecording, stopRecording,
     selectedModel, setSelectedModel: handleSetModel,
   };
