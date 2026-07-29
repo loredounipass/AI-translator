@@ -48,10 +48,10 @@ export const useAiSpeechToText = (
       const mimeType = blob.type || "audio/webm";
       console.log("[useAiSpeechToText:sendAudioChunk] Base64 generado — length:", base64.length, "mime:", mimeType);
 
-      const res = await fetch("/api/asr", {
+      const res = await fetch("/api/completions", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ apiKey, audio: base64, language: "multi", mime: mimeType }),
+        body: JSON.stringify({ _type: "asr", apiKey, audio: base64, language: "multi", mime: mimeType }),
       });
 
       console.log("[useAiSpeechToText:sendAudioChunk] Respuesta del servidor — status:", res.status, "ok:", res.ok);
