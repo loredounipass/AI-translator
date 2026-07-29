@@ -63,6 +63,13 @@ export const AI_MODELS: Record<string, AIModel> = {
   //   apiProvider: "nvidia",
   //   free: true,
   // },
+  "nvidia-asr-parakeet": {
+    id: "nvidia/parakeet-1.1b-rnnt-multilingual-asr",
+    name: "Parakeet RNNT 1.1B (ASR)",
+    provider: "NVIDIA",
+    apiProvider: "nvidia",
+    free: false,
+  },
 };
 
 export const DEFAULT_MODEL = "nvidia-nemotron";
