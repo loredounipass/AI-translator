@@ -77,7 +77,7 @@ module.exports = async (req, res) => {
       return res.status(401).json({ error: "NVIDIA API key requerida para ASR" });
     }
 
-    const model = req.body.model || "microsoft/phi-4-multimodal-instruct";
+    const model = req.body.model || "nvidia/nemotron-3-nano-omni-30b-a3b-reasoning";
 
     const { audio, language, mime } = req.body;
     if (!audio) {

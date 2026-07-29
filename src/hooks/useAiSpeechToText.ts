@@ -51,7 +51,7 @@ export const useAiSpeechToText = (
       const res = await fetch("/api/completions", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ _type: "asr", apiKey, audio: base64, language: "multi", mime: mimeType, model: "microsoft/phi-4-multimodal-instruct" }),
+        body: JSON.stringify({ _type: "asr", apiKey, audio: base64, language: "multi", mime: mimeType, model: "nvidia/nemotron-3-nano-omni-30b-a3b-reasoning" }),
       });
 
       console.log("[useAiSpeechToText:sendAudioChunk] Respuesta del servidor — status:", res.status, "ok:", res.ok);
