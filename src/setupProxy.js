@@ -60,9 +60,13 @@ module.exports = function (app) {
 
       let apiKey = "";
       let cleanBody = bodyStr;
+      let isAsr = false;
+      let parsedBody = null;
       try {
-        const parsedBody = JSON.parse(bodyStr);
+        parsedBody = JSON.parse(bodyStr);
         apiKey = parsedBody.apiKey || "";
+        isAsr = parsedBody._type === "asr";
+        
         if (apiKey) {
           const { apiKey: _, ...rest } = parsedBody;
           cleanBody = JSON.stringify(rest);
@@ -70,6 +74,49 @@ module.exports = function (app) {
       } catch (e) {
         // Ignored
       }
+
+      if (!apiKey) {
+        res.status(401).json({ error: "API key requerida" });
+        return;
+      }
+
+      if (isAsr && parsedBody) {
+        const model = parsedBody.model || "nvidia/nemotron-3-nano-omni-30b-a3b-reasoning";
+        const { audio, language, mime } = parsedBody;
+        if (!audio) return res.status(400).json({ error: "audio is required" });
+        
+        const lang = language || "multi";
+        const cleanContentType = (mime || "audio/wav").split(';')[0];
+        
+        const langInstruction = lang === "multi" ? "Detect the spoken language automatically." : `The spoken language is ${lang}.`;
+        
+        cleanBody = JSON.stringify({
+          model,
+          messages: [
+            {
+              role: "system",
+              content: `You are a highly precise speech-to-text transcription engine.
+Your ONLY task is to transcribe the audio exactly as spoken.
+${langInstruction}
+
+CRITICAL RULES:
+1. Output ONLY the transcribed text.
+2. NO explanations, NO formatting (no markdown, no bold), NO quotes around the text.
+3. DO NOT add any conversational filler.
+4. If there is no speech, return an empty string.`
+            },
+            {
+              role: "user",
+              content: [
+                { type: "audio_url", audio_url: { url: `data:${cleanContentType};base64,${audio}` } }
+              ]
+            }
+          ],
+          max_tokens: 1024,
+          temperature: 0
+        });
+      }
+
 
       if (!apiKey) {
         res.status(401).json({ error: "API key requerida — proporciona tu propia key de NVIDIA" });
@@ -159,6 +206,11 @@ module.exports = function (app) {
               
               if (proxyRes.statusCode === 200) {
                 data = JSON.parse(proxyBody.toString());
+                
+                if (isAsr && data.choices && data.choices[0]) {
+                  data = { text: (data.choices[0].message?.content || "").trim() };
+                }
+                
                 // Store successful requests in cache
                 cache.set(cacheKey, {
                   statusCode: proxyRes.statusCode,

@@ -2,60 +2,114 @@ import { useState, useRef, useCallback, useEffect } from "react";
 import { useApiKey } from "../contexts/ApiKeyContext";
 
 const STORAGE_KEY = "aiSttEnabled";
+const CHUNK_INTERVAL_MS = 3000; // Send audio every 3 seconds for real-time transcription
 
+/**
+ * Convert an audio Blob to a mono WAV base64 string.
+ * Forces mono downmix, uses efficient base64 encoding, and properly
+ * cleans up the temporary AudioContext.
+ */
 const blobToWavBase64 = async (blob: Blob): Promise<string> => {
   const audioContext = new (window.AudioContext || (window as any).webkitAudioContext)();
-  const arrayBuffer = await blob.arrayBuffer();
-  const audioBuffer = await audioContext.decodeAudioData(arrayBuffer);
-  
-  const numOfChan = audioBuffer.numberOfChannels;
-  const length = audioBuffer.length * numOfChan * 2 + 44;
-  const buffer = new ArrayBuffer(length);
-  const view = new DataView(buffer);
-  
-  const writeString = (view: DataView, offset: number, string: string) => {
-    for (let i = 0; i < string.length; i++) {
-      view.setUint8(offset + i, string.charCodeAt(i));
+  try {
+    const arrayBuffer = await blob.arrayBuffer();
+    const audioBuffer = await audioContext.decodeAudioData(arrayBuffer);
+
+    // BUG 2 FIX: Always downmix to mono for reliable WAV encoding
+    const numChannels = audioBuffer.numberOfChannels;
+    const sampleRate = audioBuffer.sampleRate;
+    const monoLength = audioBuffer.length;
+    const monoData = new Float32Array(monoLength);
+
+    if (numChannels === 1) {
+      monoData.set(audioBuffer.getChannelData(0));
+    } else {
+      // Average all channels into mono
+      for (let ch = 0; ch < numChannels; ch++) {
+        const channelData = audioBuffer.getChannelData(ch);
+        for (let i = 0; i < monoLength; i++) {
+          monoData[i] += channelData[i] / numChannels;
+        }
+      }
     }
-  };
-  
-  writeString(view, 0, 'RIFF');
-  view.setUint32(4, 36 + audioBuffer.length * numOfChan * 2, true);
-  writeString(view, 8, 'WAVE');
-  writeString(view, 12, 'fmt ');
-  view.setUint32(16, 16, true);
-  view.setUint16(20, 1, true);
-  view.setUint16(22, numOfChan, true);
-  view.setUint32(24, audioBuffer.sampleRate, true);
-  view.setUint32(28, audioBuffer.sampleRate * 2 * numOfChan, true);
-  view.setUint16(32, numOfChan * 2, true);
-  view.setUint16(34, 16, true);
-  writeString(view, 36, 'data');
-  view.setUint32(40, audioBuffer.length * numOfChan * 2, true);
-  
-  const offset = 44;
-  for (let i = 0; i < numOfChan; i++) {
-    const channelData = audioBuffer.getChannelData(i);
-    let pos = offset + (i * 2);
-    for (let j = 0; j < audioBuffer.length; j++) {
-      let sample = Math.max(-1, Math.min(1, channelData[j]));
-      sample = sample < 0 ? sample * 0x8000 : sample * 0x7FFF;
-      view.setInt16(pos, sample, true);
-      pos += numOfChan * 2;
+
+    // Build WAV header + data (mono, 16-bit PCM)
+    const dataLength = monoLength * 2; // 16-bit = 2 bytes per sample
+    const bufferLength = 44 + dataLength;
+    const wavBuffer = new ArrayBuffer(bufferLength);
+    const view = new DataView(wavBuffer);
+
+    const writeString = (offset: number, str: string) => {
+      for (let i = 0; i < str.length; i++) {
+        view.setUint8(offset + i, str.charCodeAt(i));
+      }
+    };
+
+    // RIFF header
+    writeString(0, 'RIFF');
+    view.setUint32(4, 36 + dataLength, true);
+    writeString(8, 'WAVE');
+
+    // fmt sub-chunk
+    writeString(12, 'fmt ');
+    view.setUint32(16, 16, true);          // Subchunk1Size (PCM = 16)
+    view.setUint16(20, 1, true);           // AudioFormat (PCM = 1)
+    view.setUint16(22, 1, true);           // NumChannels (mono = 1)
+    view.setUint32(24, sampleRate, true);   // SampleRate
+    view.setUint32(28, sampleRate * 2, true); // ByteRate (SampleRate * NumChannels * BitsPerSample/8)
+    view.setUint16(32, 2, true);           // BlockAlign (NumChannels * BitsPerSample/8)
+    view.setUint16(34, 16, true);          // BitsPerSample
+
+    // data sub-chunk
+    writeString(36, 'data');
+    view.setUint32(40, dataLength, true);
+
+    // Write mono PCM samples (interleaving is trivial for mono)
+    let offset = 44;
+    for (let i = 0; i < monoLength; i++) {
+      const sample = Math.max(-1, Math.min(1, monoData[i]));
+      const int16 = sample < 0 ? sample * 0x8000 : sample * 0x7FFF;
+      view.setInt16(offset, int16, true);
+      offset += 2;
+    }
+
+    // BUG 6 FIX: Efficient base64 conversion using chunked approach
+    const bytes = new Uint8Array(wavBuffer);
+    const chunkSize = 8192;
+    const parts: string[] = [];
+    for (let i = 0; i < bytes.length; i += chunkSize) {
+      const chunk = bytes.subarray(i, Math.min(i + chunkSize, bytes.length));
+      let binaryChunk = "";
+      for (let j = 0; j < chunk.length; j++) {
+        binaryChunk += String.fromCharCode(chunk[j]);
+      }
+      parts.push(binaryChunk);
+    }
+    return btoa(parts.join(""));
+  } finally {
+    // BUG 5 FIX: Always close the temporary AudioContext to prevent leaks
+    try {
+      await audioContext.close();
+    } catch {
+      // Already closed — safe to ignore
     }
   }
-  
-  const bytes = new Uint8Array(buffer);
-  let binary = "";
-  for (let i = 0; i < bytes.byteLength; i++) {
-    binary += String.fromCharCode(bytes[i]);
-  }
-  return btoa(binary);
+};
+
+/**
+ * Determine if an error is fatal (should stop recording) vs transient (should retry).
+ */
+const isFatalError = (errorMsg: string): boolean => {
+  const fatalPatterns = [
+    "API key", "api key", "401", "403", "Unauthorized", "Forbidden",
+    "key requerida", "Invalid", "invalid",
+  ];
+  return fatalPatterns.some(p => errorMsg.includes(p));
 };
 
 export const useAiSpeechToText = (
   onChunk: (text: string) => void,
-  _sourceLang: string
+  sourceLang: string // BUG 3 FIX: Renamed from _sourceLang — now actually used
 ) => {
   const [isAiStt, setIsAiStt] = useState(() => {
     try { return localStorage.getItem(STORAGE_KEY) === "true"; } catch { return false; }
@@ -68,6 +122,7 @@ export const useAiSpeechToText = (
   const [error, setError] = useState<string | null>(null);
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const streamRef = useRef<MediaStream | null>(null);
+  const processingCountRef = useRef<number>(0);
   const { getKey } = useApiKey();
 
   const setAiStt = useCallback((value: boolean) => {
@@ -82,13 +137,15 @@ export const useAiSpeechToText = (
 
   const toggleAiStt = useCallback(() => setAiStt(!isAiStt), [isAiStt, setAiStt]);
 
+  // BUG 12 FIX: Safe stopRecording that checks state properly
   const stopRecording = useCallback(() => {
-    if (mediaRecorderRef.current?.state !== "inactive") {
-      try { mediaRecorderRef.current?.stop(); } catch (e) {}
+    const recorder = mediaRecorderRef.current;
+    if (recorder && recorder.state !== "inactive") {
+      try { recorder.stop(); } catch { /* already stopped */ }
     }
-    if (streamRef.current) { 
-      streamRef.current.getTracks().forEach((t) => t.stop()); 
-      streamRef.current = null; 
+    if (streamRef.current) {
+      streamRef.current.getTracks().forEach((t) => t.stop());
+      streamRef.current = null;
     }
     mediaRecorderRef.current = null;
     setIsRecording(false);
@@ -96,42 +153,61 @@ export const useAiSpeechToText = (
 
   const sendAudioChunk = useCallback(async (blob: Blob) => {
     const apiKey = getKey("nvidia");
-    console.log("[useAiSpeechToText:sendAudioChunk] Inicio — blob size:", blob.size, "mime:", blob.type);
-    if (!apiKey) { console.log("[useAiSpeechToText:sendAudioChunk] No NVIDIA API key"); setError("No NVIDIA API key"); stopRecording(); return; }
-    console.log("[useAiSpeechToText:sendAudioChunk] API key encontrada (primeros 8 chars):", apiKey.substring(0, 8));
+    console.log("[AI-STT:sendChunk] blob size:", blob.size, "mime:", blob.type);
 
+    if (!apiKey) {
+      console.error("[AI-STT:sendChunk] No NVIDIA API key");
+      setError("No NVIDIA API key");
+      stopRecording();
+      return;
+    }
+
+    // Skip very small blobs (likely silence)
+    if (blob.size < 1000) {
+      console.log("[AI-STT:sendChunk] Skipping tiny blob (likely silence)");
+      return;
+    }
+
+    processingCountRef.current += 1;
     setIsProcessing(true);
     try {
       const base64 = await blobToWavBase64(blob);
       const mimeType = "audio/wav";
-      console.log("[useAiSpeechToText:sendAudioChunk] Base64 generado — length:", base64.length, "mime:", mimeType);
+      console.log("[AI-STT:sendChunk] WAV base64 length:", base64.length);
+
+      // BUG 3 FIX: Pass actual source language instead of hardcoded "multi"
+      const lang = sourceLang || "multi";
 
       const res = await fetch("/api/completions", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ _type: "asr", apiKey, audio: base64, language: "multi", mime: mimeType, model: selectedModel }),
+        body: JSON.stringify({
+          _type: "asr",
+          apiKey,
+          audio: base64,
+          language: lang,
+          mime: mimeType,
+          model: selectedModel,
+        }),
       });
 
-      console.log("[useAiSpeechToText:sendAudioChunk] Respuesta del servidor — status:", res.status, "ok:", res.ok);
+      console.log("[AI-STT:sendChunk] Response status:", res.status);
 
       const responseText = await res.text();
-      console.log("[useAiSpeechToText:sendAudioChunk] Respuesta raw (primeros 300):", responseText.substring(0, 300));
-
       let data;
       try {
         data = JSON.parse(responseText);
-        console.log("[useAiSpeechToText:sendAudioChunk] Respuesta JSON parseada:", JSON.stringify(data).substring(0, 300));
-      } catch (parseError) {
-        console.error("[useAiSpeechToText:sendAudioChunk] ERROR: Respuesta no es JSON válido:", responseText.substring(0, 500));
-        throw new Error(`Invalid JSON response from server (status ${res.status}): ${responseText.substring(0, 300)}`);
+      } catch {
+        console.error("[AI-STT:sendChunk] Invalid JSON response:", responseText.substring(0, 300));
+        throw new Error(`Invalid JSON response (status ${res.status})`);
       }
 
       if (data.text) {
-        console.log("[useAiSpeechToText:sendAudioChunk] Transcripción recibida:", data.text.substring(0, 100));
+        console.log("[AI-STT:sendChunk] Transcription:", data.text.substring(0, 100));
         setError(null);
         onChunk(data.text);
       } else {
-        let errorMsg = "ASR request failed (sin texto en respuesta)";
+        let errorMsg = "ASR: no text in response";
         if (data.error) {
           errorMsg = typeof data.error === 'object' ? data.error.message || JSON.stringify(data.error) : data.error;
         } else if (data.detail) {
@@ -139,19 +215,32 @@ export const useAiSpeechToText = (
         } else if (data.message) {
           errorMsg = data.message;
         }
-        console.error("[useAiSpeechToText:sendAudioChunk] ERROR: Sin texto en respuesta:", errorMsg);
+        console.error("[AI-STT:sendChunk] Error:", errorMsg);
         setError(errorMsg);
-        stopRecording();
+
+        // BUG 4 FIX: Only stop recording on fatal errors, not transient ones
+        if (isFatalError(errorMsg)) {
+          console.error("[AI-STT:sendChunk] Fatal error — stopping recording");
+          stopRecording();
+        }
       }
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : String(err);
-      console.error("[useAiSpeechToText:sendAudioChunk] ERROR en fetch/request:", errorMessage, err);
+      console.error("[AI-STT:sendChunk] Fetch error:", errorMessage);
       setError("ASR failed: " + errorMessage);
+
+      // BUG 4 FIX: Don't stop recording on transient network errors
+      if (isFatalError(errorMessage)) {
+        stopRecording();
+      }
     } finally {
-      console.log("[useAiSpeechToText:sendAudioChunk] Finalizado — isProcessing=false");
-      setIsProcessing(false);
+      processingCountRef.current -= 1;
+      if (processingCountRef.current <= 0) {
+        processingCountRef.current = 0;
+        setIsProcessing(false);
+      }
     }
-  }, [getKey, onChunk, stopRecording, selectedModel]);
+  }, [getKey, onChunk, stopRecording, selectedModel, sourceLang]);
 
   const startRecording = useCallback(async () => {
     setError(null);
@@ -159,10 +248,24 @@ export const useAiSpeechToText = (
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
       streamRef.current = stream;
 
-      const mimeType = MediaRecorder.isTypeSupported("audio/webm;codecs=opus")
-        ? "audio/webm;codecs=opus" : "audio/webm";
+      // BUG 10 FIX: Add Safari/iOS fallback MIME types
+      let mimeType = "audio/webm;codecs=opus";
+      if (!MediaRecorder.isTypeSupported(mimeType)) {
+        mimeType = "audio/webm";
+      }
+      if (!MediaRecorder.isTypeSupported(mimeType)) {
+        mimeType = "audio/mp4"; // Safari fallback
+      }
+      if (!MediaRecorder.isTypeSupported(mimeType)) {
+        mimeType = ""; // Let browser choose default
+      }
 
-      const recorder = new MediaRecorder(stream, { mimeType });
+      const recorderOptions: MediaRecorderOptions = {};
+      if (mimeType) {
+        recorderOptions.mimeType = mimeType;
+      }
+
+      const recorder = new MediaRecorder(stream, recorderOptions);
       mediaRecorderRef.current = recorder;
 
       recorder.ondataavailable = (event) => {
@@ -170,9 +273,14 @@ export const useAiSpeechToText = (
       };
 
       recorder.onerror = () => setError("Recording error");
-      recorder.start(); // Start without timeslice to record until stopped
+
+      // BUG 1 FIX: Use timeslice to send chunks every CHUNK_INTERVAL_MS for real-time transcription
+      recorder.start(CHUNK_INTERVAL_MS);
       setIsRecording(true);
-    } catch { setError("Microphone access denied"); }
+      console.log("[AI-STT:startRecording] Started with timeslice:", CHUNK_INTERVAL_MS, "ms, mime:", mimeType || "default");
+    } catch {
+      setError("Microphone access denied");
+    }
   }, [sendAudioChunk]);
 
   useEffect(() => {

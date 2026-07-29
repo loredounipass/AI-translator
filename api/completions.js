@@ -88,17 +88,24 @@ module.exports = async (req, res) => {
     const contentType = mime || "audio/wav";
     const cleanContentType = contentType.split(';')[0];
 
-    // Use multimodal chat completions endpoint (cloud-compatible)
     const langInstruction = lang === "multi"
-      ? "Detect the language automatically."
-      : `The audio is in ${lang}.`;
+      ? "Detect the spoken language automatically."
+      : `The spoken language is ${lang}.`;
 
     const chatBody = JSON.stringify({
       model,
       messages: [
         {
           role: "system",
-          content: `You are a speech-to-text transcription engine. Transcribe the audio exactly as spoken. Output ONLY the transcribed text, nothing else. No explanations, no formatting, no quotes. ${langInstruction}`
+          content: `You are a highly precise speech-to-text transcription engine.
+Your ONLY task is to transcribe the audio exactly as spoken.
+${langInstruction}
+
+CRITICAL RULES:
+1. Output ONLY the transcribed text.
+2. NO explanations, NO formatting (no markdown, no bold), NO quotes around the text.
+3. DO NOT add any conversational filler (e.g., "Here is the transcription:").
+4. If there is no speech, return an empty string.`
         },
         {
           role: "user",
@@ -135,7 +142,7 @@ module.exports = async (req, res) => {
           });
         });
         proxyReq.on("error", reject);
-        proxyReq.setTimeout(30000, () => { proxyReq.destroy(); reject(new Error("ASR request timed out")); });
+        proxyReq.setTimeout(45000, () => { proxyReq.destroy(); reject(new Error("ASR request timed out")); });
         proxyReq.end(chatBody);
       });
 

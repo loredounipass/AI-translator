@@ -121,13 +121,15 @@ const TranslationTextField = () => {
   const placeholder = useTypewriterPlaceholder(text);
 
   const MAX_URL_TEXT_LENGTH = 8000;
-  const setTextParamRef = React.useRef<(value: string) => void>(() => {});
-  const textRef = React.useRef(text);
-  textRef.current = text;
+  const setTextParamRef = React.useRef<((value: string | ((prev: string) => string)) => void) | null>(null);
+  
   const onChunkRef = React.useRef<(chunk: string) => void>(() => {});
   onChunkRef.current = (chunk: string) => {
-    const current = textRef.current;
-    setTextParamRef.current(current + (current ? " " : "") + chunk);
+    if (setTextParamRef.current) {
+      setTextParamRef.current((prevText: string) => {
+        return prevText + (prevText ? " " : "") + chunk;
+      });
+    }
   };
 
   const aiStt = useAiSpeechToText(
@@ -159,21 +161,25 @@ const TranslationTextField = () => {
     initDevices();
   }, [selectedDeviceId]);
 
-  const setTextParam = React.useCallback((value: string) => {
-    const trimmedValue = value.trim() === "" ? "" : value;
-    setText(trimmedValue);
+  const setTextParam = React.useCallback((value: string | ((prev: string) => string)) => {
+    setText((prevText) => {
+      const nextValue = typeof value === "function" ? value(prevText) : value;
+      const trimmedValue = nextValue.trim() === "" ? "" : nextValue;
+      
+      const truncatedValue = trimmedValue.length > MAX_URL_TEXT_LENGTH
+        ? trimmedValue.slice(0, MAX_URL_TEXT_LENGTH)
+        : trimmedValue;
 
-    const truncatedValue = trimmedValue.length > MAX_URL_TEXT_LENGTH
-      ? trimmedValue.slice(0, MAX_URL_TEXT_LENGTH)
-      : trimmedValue;
-
-    setURLSearchParams((params) => {
-      if (truncatedValue === "") {
-        params.delete("text");
-      } else {
-        params.set("text", truncatedValue);
-      }
-      return params;
+      setURLSearchParams((params) => {
+        if (truncatedValue === "") {
+          params.delete("text");
+        } else {
+          params.set("text", truncatedValue);
+        }
+        return params;
+      });
+      
+      return trimmedValue;
     });
   }, [setURLSearchParams, MAX_URL_TEXT_LENGTH]);
   setTextParamRef.current = setTextParam;
