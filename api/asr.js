@@ -43,29 +43,24 @@ module.exports = async (req, res) => {
       },
     };
 
-    const { statusCode, raw } = await new Promise((resolve, reject) => {
-      const proxyReq = https.request(options, (proxyRes) => {
-        const chunks = [];
-        proxyRes.on("data", (c) => chunks.push(c));
-        proxyRes.on("end", () => {
-          resolve({
-            statusCode: proxyRes.statusCode,
-            raw: Buffer.concat(chunks).toString(),
+    try {
+      const { statusCode, raw } = await new Promise((resolve, reject) => {
+        const testReq = https.get("https://www.google.com", (testRes) => {
+          const chunks = [];
+          testRes.on("data", (c) => chunks.push(c));
+          testRes.on("end", () => {
+            resolve({ statusCode: testRes.statusCode, raw: "ok" });
           });
         });
+        testReq.on("error", reject);
+        testReq.setTimeout(10000, () => {
+          testReq.destroy();
+          reject(new Error("Test request timed out"));
+        });
       });
-      proxyReq.on("error", reject);
-      proxyReq.setTimeout(15000, () => {
-        proxyReq.destroy();
-        reject(new Error("ASR request timed out"));
-      });
-      proxyReq.end(bodyBuffer);
-    });
-
-    try {
-      return res.status(statusCode).json(JSON.parse(raw));
-    } catch {
-      return res.status(statusCode).send(raw);
+      return res.status(200).json({ statusCode, raw, note: "HTTPS test passed" });
+    } catch (err) {
+      return res.status(502).json({ error: "HTTPS test failed: " + (err instanceof Error ? err.message : String(err)) });
     }
   } catch (err) {
     return res.status(502).json({ error: "ASR proxy error: " + (err instanceof Error ? err.message : String(err)) });
