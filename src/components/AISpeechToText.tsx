@@ -17,7 +17,6 @@ interface AISpeechToTextProps {
 
 const AI_MODELS = [
   { value: "nvidia/nemotron-3-nano-omni-30b-a3b-reasoning", label: "Nemotron Omni 30B" },
-  { value: "nvidia/parakeet-rnnt-1.1b", label: "Parakeet RNNT 1.1B" },
 ];
 
 const AISpeechToText = ({
