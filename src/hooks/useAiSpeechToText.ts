@@ -129,12 +129,12 @@ export const useAiSpeechToText = (
 
   const setAiStt = useCallback((value: boolean) => {
     setIsAiStt(value);
-    try { localStorage.setItem(STORAGE_KEY, value ? "true" : "false"); } catch {}
+    try { localStorage.setItem(STORAGE_KEY, value ? "true" : "false"); } catch { }
   }, []);
 
   const handleSetModel = useCallback((model: string) => {
     setSelectedModel(model);
-    try { localStorage.setItem("aiSttModel", model); } catch {}
+    try { localStorage.setItem("aiSttModel", model); } catch { }
   }, []);
 
   const toggleAiStt = useCallback(() => setAiStt(!isAiStt), [isAiStt, setAiStt]);
@@ -203,12 +203,12 @@ export const useAiSpeechToText = (
     // Stop VAD first
     stopVAD();
     if (audioContextRef.current) {
-      try { audioContextRef.current.close(); } catch {}
+      try { audioContextRef.current.close(); } catch { }
       audioContextRef.current = null;
     }
-    
+
     if (mixAudioContextRef.current) {
-      try { mixAudioContextRef.current.close(); } catch {}
+      try { mixAudioContextRef.current.close(); } catch { }
       mixAudioContextRef.current = null;
     }
 
@@ -218,16 +218,12 @@ export const useAiSpeechToText = (
       try { recorder.stop(); } catch { /* already stopped */ }
     }
 
-    // Stop all tracks
+    // Stop all tracks (except display stream, we keep it alive until user stops it via browser UI)
     if (streamRef.current) {
       streamRef.current.getTracks().forEach((t) => t.stop());
       streamRef.current = null;
     }
-    if (displayStreamRef.current) {
-      displayStreamRef.current.getTracks().forEach((t) => t.stop());
-      displayStreamRef.current = null;
-    }
-    
+
     mediaRecorderRef.current = null;
     setIsRecording(false);
   }, [stopVAD]);
@@ -326,18 +322,24 @@ export const useAiSpeechToText = (
     try {
       const micStream = await navigator.mediaDevices.getUserMedia({ audio: true });
       streamRef.current = micStream;
-      
+
       let finalStream = micStream;
-      
+
       // If system audio capture is requested, try to mix it
       if (captureSystemAudio) {
         try {
-          const displayStream = await navigator.mediaDevices.getDisplayMedia({ audio: true, video: true });
-          displayStreamRef.current = displayStream;
-          
-          if (displayStream.getAudioTracks().length === 0) {
+          // Re-use existing display stream if user hasn't clicked "Stop sharing" on the browser UI
+          let displayStream = displayStreamRef.current;
+          const isStreamActive = displayStream && displayStream.getTracks().some(t => t.readyState === 'live');
+
+          if (!isStreamActive) {
+            displayStream = await navigator.mediaDevices.getDisplayMedia({ audio: true, video: true });
+            displayStreamRef.current = displayStream;
+          }
+
+          if (displayStream && displayStream.getAudioTracks().length === 0) {
             message.warning("No compartiste el audio del sistema. Grabando solo micrófono.");
-          } else {
+          } else if (displayStream) {
             // Mix the two streams
             const AudioCtx = (window as any).AudioContext || (window as any).webkitAudioContext;
             const mixCtx = new AudioCtx();
