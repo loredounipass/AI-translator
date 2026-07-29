@@ -8,6 +8,7 @@ interface AISpeechToTextProps {
   onToggle: () => void;
   isRecording: boolean;
   isProcessing: boolean;
+  isVoiceActive: boolean;
   error: string | null;
   onStartRecording: () => void;
   onStopRecording: () => void;
@@ -24,6 +25,7 @@ const AISpeechToText = ({
   onToggle,
   isRecording,
   isProcessing,
+  isVoiceActive,
   error,
   onStartRecording,
   onStopRecording,
@@ -82,10 +84,24 @@ const AISpeechToText = ({
           >
             {isRecording ? <PauseIcon size={30} /> : <MicIcon size={30} />}
           </button>
-          {isProcessing && (
-            <span className="text-xs text-blue-500 animate-pulse">Processing...</span>
+          {isRecording && (
+            <span className="flex items-center gap-1.5">
+              <span
+                className={`inline-block w-2.5 h-2.5 rounded-full transition-colors duration-200 ${
+                  isVoiceActive
+                    ? "bg-green-500 shadow-[0_0_6px_rgba(34,197,94,0.6)]"
+                    : "bg-red-400 animate-pulse"
+                }`}
+              />
+              <span className="text-[10px] text-slate-400 dark:text-slate-500 whitespace-nowrap">
+                {isVoiceActive ? "Listening..." : "Waiting for voice..."}
+              </span>
+            </span>
           )}
-          {error && (
+          {isProcessing && (
+            <span className="text-xs text-blue-500 animate-pulse">Transcribing...</span>
+          )}
+          {error && !isRecording && (
             <span className="text-xs text-red-500">{error}</span>
           )}
         </>
