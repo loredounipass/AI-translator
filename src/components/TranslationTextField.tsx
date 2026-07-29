@@ -16,6 +16,8 @@ import {
 import { addPunctuation } from "../utils/punctuationLogic";
 import { analyzeAudioFrame } from "../utils/vadMath";
 import { useTypewriterPlaceholder } from "../hooks/useTypewriterPlaceholder";
+import { useAiSpeechToText } from "../hooks/useAiSpeechToText";
+import AISpeechToText from "./AISpeechToText";
 
 const TranslationTextField = () => {
   const [searchParams, setURLSearchParams] = useSearchParams();
@@ -119,6 +121,19 @@ const TranslationTextField = () => {
   const placeholder = useTypewriterPlaceholder(text);
 
   const MAX_URL_TEXT_LENGTH = 8000;
+  const setTextParamRef = React.useRef<(value: string) => void>(() => {});
+  const textRef = React.useRef(text);
+  textRef.current = text;
+  const onChunkRef = React.useRef<(chunk: string) => void>(() => {});
+  onChunkRef.current = (chunk: string) => {
+    const current = textRef.current;
+    setTextParamRef.current(current + (current ? " " : "") + chunk);
+  };
+
+  const aiStt = useAiSpeechToText(
+    React.useCallback((chunk: string) => onChunkRef.current(chunk), []),
+    sl
+  );
 
   React.useEffect(() => {
     const initDevices = async () => {
@@ -155,6 +170,7 @@ const TranslationTextField = () => {
       return params;
     });
   }, [setURLSearchParams, MAX_URL_TEXT_LENGTH]);
+  setTextParamRef.current = setTextParam;
 
   React.useEffect(() => {
     if (manualEditRef.current) return;
@@ -499,7 +515,16 @@ const TranslationTextField = () => {
         </span>
       </div>
       <div className="flex shrink-0 items-center gap-2 flex-wrap pl-3 md:pl-4 pb-2.5">
-        {browserSupportsSpeechRecognition ? (
+        <AISpeechToText
+          aiEnabled={aiStt.isAiStt}
+          onToggle={aiStt.toggleAiStt}
+          isRecording={aiStt.isRecording}
+          isProcessing={aiStt.isProcessing}
+          error={aiStt.error}
+          onStartRecording={aiStt.startRecording}
+          onStopRecording={aiStt.stopRecording}
+        />
+        {!aiStt.isAiStt && browserSupportsSpeechRecognition && (
           <div className="flex items-center gap-2">
             <div className="flex items-center gap-2">
               <button
@@ -554,7 +579,8 @@ const TranslationTextField = () => {
               </span>
             )}
           </div>
-        ) : (
+        )}
+        {!aiStt.isAiStt && !browserSupportsSpeechRecognition && (
           <p className="text-xs text-slate-400">Reconocimiento de voz no soportado</p>
         )}
       </div>
