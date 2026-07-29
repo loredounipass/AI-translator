@@ -136,6 +136,12 @@ const TranslationTextField = () => {
   );
 
   React.useEffect(() => {
+    if (aiStt.isAiStt && listening) {
+      SpeechRecognition.stopListening().catch(() => {});
+    }
+  }, [aiStt.isAiStt, listening]);
+
+  React.useEffect(() => {
     const initDevices = async () => {
       try {
         if (selectedDeviceId) return;

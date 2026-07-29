@@ -123,6 +123,10 @@ export const useAiSpeechToText = (
     } catch { setError("Microphone access denied"); }
   }, [sendAudioChunk]);
 
+  useEffect(() => {
+    if (!isAiStt && isRecording) stopRecording();
+  }, [isAiStt, isRecording, stopRecording]);
+
   useEffect(() => () => stopRecording(), [stopRecording]);
 
   return { isAiStt, setAiStt, toggleAiStt, isRecording, isProcessing, error, startRecording, stopRecording };
