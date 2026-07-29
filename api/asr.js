@@ -26,18 +26,42 @@ module.exports = async (req, res) => {
       return res.status(405).json({ error: "Method not allowed" });
     }
 
-    const apiKey = (req.body && req.body.apiKey) || "";
+    const contentType = req.headers['content-type'] || "";
+    let apiKey = "";
+    let audio = "";
+    let language = "multi";
+
+    if (contentType.includes('application/json')) {
+      const body = JSON.parse(req.body);
+      apiKey = body.apiKey || "";
+      audio = body.audio || "";
+      language = body.language || "multi";
+    } else if (contentType.includes('multipart/form-data')) {
+      const boundary = contentType.includes('boundary=') 
+        ? contentType.split('boundary=')[1].split(';')[0]
+        : `----ASR${Date.now().toString(36)}`;
+
+      const parts = req.body.split(`\r\n`);
+      for (let i = 0; i < parts.length; i++) {
+        if (parts[i].includes('name="apiKey"')) {
+          apiKey = parts[i].split('\r\n')[2];
+        } else if (parts[i].includes('name="audio"')) {
+          audio = parts[i].split('\r\n')[2];
+        } else if (parts[i].includes('name="language"')) {
+          language = parts[i].split('\r\n')[2];
+        }
+      }
+    }
+
     if (!apiKey) {
       return res.status(401).json({ error: "NVIDIA API key requerida para ASR" });
     }
 
-    const { audio, language } = req.body;
     if (!audio) {
-      return res.status(400).json({ error: "audio (base64) es requerido" });
+      return res.status(400).json({ error: "audio es requerido" });
     }
 
     const audioBuffer = Buffer.from(audio, "base64");
-    const boundary = "----ASR" + Date.now().toString(36);
     const lang = language || "multi";
 
     let body = "";
