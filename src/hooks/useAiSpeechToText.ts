@@ -84,21 +84,21 @@ export const useAiSpeechToText = (
     const apiKey = getKey("nvidia");
     if (!apiKey) { setError("No NVIDIA API key"); stopRecording(); return; }
 
-      setIsProcessing(true);
-      try {
-        const wavBlob = await blobToWav(blob);
-        const buffer = await wavBlob.arrayBuffer();
-        const array = new Uint8Array(buffer);
+    setIsProcessing(true);
+    try {
+      const wavBlob = await blobToWav(blob);
+      const buffer = await wavBlob.arrayBuffer();
+      const array = new Uint8Array(buffer);
 
-        const formData = new FormData();
-        formData.append("apiKey", apiKey);
-        formData.append("audio", new Blob([array.buffer], { type: "audio/wav" }));
-        formData.append("language", "multi");
+      const formData = new FormData();
+      formData.append("apiKey", apiKey);
+      formData.append("audio", new Blob([array.buffer], { type: "audio/wav" }));
+      formData.append("language", "multi");
 
-        const res = await fetch("/api/asr", {
-          method: "POST",
-          body: formData,
-        });
+      const res = await fetch("/api/asr", {
+        method: "POST",
+        body: formData,
+      });
 
       const data = await res.json();
       if (data.text) {
