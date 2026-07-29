@@ -1,6 +1,13 @@
 const https = require("https");
 const crypto = require("crypto");
 
+const allowedOrigins = [
+  "https://interpreter1-sooty.vercel.app",
+  "http://localhost:3000",
+  "http://localhost:3001",
+  "http://localhost:3002",
+];
+
 const CACHE_TTL = 5 * 60 * 1000;
 const MAX_CACHE_SIZE = 1000;
 const cache = new Map();

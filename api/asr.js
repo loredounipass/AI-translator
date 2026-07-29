@@ -1,7 +1,27 @@
 const https = require("https");
 
+const allowedOrigins = [
+  "https://interpreter1-sooty.vercel.app",
+  "http://localhost:3000",
+  "http://localhost:3001",
+  "http://localhost:3002",
+];
+
 module.exports = async (req, res) => {
   try {
+    const origin = req.headers.origin || "";
+    if (allowedOrigins.includes(origin)) {
+      res.setHeader("Access-Control-Allow-Origin", origin);
+    } else if (origin) {
+      res.setHeader("Access-Control-Allow-Origin", "*");
+    }
+    res.setHeader("Access-Control-Allow-Methods", "POST, OPTIONS");
+    res.setHeader("Access-Control-Allow-Headers", "Content-Type, Authorization");
+
+    if (req.method === "OPTIONS") {
+      return res.status(200).end();
+    }
+
     if (req.method !== "POST") {
       return res.status(405).json({ error: "Method not allowed" });
     }
@@ -38,6 +58,7 @@ module.exports = async (req, res) => {
         Authorization: `Bearer ${apiKey}`,
         "Content-Type": `multipart/form-data; boundary=${boundary}`,
         "Content-Length": bodyBuffer.length,
+        "User-Agent": "Mozilla/5.0 (compatible; AI-translator/1.0)",
       },
     };
 
