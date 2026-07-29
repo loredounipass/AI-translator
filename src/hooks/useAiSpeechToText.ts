@@ -1,6 +1,7 @@
 import { useState, useRef, useCallback, useEffect } from "react";
 import { message } from "antd";
 import { useApiKey } from "../contexts/ApiKeyContext";
+import { INTERPETERAI_TRAINING_MODULE } from "../api/interpreter.guide";
 
 const STORAGE_KEY = "aiSttEnabled";
 const CHUNK_INTERVAL_MS = 3000; // Send audio every 3 seconds for real-time transcription
@@ -189,6 +190,7 @@ export const useAiSpeechToText = (
           language: lang,
           mime: mimeType,
           model: selectedModel,
+          interpreterContext: INTERPETERAI_TRAINING_MODULE,
         }),
       });
 

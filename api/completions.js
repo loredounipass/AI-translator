@@ -79,7 +79,7 @@ module.exports = async (req, res) => {
 
     const model = req.body.model || "nvidia/nemotron-3-nano-omni-30b-a3b-reasoning";
 
-    const { audio, language, mime } = req.body;
+    const { audio, language, mime, interpreterContext } = req.body;
     if (!audio) {
       return res.status(400).json({ error: "audio (base64) es requerido" });
     }
@@ -92,6 +92,10 @@ module.exports = async (req, res) => {
       ? "Detect the spoken language automatically."
       : `The spoken language is ${lang}.`;
 
+    const contextInstruction = interpreterContext 
+      ? `\nCONTEXT ABOUT THE USER'S JOB (FOR YOUR UNDERSTANDING ONLY):\nThe user you are assisting is a professional over-the-phone interpreter. Their job involves strict training based on the following module:\n\n${JSON.stringify(interpreterContext, null, 2)}\n\nThat is the USER'S job. YOUR ROLE AS THE AI is to transcribe the text exactly as spoken to help them. You MUST NOT try to do the user's job or intervene in the scenarios.`
+      : "";
+
     const chatBody = JSON.stringify({
       model,
       messages: [
@@ -99,7 +103,7 @@ module.exports = async (req, res) => {
           role: "system",
           content: `You are a highly precise speech-to-text transcription engine.
 Your ONLY task is to transcribe the audio exactly as spoken.
-${langInstruction}
+${langInstruction}${contextInstruction}
 
 CRITICAL RULES:
 1. Output ONLY the transcribed text.
