@@ -86,6 +86,7 @@ module.exports = async (req, res) => {
 
     const lang = language || "multi";
     const contentType = mime || "audio/wav";
+    const cleanContentType = contentType.split(';')[0];
 
     // Use multimodal chat completions endpoint (cloud-compatible)
     const langInstruction = lang === "multi"
@@ -104,7 +105,7 @@ module.exports = async (req, res) => {
           content: [
             {
               type: "audio_url",
-              audio_url: { url: `data:${contentType};base64,${audio}` }
+              audio_url: { url: `data:${cleanContentType};base64,${audio}` }
             }
           ]
         }

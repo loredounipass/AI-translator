@@ -73,7 +73,14 @@ export const useAiSpeechToText = (
         setError(null);
         onChunk(data.text);
       } else {
-        const errorMsg = data.error || data.detail || data.message || "ASR request failed (sin texto en respuesta)";
+        let errorMsg = "ASR request failed (sin texto en respuesta)";
+        if (data.error) {
+          errorMsg = typeof data.error === 'object' ? data.error.message || JSON.stringify(data.error) : data.error;
+        } else if (data.detail) {
+          errorMsg = typeof data.detail === 'object' ? JSON.stringify(data.detail) : data.detail;
+        } else if (data.message) {
+          errorMsg = data.message;
+        }
         console.error("[useAiSpeechToText:sendAudioChunk] ERROR: Sin texto en respuesta:", errorMsg);
         setError(errorMsg);
         stopRecording();
