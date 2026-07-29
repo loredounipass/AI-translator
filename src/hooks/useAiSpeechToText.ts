@@ -45,7 +45,7 @@ export const useAiSpeechToText = (
       const lang = "multi";
       const mime = blob.type;
 
-      const res = await fetch("/api/completions", {
+      const res = await fetch("/api/asr", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
