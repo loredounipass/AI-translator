@@ -126,6 +126,7 @@ export const useAiSpeechToText = (
   const floatDataRef = useRef<Float32Array | null>(null);
   const byteDataRef = useRef<Uint8Array | null>(null);
   const fftDataRef = useRef<Uint8Array | null>(null);
+  const hasSpokenRef = useRef<boolean>(false);
 
   const setAiStt = useCallback((value: boolean) => {
     setIsAiStt(value);
@@ -195,6 +196,10 @@ export const useAiSpeechToText = (
       rmsSmoothRef.current = newSmooth;
       noiseFloorRef.current = newNoiseFloor;
       setIsVoiceActive(isVoiceDetected);
+      
+      if (isVoiceDetected) {
+        hasSpokenRef.current = true;
+      }
     }, vadCheckInterval);
   }, [stopVAD]);
 
@@ -236,6 +241,11 @@ export const useAiSpeechToText = (
     if (!apiKey) {
       message.error("No NVIDIA API key configured");
       setError("No NVIDIA API key");
+      return;
+    }
+
+    if (!hasSpokenRef.current) {
+      console.log("[AI-STT:send] Skipping sending: No voice activity was detected during this recording session.");
       return;
     }
 
@@ -319,6 +329,7 @@ export const useAiSpeechToText = (
   // --- Start Recording (user presses mic) ---
   const startRecording = useCallback(async () => {
     setError(null);
+    hasSpokenRef.current = false;
     try {
       const micStream = await navigator.mediaDevices.getUserMedia({ audio: true });
       streamRef.current = micStream;
