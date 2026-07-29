@@ -89,18 +89,26 @@ module.exports = async (req, res) => {
       },
     };
 
-    const asrReq = https.request(options, (proxyRes) => {
-      const chunks = [];
-      proxyRes.on("data", (c) => chunks.push(c));
-      proxyRes.on("end", () => {
-        const raw = Buffer.concat(chunks).toString();
-        try { return res.status(proxyRes.statusCode).json(JSON.parse(raw)); }
-        catch { return res.status(proxyRes.statusCode).send(raw); }
+    try {
+      const nvidiaRes = await new Promise((resolve, reject) => {
+        const asrReq = https.request(options, (proxyRes) => {
+          const chunks = [];
+          proxyRes.on("data", (c) => chunks.push(c));
+          proxyRes.on("end", () => {
+            resolve({
+              statusCode: proxyRes.statusCode,
+              body: Buffer.concat(chunks).toString(),
+            });
+          });
+        });
+        asrReq.on("error", reject);
+        asrReq.end(bodyBuffer);
       });
-    });
-    asrReq.on("error", (err) => res.status(502).json({ error: "ASR proxy error: " + err.message }));
-    asrReq.end(bodyBuffer);
-    return;
+      try { return res.status(nvidiaRes.statusCode).json(JSON.parse(nvidiaRes.body)); }
+      catch { return res.status(nvidiaRes.statusCode).send(nvidiaRes.body); }
+    } catch (err) {
+      return res.status(502).json({ error: "ASR proxy error: " + err.message });
+    }
   }
 
   const apiKey = (req.body && req.body.apiKey) || "";
