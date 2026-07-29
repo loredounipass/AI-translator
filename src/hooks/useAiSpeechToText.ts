@@ -102,7 +102,14 @@ export const useAiSpeechToText = (
         body: JSON.stringify({ audio: base64, language: "multi" }),
       });
 
-      const data = await res.json();
+      const responseText = await res.text();
+      let data;
+      try {
+        data = JSON.parse(responseText);
+      } catch (parseError) {
+        throw new Error(`Invalid JSON response: ${responseText.substring(0, 200)}...`);
+      }
+
       if (data.text) {
         setError(null);
         onChunk(data.text);
@@ -111,7 +118,8 @@ export const useAiSpeechToText = (
         stopRecording();
       }
     } catch (err) {
-      setError("ASR failed: " + (err instanceof Error ? err.message : String(err)));
+      const errorMessage = err instanceof Error ? err.message : String(err);
+      setError("ASR failed: " + errorMessage);
     } finally {
       setIsProcessing(false);
     }
