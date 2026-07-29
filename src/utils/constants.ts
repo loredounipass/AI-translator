@@ -64,8 +64,8 @@ export const AI_MODELS: Record<string, AIModel> = {
   //   free: true,
   // },
   "nvidia-asr-parakeet": {
-    id: "nvidia/parakeet-1.1b-rnnt-multilingual-asr",
-    name: "Parakeet RNNT 1.1B (ASR)",
+    id: "nvidia/parakeet-ctc-0.6b-es",
+    name: "Parakeet CTC 0.6B ES (ASR)",
     provider: "NVIDIA",
     apiProvider: "nvidia",
     free: false,
