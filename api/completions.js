@@ -77,19 +77,21 @@ module.exports = async (req, res) => {
       return res.status(401).json({ error: "NVIDIA API key requerida para ASR" });
     }
 
-    const { audio, language, mime } = req.body;
-    if (!audio) {
-      return res.status(400).json({ error: "audio (base64) es requerido" });
-    }
+   const model = req.body.model || "nvidia/parakeet-1.1b-rnnt-multilingual-asr";
 
-    const audioBuffer = Buffer.from(audio, "base64");
-    const boundary = "----ASR" + Date.now().toString(36);
-    const lang = language || "multi";
-    const contentType = mime || "audio/wav";
-    const ext = contentType.includes("webm") ? "webm" : contentType.includes("ogg") ? "ogg" : "wav";
+   const { audio, language, mime } = req.body;
+   if (!audio) {
+     return res.status(400).json({ error: "audio (base64) es requerido" });
+   }
 
-    let body = "";
-    body += `--${boundary}\r\nContent-Disposition: form-data; name="model"\r\n\r\nnvidia/parakeet-1.1b-rnnt-multilingual-asr\r\n`;
+   const audioBuffer = Buffer.from(audio, "base64");
+   const boundary = "----ASR" + Date.now().toString(36);
+   const lang = language || "multi";
+   const contentType = mime || "audio/wav";
+   const ext = contentType.includes("webm") ? "webm" : contentType.includes("ogg") ? "ogg" : "wav";
+
+   let body = "";
+   body += `--${boundary}\r\nContent-Disposition: form-data; name="model"\r\n\r\n${model}\r\n`;
     body += `--${boundary}\r\nContent-Disposition: form-data; name="language"\r\n\r\n${lang}\r\n`;
     body += `--${boundary}\r\nContent-Disposition: form-data; name="file"; filename="audio.${ext}"\r\nContent-Type: ${contentType}\r\n\r\n`;
     const bodyBuffer = Buffer.concat([
