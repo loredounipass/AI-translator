@@ -11,7 +11,7 @@ module.exports = async (req, res) => {
       return res.status(401).json({ error: "NVIDIA API key requerida para ASR" });
     }
 
-    const { audio, language, mime } = req.body;
+    const { audio, language } = req.body;
     if (!audio) {
       return res.status(400).json({ error: "audio (base64) es requerido" });
     }
@@ -19,13 +19,11 @@ module.exports = async (req, res) => {
     const audioBuffer = Buffer.from(audio, "base64");
     const boundary = "----ASR" + Date.now().toString(36);
     const lang = language || "multi";
-    const contentType = mime || "audio/wav";
-    const ext = contentType.includes("webm") ? "webm" : contentType.includes("ogg") ? "ogg" : "wav";
 
     let body = "";
     body += `--${boundary}\r\nContent-Disposition: form-data; name="model"\r\n\r\nnvidia/parakeet-1.1b-rnnt-multilingual-asr\r\n`;
     body += `--${boundary}\r\nContent-Disposition: form-data; name="language"\r\n\r\n${lang}\r\n`;
-    body += `--${boundary}\r\nContent-Disposition: form-data; name="file"; filename="audio.${ext}"\r\nContent-Type: ${contentType}\r\n\r\n`;
+    body += `--${boundary}\r\nContent-Disposition: form-data; name="file"; filename="audio.wav"\r\nContent-Type: audio/wav\r\n\r\n`;
     const bodyBuffer = Buffer.concat([
       Buffer.from(body, "utf-8"),
       audioBuffer,
@@ -43,28 +41,21 @@ module.exports = async (req, res) => {
       },
     };
 
-    try {
-      const { statusCode, raw } = await new Promise((resolve, reject) => {
-        const testReq = https.get("https://integrate.api.nvidia.com", (testRes) => {
-          const chunks = [];
-          testRes.on("data", (c) => chunks.push(c));
-          testRes.on("end", () => {
-            resolve({
-              statusCode: testRes.statusCode,
-              raw: Buffer.concat(chunks).toString().slice(0, 500),
-            });
-          });
-        });
-        testReq.on("error", (err) => reject(new Error("HTTPS error: " + err.message)));
-        testReq.setTimeout(15000, () => {
-          testReq.destroy();
-          reject(new Error("DNS/connect timeout"));
+    const { statusCode, raw } = await new Promise((resolve, reject) => {
+      const proxyReq = https.request(options, (proxyRes) => {
+        const chunks = [];
+        proxyRes.on("data", (c) => chunks.push(c));
+        proxyRes.on("end", () => {
+          resolve({ statusCode: proxyRes.statusCode, raw: Buffer.concat(chunks).toString() });
         });
       });
-      return res.status(200).json({ nvidia_test: { statusCode, raw } });
-    } catch (err) {
-      return res.status(502).json({ error: "NVIDIA unreachable: " + (err instanceof Error ? err.message : String(err)) });
-    }
+      proxyReq.on("error", reject);
+      proxyReq.setTimeout(15000, () => { proxyReq.destroy(); reject(new Error("ASR request timed out")); });
+      proxyReq.end(bodyBuffer);
+    });
+
+    try { return res.status(statusCode).json(JSON.parse(raw)); }
+    catch { return res.status(statusCode).send(raw); }
   } catch (err) {
     return res.status(502).json({ error: "ASR proxy error: " + (err instanceof Error ? err.message : String(err)) });
   }

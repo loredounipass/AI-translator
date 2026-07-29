@@ -3,6 +3,55 @@ import { useApiKey } from "../contexts/ApiKeyContext";
 
 const STORAGE_KEY = "aiSttEnabled";
 
+function writeString(view: DataView, offset: number, str: string) {
+  for (let i = 0; i < str.length; i++) view.setUint8(offset + i, str.charCodeAt(i));
+}
+
+async function blobToWav(blob: Blob): Promise<Blob> {
+  const ctx = new AudioContext();
+  const buf = await ctx.decodeAudioData(await blob.arrayBuffer());
+  const numChannels = buf.numberOfChannels;
+  const sampleRate = buf.sampleRate;
+  const length = buf.length;
+
+  const channelData: Float32Array[] = [];
+  for (let ch = 0; ch < numChannels; ch++) channelData.push(buf.getChannelData(ch));
+  const mono = new Float32Array(length);
+  for (let i = 0; i < length; i++) {
+    let sum = 0;
+    for (let ch = 0; ch < numChannels; ch++) sum += channelData[ch][i];
+    mono[i] = sum / numChannels;
+  }
+
+  const dataLen = length * 2;
+  const wav = new ArrayBuffer(44 + dataLen);
+  const v = new DataView(wav);
+
+  writeString(v, 0, "RIFF");
+  v.setUint32(4, 36 + dataLen, true);
+  writeString(v, 8, "WAVE");
+  writeString(v, 12, "fmt ");
+  v.setUint32(16, 16, true);
+  v.setUint16(20, 1, true);
+  v.setUint16(22, 1, true);
+  v.setUint32(24, sampleRate, true);
+  v.setUint32(28, sampleRate * 2, true);
+  v.setUint16(32, 2, true);
+  v.setUint16(34, 16, true);
+  writeString(v, 36, "data");
+  v.setUint32(40, dataLen, true);
+
+  let off = 44;
+  for (let i = 0; i < length; i++) {
+    const s = Math.max(-1, Math.min(1, mono[i]));
+    v.setInt16(off, s < 0 ? s * 0x8000 : s * 0x7FFF, true);
+    off += 2;
+  }
+
+  ctx.close();
+  return new Blob([wav], { type: "audio/wav" });
+}
+
 export const useAiSpeechToText = (
   onChunk: (text: string) => void,
   _sourceLang: string
@@ -32,74 +81,35 @@ export const useAiSpeechToText = (
   }, []);
 
   const sendAudioChunk = useCallback(async (blob: Blob) => {
-    console.log("[useAiSpeechToText:sendAudioChunk] Inicio — blob size:", blob.size, "mime:", blob.type);
-
     const apiKey = getKey("nvidia");
-    if (!apiKey) {
-      console.error("[useAiSpeechToText:sendAudioChunk] No hay API key de NVIDIA disponible");
-      setError("No NVIDIA API key"); stopRecording(); return;
-    }
-    console.log("[useAiSpeechToText:sendAudioChunk] API key encontrada (primeros 8 chars):", apiKey.slice(0, 8) + "...");
+    if (!apiKey) { setError("No NVIDIA API key"); stopRecording(); return; }
 
     setIsProcessing(true);
     try {
-      console.log("[useAiSpeechToText:sendAudioChunk] Convirtiendo blob a base64...");
-      const buffer = await blob.arrayBuffer();
+      const wavBlob = await blobToWav(blob);
+      const buffer = await wavBlob.arrayBuffer();
       const bytes = new Uint8Array(buffer);
       let binary = "";
       for (let i = 0; i < bytes.length; i++) binary += String.fromCharCode(bytes[i]);
       const base64 = btoa(binary);
-      console.log("[useAiSpeechToText:sendAudioChunk] Base64 generado — length:", base64.length, "primeros 50:", base64.slice(0, 50) + "...");
 
-      const lang = "multi";
-      const mime = blob.type;
-      const ext = mime.includes("webm") ? "webm" : mime.includes("ogg") ? "ogg" : "wav";
-
-      const form = new FormData();
-      form.append("model", "nvidia/parakeet-1.1b-rnnt-multilingual-asr");
-      form.append("language", lang);
-      const audioFile = new Blob([blob], { type: mime });
-      form.append("file", audioFile, "audio." + ext);
-
-      console.log("[useAiSpeechToText:sendAudioChunk] Enviando POST directo a NVIDIA con lang=" + lang + " mime=" + mime);
-      const res = await fetch("https://integrate.api.nvidia.com/v1/audio/transcriptions", {
+      const res = await fetch("/api/asr", {
         method: "POST",
-        headers: {
-          Authorization: "Bearer " + apiKey,
-        },
-        body: form,
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ apiKey, audio: base64, language: "multi" }),
       });
 
-      console.log("[useAiSpeechToText:sendAudioChunk] Respuesta recibida — status:", res.status, res.statusText);
-
-      const responseText = await res.text();
-      console.log("[useAiSpeechToText:sendAudioChunk] Cuerpo crudo (primeros 500 chars):", responseText.slice(0, 500));
-
-      let data;
-      try {
-        data = JSON.parse(responseText);
-        console.log("[useAiSpeechToText:sendAudioChunk] JSON parseado exitosamente:", data);
-      } catch (parseErr) {
-        console.error("[useAiSpeechToText:sendAudioChunk] Error al parsear JSON:", parseErr, "cuerpo:", responseText.slice(0, 300));
-        setError("ASR response: " + res.status + " " + res.statusText);
-        stopRecording();
-        return;
-      }
-
+      const data = await res.json();
       if (data.text) {
-        console.log("[useAiSpeechToText:sendAudioChunk] Transcripción recibida:", data.text);
         setError(null);
         onChunk(data.text);
       } else {
-        console.error("[useAiSpeechToText:sendAudioChunk] Respuesta sin campo 'text':", JSON.stringify(data));
-        setError(data.detail || data.error || data.message || "ASR request failed (no text in response)");
+        setError(data.error || data.detail || "ASR request failed");
         stopRecording();
       }
     } catch (err) {
-      console.error("[useAiSpeechToText:sendAudioChunk] Error en fetch/request:", err);
-      setError("ASR request failed: " + (err instanceof Error ? err.message : String(err)));
+      setError("ASR failed: " + (err instanceof Error ? err.message : String(err)));
     } finally {
-      console.log("[useAiSpeechToText:sendAudioChunk] Finalizado — isProcessing=false");
       setIsProcessing(false);
     }
   }, [getKey, onChunk, stopRecording]);
