@@ -82,45 +82,64 @@ export const useAiSpeechToText = (
 
   const sendAudioChunk = useCallback(async (blob: Blob) => {
     const apiKey = getKey("nvidia");
-    if (!apiKey) { setError("No NVIDIA API key"); stopRecording(); return; }
+    console.log("[useAiSpeechToText:sendAudioChunk] Inicio — blob size:", blob.size, "mime:", blob.type);
+    if (!apiKey) { console.log("[useAiSpeechToText:sendAudioChunk] No NVIDIA API key"); setError("No NVIDIA API key"); stopRecording(); return; }
+    console.log("[useAiSpeechToText:sendAudioChunk] API key encontrada (primeros 8 chars):", apiKey.substring(0, 8));
 
     setIsProcessing(true);
     try {
+      console.log("[useAiSpeechToText:sendAudioChunk] Convirtiendo blob a WAV...");
       const wavBlob = await blobToWav(blob);
+      console.log("[useAiSpeechToText:sendAudioChunk] WAV generado — size:", wavBlob.size);
+
       const buffer = await wavBlob.arrayBuffer();
       const array = new Uint8Array(buffer);
+      console.log("[useAiSpeechToText:sendAudioChunk] Buffer size:", buffer.byteLength);
+
       let binary = "";
       for (let i = 0; i < array.length; i++) binary += String.fromCharCode(array[i]);
       const base64 = btoa(binary);
+      console.log("[useAiSpeechToText:sendAudioChunk] Base64 generado — length:", base64.length, "primeros 50:", base64.substring(0, 50));
+
+      const body = JSON.stringify({ audio: base64, language: "multi" });
+      console.log("[useAiSpeechToText:sendAudioChunk] Enviando POST a /api/asr — body size:", body.length);
 
       const res = await fetch("/api/asr", {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "X-API-Key": apiKey,
-        },
-        body: JSON.stringify({ audio: base64, language: "multi" }),
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ apiKey, audio: base64, language: "multi" }),
       });
 
+      console.log("[useAiSpeechToText:sendAudioChunk] Respuesta del servidor — status:", res.status, "ok:", res.ok);
+
       const responseText = await res.text();
+      console.log("[useAiSpeechToText:sendAudioChunk] Respuesta raw (primeros 300):", responseText.substring(0, 300));
+
       let data;
       try {
         data = JSON.parse(responseText);
+        console.log("[useAiSpeechToText:sendAudioChunk] Respuesta JSON parseada:", JSON.stringify(data).substring(0, 300));
       } catch (parseError) {
-        throw new Error(`Invalid JSON response: ${responseText.substring(0, 200)}...`);
+        console.error("[useAiSpeechToText:sendAudioChunk] ERROR: Respuesta no es JSON válido:", responseText.substring(0, 500));
+        throw new Error(`Invalid JSON response from server (status ${res.status}): ${responseText.substring(0, 300)}`);
       }
 
       if (data.text) {
+        console.log("[useAiSpeechToText:sendAudioChunk] Transcripción recibida:", data.text.substring(0, 100));
         setError(null);
         onChunk(data.text);
       } else {
-        setError(data.error || data.detail || "ASR request failed");
+        const errorMsg = data.error || data.detail || data.message || "ASR request failed (sin text en respuesta)";
+        console.error("[useAiSpeechToText:sendAudioChunk] ERROR: Sin texto en respuesta:", errorMsg);
+        setError(errorMsg);
         stopRecording();
       }
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : String(err);
+      console.error("[useAiSpeechToText:sendAudioChunk] ERROR en fetch/request:", errorMessage, err);
       setError("ASR failed: " + errorMessage);
     } finally {
+      console.log("[useAiSpeechToText:sendAudioChunk] Finalizado — isProcessing=false");
       setIsProcessing(false);
     }
   }, [getKey, onChunk, stopRecording]);
