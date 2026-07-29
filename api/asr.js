@@ -32,25 +32,36 @@ module.exports = async (req, res) => {
     let language = "multi";
 
     if (contentType.includes('application/json')) {
-      const body = JSON.parse(req.body);
-      apiKey = body.apiKey || "";
-      audio = body.audio || "";
-      language = body.language || "multi";
+      try {
+        const body = JSON.parse(req.body);
+        apiKey = body.apiKey || "";
+        audio = body.audio || "";
+        language = body.language || "multi";
+      } catch (e) {
+        return res.status(400).json({ error: "Invalid JSON body" });
+      }
     } else if (contentType.includes('multipart/form-data')) {
       const boundary = contentType.includes('boundary=') 
         ? contentType.split('boundary=')[1].split(';')[0]
         : `----ASR${Date.now().toString(36)}`;
 
       const parts = req.body.split(`\r\n`);
+      let inSection = null;
       for (let i = 0; i < parts.length; i++) {
-        if (parts[i].includes('name="apiKey"')) {
-          apiKey = parts[i].split('\r\n')[2];
-        } else if (parts[i].includes('name="audio"')) {
-          audio = parts[i].split('\r\n')[2];
-        } else if (parts[i].includes('name="language"')) {
-          language = parts[i].split('\r\n')[2];
+        if (parts[i].includes('Content-Disposition:')) {
+          if (parts[i].includes('name="apiKey"')) inSection = 'apiKey';
+          else if (parts[i].includes('name="audio"')) inSection = 'audio';
+          else if (parts[i].includes('name="language"')) inSection = 'language';
+          else inSection = null;
+        } else if (inSection) {
+          if (inSection === 'apiKey') apiKey = parts[i];
+          else if (inSection === 'audio') audio = parts[i];
+          else if (inSection === 'language') language = parts[i];
+          inSection = null;
         }
       }
+    } else {
+      return res.status(400).json({ error: "Unsupported content-type: " + contentType });
     }
 
     if (!apiKey) {
@@ -61,8 +72,10 @@ module.exports = async (req, res) => {
       return res.status(400).json({ error: "audio es requerido" });
     }
 
-    const audioBuffer = Buffer.from(audio, "base64");
     const lang = language || "multi";
+
+    const audioBuffer = Buffer.from(audio, "base64");
+    const boundary = "----ASR" + Date.now().toString(36);
 
     let body = "";
     body += `--${boundary}\r\nContent-Disposition: form-data; name="model"\r\n\r\nnvidia/parakeet-1.1b-rnnt-multilingual-asr\r\n`;
@@ -71,7 +84,7 @@ module.exports = async (req, res) => {
     const bodyBuffer = Buffer.concat([
       Buffer.from(body, "utf-8"),
       audioBuffer,
-      Buffer.from(`\r\n--${boundary}--\r\n`, "utf-8"),
+      Buffer.from(`\r\n--${boundary}--\r\n", "utf-8"),
     ]);
 
     const options = {
