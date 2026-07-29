@@ -53,17 +53,21 @@ export const useAiSpeechToText = (
 
       const lang = "multi";
       const mime = blob.type;
+      const ext = mime.includes("webm") ? "webm" : mime.includes("ogg") ? "ogg" : "wav";
 
-      console.log("[useAiSpeechToText:sendAudioChunk] Enviando POST a /api/asr con lang=" + lang + " mime=" + mime);
-      const res = await fetch("/api/asr", {
+      const form = new FormData();
+      form.append("model", "nvidia/parakeet-1.1b-rnnt-multilingual-asr");
+      form.append("language", lang);
+      const audioFile = new Blob([blob], { type: mime });
+      form.append("file", audioFile, "audio." + ext);
+
+      console.log("[useAiSpeechToText:sendAudioChunk] Enviando POST directo a NVIDIA con lang=" + lang + " mime=" + mime);
+      const res = await fetch("https://integrate.api.nvidia.com/v1/audio/transcriptions", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          apiKey,
-          audio: base64,
-          language: lang,
-          mime,
-        }),
+        headers: {
+          Authorization: "Bearer " + apiKey,
+        },
+        body: form,
       });
 
       console.log("[useAiSpeechToText:sendAudioChunk] Respuesta recibida — status:", res.status, res.statusText);
