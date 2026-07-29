@@ -1,4 +1,5 @@
 import { useState, useRef, useCallback, useEffect } from "react";
+import { message } from "antd";
 import { useApiKey } from "../contexts/ApiKeyContext";
 
 const STORAGE_KEY = "aiSttEnabled";
@@ -216,22 +217,31 @@ export const useAiSpeechToText = (
           errorMsg = data.message;
         }
         console.error("[AI-STT:sendChunk] Error:", errorMsg);
-        setError(errorMsg);
-
-        // BUG 4 FIX: Only stop recording on fatal errors, not transient ones
+        
         if (isFatalError(errorMsg)) {
           console.error("[AI-STT:sendChunk] Fatal error — stopping recording");
+          message.error("Error crítico: " + errorMsg);
+          setError(errorMsg);
           stopRecording();
+        } else {
+          message.warning("Error de red, reintentando...");
         }
       }
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : String(err);
       console.error("[AI-STT:sendChunk] Fetch error:", errorMessage);
-      setError("ASR failed: " + errorMessage);
-
-      // BUG 4 FIX: Don't stop recording on transient network errors
+      
+      if (errorMessage.includes("Unable to decode audio data")) {
+        console.log("[AI-STT:sendChunk] Silent failure - empty audio chunk ignored");
+        return;
+      }
+      
       if (isFatalError(errorMessage)) {
+        message.error("Error crítico de grabación: " + errorMessage);
+        setError("ASR failed: " + errorMessage);
         stopRecording();
+      } else {
+        message.warning("Fallo temporal de conexión con IA...");
       }
     } finally {
       processingCountRef.current -= 1;
