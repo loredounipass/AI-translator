@@ -74,8 +74,16 @@ export const useAiSpeechToText = (
 
   const toggleAiStt = useCallback(() => setAiStt(!isAiStt), [isAiStt, setAiStt]);
 
+  const recordingIntervalRef = useRef<number | null>(null);
+
   const stopRecording = useCallback(() => {
-    if (mediaRecorderRef.current?.state !== "inactive") mediaRecorderRef.current?.stop();
+    if (recordingIntervalRef.current) {
+      window.clearInterval(recordingIntervalRef.current);
+      recordingIntervalRef.current = null;
+    }
+    if (mediaRecorderRef.current?.state !== "inactive") {
+      try { mediaRecorderRef.current?.stop(); } catch (e) {}
+    }
     if (streamRef.current) { streamRef.current.getTracks().forEach((t) => t.stop()); streamRef.current = null; }
     mediaRecorderRef.current = null;
     setIsRecording(false);
@@ -149,15 +157,39 @@ export const useAiSpeechToText = (
       const mimeType = MediaRecorder.isTypeSupported("audio/webm;codecs=opus")
         ? "audio/webm;codecs=opus" : "audio/webm";
 
-      const recorder = new MediaRecorder(stream, { mimeType });
-      mediaRecorderRef.current = recorder;
+      const startNewChunk = () => {
+        if (!streamRef.current || streamRef.current.getAudioTracks().length === 0) return;
+        
+        try {
+          const recorder = new MediaRecorder(streamRef.current, { mimeType });
+          mediaRecorderRef.current = recorder;
 
-      recorder.ondataavailable = (event) => {
-        if (event.data.size > 0) sendAudioChunk(event.data);
+          recorder.ondataavailable = (event) => {
+            if (event.data.size > 0) sendAudioChunk(event.data);
+          };
+
+          recorder.onerror = () => setError("Recording error");
+          recorder.start();
+
+          // Stop this recorder after 3 seconds, which will trigger ondataavailable
+          setTimeout(() => {
+            if (recorder.state === "recording") {
+              recorder.stop();
+            }
+          }, 3000);
+        } catch (e) {
+          console.error("Failed to start new chunk recorder:", e);
+        }
       };
 
-      recorder.onerror = () => setError("Recording error");
-      recorder.start(3000);
+      // Start the first chunk immediately
+      startNewChunk();
+
+      // Start the interval to spin up a new recorder every 3 seconds
+      recordingIntervalRef.current = window.setInterval(() => {
+        startNewChunk();
+      }, 3000);
+
       setIsRecording(true);
     } catch { setError("Microphone access denied"); }
   }, [sendAudioChunk]);
