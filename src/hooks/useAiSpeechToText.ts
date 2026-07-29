@@ -89,15 +89,14 @@ export const useAiSpeechToText = (
       const wavBlob = await blobToWav(blob);
       const buffer = await wavBlob.arrayBuffer();
       const array = new Uint8Array(buffer);
-
-      const formData = new FormData();
-      formData.append("apiKey", apiKey);
-      formData.append("audio", new Blob([array.buffer], { type: "audio/wav" }));
-      formData.append("language", "multi");
+      let binary = "";
+      for (let i = 0; i < array.length; i++) binary += String.fromCharCode(array[i]);
+      const base64 = btoa(binary);
 
       const res = await fetch("/api/asr", {
         method: "POST",
-        body: formData,
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ apiKey, audio: base64, language: "multi" }),
       });
 
       const data = await res.json();
