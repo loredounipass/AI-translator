@@ -192,7 +192,7 @@ const TranslatedText = () => {
 
     if (keysLoading || !keysLoaded) return;
 
-    if (!apiKeyRef.current) {
+    if (!apiKey) {
       if (!apiKeyNotifiedRef.current) {
         apiKeyNotifiedRef.current = true;
         notification.warning({
