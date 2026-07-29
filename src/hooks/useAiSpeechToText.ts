@@ -45,10 +45,16 @@ export const useAiSpeechToText = (
       const lang = "multi";
       const mime = blob.type;
 
-      const res = await fetch("/api/asr", {
+      const res = await fetch("/api/completions", {
         method: "POST",
-        headers: { "Content-Type": "application/json", "x-nvidia-api-key": apiKey },
-        body: JSON.stringify({ audio: base64, language: lang, mime }),
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          _type: "asr",
+          apiKey,
+          audio: base64,
+          language: lang,
+          mime,
+        }),
       });
 
       const data = await res.json();
