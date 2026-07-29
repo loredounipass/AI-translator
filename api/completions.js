@@ -78,34 +78,18 @@ module.exports = async (req, res) => {
       Buffer.from(`\r\n--${boundary}--\r\n`, "utf-8"),
     ]);
 
-    const options = {
-      hostname: "integrate.api.nvidia.com",
-      path: "/v1/audio/transcriptions",
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${apiKey}`,
-        "Content-Type": `multipart/form-data; boundary=${boundary}`,
-        "Content-Length": bodyBuffer.length,
-      },
-    };
-
     try {
-      const nvidiaRes = await new Promise((resolve, reject) => {
-        const asrReq = https.request(options, (proxyRes) => {
-          const chunks = [];
-          proxyRes.on("data", (c) => chunks.push(c));
-          proxyRes.on("end", () => {
-            resolve({
-              statusCode: proxyRes.statusCode,
-              body: Buffer.concat(chunks).toString(),
-            });
-          });
-        });
-        asrReq.on("error", reject);
-        asrReq.end(bodyBuffer);
+      const nvidiaRes = await fetch("https://integrate.api.nvidia.com/v1/audio/transcriptions", {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${apiKey}`,
+          "Content-Type": `multipart/form-data; boundary=${boundary}`,
+        },
+        body: bodyBuffer,
       });
-      try { return res.status(nvidiaRes.statusCode).json(JSON.parse(nvidiaRes.body)); }
-      catch { return res.status(nvidiaRes.statusCode).send(nvidiaRes.body); }
+      const body = await nvidiaRes.text();
+      try { return res.status(nvidiaRes.status).json(JSON.parse(body)); }
+      catch { return res.status(nvidiaRes.status).send(body); }
     } catch (err) {
       return res.status(502).json({ error: "ASR proxy error: " + err.message });
     }
