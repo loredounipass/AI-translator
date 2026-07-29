@@ -162,6 +162,11 @@ export const useAiSpeechToText = (
     const AudioCtx = (window as any).AudioContext || (window as any).webkitAudioContext;
     const audioCtx: AudioContext = new AudioCtx();
     audioContextRef.current = audioCtx;
+    
+    // Ensure AudioContext is running (might be suspended if delayed by permissions)
+    if (audioCtx.state === 'suspended') {
+      audioCtx.resume().catch(console.warn);
+    }
 
     const source = audioCtx.createMediaStreamSource(stream);
     const analyser = audioCtx.createAnalyser();
@@ -355,6 +360,10 @@ export const useAiSpeechToText = (
             const AudioCtx = (window as any).AudioContext || (window as any).webkitAudioContext;
             const mixCtx = new AudioCtx();
             mixAudioContextRef.current = mixCtx;
+            
+            if (mixCtx.state === 'suspended') {
+              mixCtx.resume().catch(console.warn);
+            }
             
             const dest = mixCtx.createMediaStreamDestination();
             
