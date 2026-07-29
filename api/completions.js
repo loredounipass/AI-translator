@@ -88,44 +88,74 @@ module.exports = async (req, res) => {
     const contentType = mime || "audio/wav";
     const cleanContentType = contentType.split(';')[0];
 
-    // Use multimodal chat completions endpoint (cloud-compatible)
-    const langInstruction = lang === "multi"
-      ? "Detect the language automatically."
-      : `The audio is in ${lang}.`;
+    let options;
+    let requestPayload;
 
-    const chatBody = JSON.stringify({
-      model,
-      messages: [
-        {
-          role: "system",
-          content: `You are a speech-to-text transcription engine. Transcribe the audio exactly as spoken. Output ONLY the transcribed text, nothing else. No explanations, no formatting, no quotes. ${langInstruction}`
+    if (model.includes("parakeet") || model.includes("canary")) {
+      // Dedicated ASR models use multipart/form-data on /v1/audio/transcriptions
+      const boundary = `----WebKitFormBoundary${Math.random().toString(36).substring(2)}`;
+      const audioBuffer = Buffer.from(audio, "base64");
+      
+      let bodyStr = "";
+      bodyStr += `--${boundary}\r\nContent-Disposition: form-data; name="model"\r\n\r\n${model}\r\n`;
+      bodyStr += `--${boundary}\r\nContent-Disposition: form-data; name="file"; filename="audio.wav"\r\nContent-Type: ${cleanContentType}\r\n\r\n`;
+      
+      requestPayload = Buffer.concat([
+        Buffer.from(bodyStr, "utf-8"),
+        audioBuffer,
+        Buffer.from(`\r\n--${boundary}--\r\n`, "utf-8")
+      ]);
+
+      options = {
+        hostname: "integrate.api.nvidia.com",
+        path: "/v1/audio/transcriptions",
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${apiKey}`,
+          "Content-Type": `multipart/form-data; boundary=${boundary}`,
+          "Content-Length": Buffer.byteLength(requestPayload),
         },
-        {
-          role: "user",
-          content: [
-            {
-              type: "audio_url",
-              audio_url: { url: `data:${cleanContentType};base64,${audio}` }
-            }
-          ]
-        }
-      ],
-      max_tokens: 1024,
-      temperature: 0
-    });
+      };
+    } else {
+      // Omni/Multimodal models use chat completions
+      const langInstruction = lang === "multi"
+        ? "Detect the language automatically."
+        : `The audio is in ${lang}.`;
 
-    try {
-      const options = {
+      requestPayload = JSON.stringify({
+        model,
+        messages: [
+          {
+            role: "system",
+            content: `You are a speech-to-text transcription engine. Transcribe the audio exactly as spoken. Output ONLY the transcribed text, nothing else. No explanations, no formatting, no quotes. ${langInstruction}`
+          },
+          {
+            role: "user",
+            content: [
+              {
+                type: "audio_url",
+                audio_url: { url: `data:${cleanContentType};base64,${audio}` }
+              }
+            ]
+          }
+        ],
+        max_tokens: 1024,
+        temperature: 0
+      });
+
+      options = {
         hostname: "integrate.api.nvidia.com",
         path: "/v1/chat/completions",
         method: "POST",
         headers: {
           Authorization: `Bearer ${apiKey}`,
           "Content-Type": "application/json",
-          "Content-Length": Buffer.byteLength(chatBody),
+          "Content-Length": Buffer.byteLength(requestPayload),
         },
       };
+    }
 
+    try {
       const { statusCode, raw } = await new Promise((resolve, reject) => {
         const proxyReq = https.request(options, (proxyRes) => {
           const chunks = [];
@@ -136,7 +166,7 @@ module.exports = async (req, res) => {
         });
         proxyReq.on("error", reject);
         proxyReq.setTimeout(30000, () => { proxyReq.destroy(); reject(new Error("ASR request timed out")); });
-        proxyReq.end(chatBody);
+        proxyReq.end(requestPayload);
       });
 
       let parsed;
