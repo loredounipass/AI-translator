@@ -45,40 +45,25 @@ module.exports = async (req, res) => {
 
     try {
       const { statusCode, raw } = await new Promise((resolve, reject) => {
-        const proxyReq = https.request(options, (proxyRes) => {
+        const testReq = https.get("https://integrate.api.nvidia.com", (testRes) => {
           const chunks = [];
-          proxyRes.on("data", (c) => chunks.push(c));
-          proxyRes.on("close", () => {
-            if (chunks.length === 0 && proxyRes.statusCode === undefined) {
-              reject(new Error("Connection closed without response"));
-            } else {
-              resolve({
-                statusCode: proxyRes.statusCode || 0,
-                raw: Buffer.concat(chunks).toString(),
-              });
-            }
-          });
-          proxyRes.on("end", () => {
+          testRes.on("data", (c) => chunks.push(c));
+          testRes.on("end", () => {
             resolve({
-              statusCode: proxyRes.statusCode,
-              raw: Buffer.concat(chunks).toString(),
+              statusCode: testRes.statusCode,
+              raw: Buffer.concat(chunks).toString().slice(0, 500),
             });
           });
         });
-        proxyReq.on("error", (err) => reject(new Error("HTTPS error: " + err.message)));
-        proxyReq.on("socket", (socket) => {
-          socket.on("error", (err) => reject(new Error("Socket error: " + err.message)));
-          socket.setTimeout(20000, () => {
-            socket.destroy();
-            reject(new Error("Socket timeout"));
-          });
+        testReq.on("error", (err) => reject(new Error("HTTPS error: " + err.message)));
+        testReq.setTimeout(15000, () => {
+          testReq.destroy();
+          reject(new Error("DNS/connect timeout"));
         });
-        proxyReq.end(bodyBuffer);
       });
-      try { return res.status(statusCode).json(JSON.parse(raw)); }
-      catch { return res.status(statusCode).send(raw); }
+      return res.status(200).json({ nvidia_test: { statusCode, raw } });
     } catch (err) {
-      return res.status(502).json({ error: "ASR proxy error: " + (err instanceof Error ? err.message : String(err)) });
+      return res.status(502).json({ error: "NVIDIA unreachable: " + (err instanceof Error ? err.message : String(err)) });
     }
   } catch (err) {
     return res.status(502).json({ error: "ASR proxy error: " + (err instanceof Error ? err.message : String(err)) });
