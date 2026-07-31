@@ -95,7 +95,7 @@ function App() {
           <Route
             path="/"
             element={
-              <div className="text-center text-[#111111] dark:text-slate-100 h-[calc(100vh-4.5rem)] sm:h-[calc(100vh-6.5rem)] md:h-[calc(100vh-7.5rem)] w-[95%] md:w-[97%] bg-white dark:bg-slate-800 rounded-2xl mx-auto mt-[4.2rem] sm:mt-[6rem] md:mt-[7rem] overflow-hidden flex flex-col font-sans shadow-lg border border-slate-200/50 dark:border-slate-700/50 transition-colors duration-200">
+              <div className="text-center text-[#111111] dark:text-slate-100 h-[calc(100vh-5rem)] sm:h-[calc(100vh-5.5rem)] md:h-[calc(100vh-6rem)] w-[95%] md:w-[97%] bg-white dark:bg-slate-800 rounded-2xl mx-auto mt-16 sm:mt-[4.5rem] md:mt-[5rem] overflow-hidden flex flex-col font-sans shadow-lg border border-slate-200/50 dark:border-slate-700/50 transition-colors duration-200">
                 <LanguagesBar />
                 <div className="flex-1 flex flex-col md:flex-row overflow-hidden">
                   <TranslationTextField />
