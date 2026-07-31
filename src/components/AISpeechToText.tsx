@@ -20,7 +20,7 @@ interface AISpeechToTextProps {
 
 const AI_MODELS = [
   { value: "nvidia/nemotron-3-nano-omni-30b-a3b-reasoning", label: "Nemotron Omni 30B", shortLabel: "Nemotron Omni" },
-  { value: "nvidia/canary-1b-asr", label: "Canary 1B ASR", shortLabel: "Canary 1B" },
+  // { value: "nvidia/canary-1b-asr", label: "Canary 1B ASR", shortLabel: "Canary 1B" },
 ];
 
 const ToggleSwitch = ({ checked, onChange, label, disabled }: { checked: boolean; onChange: () => void; label: string; disabled?: boolean }) => (
