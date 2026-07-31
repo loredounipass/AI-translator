@@ -12,7 +12,6 @@ import UserAvatar from "./components/UserAvatar";
 import { AI_MODELS, DEFAULT_MODEL } from "utils/constants";
 import { Analytics } from "@vercel/analytics/react";
 import { useAuth, AuthProvider } from "contexts/AuthContext";
-import { ApiKeyProvider, useApiKey } from "./contexts/ApiKeyContext";
 import type { User } from "@supabase/supabase-js";
 import { message } from "antd";
 import { syncRegionsFromSupabase } from "./utils/mapeoLocales";
@@ -66,8 +65,6 @@ function App() {
   return (
     <Router>
       <div className="min-h-screen bg-slate-50 dark:bg-slate-900 transition-colors duration-200 overflow-x-hidden">
-        <AuthProvider>
-        <ApiKeyProvider>
         <Header
           isDark={isDark}
           toggleDark={() => setIsDark(!isDark)}
@@ -109,8 +106,6 @@ function App() {
           />
         </Routes>
         <Analytics />
-      </ApiKeyProvider>
-      </AuthProvider>
       </div>
     </Router>
   );
