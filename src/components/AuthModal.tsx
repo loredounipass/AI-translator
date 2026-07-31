@@ -31,6 +31,8 @@ const PhoneIcon = () => (
     </svg>
 );
 
+const BASE_INPUT_CLASSES = "w-full py-2.5 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-200 placeholder-slate-400 dark:placeholder-slate-500 text-sm outline-none focus:border-blue-400 dark:focus:border-blue-500 transition-colors";
+
 interface AuthModalProps {
     isOpen: boolean;
     onClose: () => void;
@@ -177,7 +179,7 @@ const AuthModal = ({ isOpen, onClose }: AuthModalProps) => {
                                                 value={firstName}
                                                 onChange={(e) => setFirstName(e.target.value)}
                                                 placeholder="Nombre"
-                                                className="w-full pl-10 pr-3 py-2.5 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-200 placeholder-slate-400 dark:placeholder-slate-500 text-sm outline-none focus:border-blue-400 dark:focus:border-blue-500 transition-colors"
+                                                className={`${BASE_INPUT_CLASSES} pl-10 pr-3`}
                                                 autoComplete="given-name"
                                                 required
                                                 minLength={2}
@@ -189,7 +191,7 @@ const AuthModal = ({ isOpen, onClose }: AuthModalProps) => {
                                                 value={lastName}
                                                 onChange={(e) => setLastName(e.target.value)}
                                                 placeholder="Apellido"
-                                                className="w-full pl-3 pr-3 py-2.5 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-200 placeholder-slate-400 dark:placeholder-slate-500 text-sm outline-none focus:border-blue-400 dark:focus:border-blue-500 transition-colors"
+                                                className={`${BASE_INPUT_CLASSES} pl-3 pr-3`}
                                                 autoComplete="family-name"
                                             />
                                         </div>
@@ -225,7 +227,7 @@ const AuthModal = ({ isOpen, onClose }: AuthModalProps) => {
                                                     setPhoneNumber(raw);
                                                 }}
                                                 placeholder="Teléfono"
-                                                className="w-full pl-10 pr-3 py-2.5 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-200 placeholder-slate-400 dark:placeholder-slate-500 text-sm outline-none focus:border-blue-400 dark:focus:border-blue-500 transition-colors"
+                                                className={`${BASE_INPUT_CLASSES} pl-10 pr-3`}
                                                 autoComplete="tel"
                                             />
                                         </div>
@@ -242,7 +244,7 @@ const AuthModal = ({ isOpen, onClose }: AuthModalProps) => {
                                     value={email}
                                     onChange={(e) => setEmail(e.target.value)}
                                     placeholder="correo@ejemplo.com"
-                                    className="w-full pl-10 pr-3 py-2.5 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-200 placeholder-slate-400 dark:placeholder-slate-500 text-sm outline-none focus:border-blue-400 dark:focus:border-blue-500 transition-colors"
+                                    className={`${BASE_INPUT_CLASSES} pl-10 pr-3`}
                                     autoComplete="email"
                                     required
                                 />
@@ -257,7 +259,7 @@ const AuthModal = ({ isOpen, onClose }: AuthModalProps) => {
                                     value={password}
                                     onChange={(e) => setPassword(e.target.value)}
                                     placeholder="Contraseña"
-                                    className="w-full pl-10 pr-10 py-2.5 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-200 placeholder-slate-400 dark:placeholder-slate-500 text-sm outline-none focus:border-blue-400 dark:focus:border-blue-500 transition-colors"
+                                    className={`${BASE_INPUT_CLASSES} pl-10 pr-10`}
                                     autoComplete={mode === "login" ? "current-password" : "new-password"}
                                     required
                                     minLength={8}

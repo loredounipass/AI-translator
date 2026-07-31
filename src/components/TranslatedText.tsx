@@ -6,7 +6,7 @@ import { translate } from "api/ai-translation";
 import CopyIcon from "assets/CopyIcon";
 import { DEFAULT_SOURCE_LANGUAGE, DEFAULT_TARGET_LANGUAGE, DEFAULT_MODEL, AI_MODELS } from "utils/constants";
 import { debounce } from "lodash";
-import { useAuth } from "hooks/useAuth";
+import { useAuth } from "contexts/AuthContext";
 import { useApiKey } from "../contexts/ApiKeyContext";
 import { historyService } from "utils/historyService";
 

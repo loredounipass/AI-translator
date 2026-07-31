@@ -8,7 +8,7 @@ import {
 } from "utils/constants";
 import { REGIONES_POR_IDIOMA, getSavedRegion, saveRegion } from "../utils/mapeoLocales";
 import { SwitchIcon } from "../assets/SwitchIcon";
-import { useAuth } from "hooks/useAuth";
+import { useAuth } from "contexts/AuthContext";
 
 const LanguagesBar = () => {
   const { user } = useAuth();

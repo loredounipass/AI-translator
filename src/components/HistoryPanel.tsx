@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from "react";
 import { useSearchParams } from "react-router-dom";
-import { useAuth } from "hooks/useAuth";
+import { useAuth } from "contexts/AuthContext";
 import { historyService } from "utils/historyService";
 import type { HistoryItem } from "utils/historyService";
 

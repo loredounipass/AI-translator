@@ -7,7 +7,7 @@ import MicIcon from "assets/MicIcon";
 import PauseIcon from "assets/PauseIcon";
 import { DEFAULT_SOURCE_LANGUAGE } from "utils/constants";
 import { MAPEO_LOCALES, REGIONES_POR_IDIOMA, REGION_A_IDIOMA_BASE, normalizarLocale, filtrarRegiones, localeSoportado, saveRegion } from "../utils/mapeoLocales";
-import { useAuth } from "hooks/useAuth";
+import { useAuth } from "contexts/AuthContext";
 import {
   vadCheckInterval,
   silenceHoldCount,
