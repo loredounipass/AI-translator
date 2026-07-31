@@ -498,9 +498,22 @@ const TranslationTextField = () => {
     <div className="relative flex flex-col flex-1 min-h-0 font-sans font-normal leading-normal">
       <div className="flex-1 relative min-h-0">
         <div
-          className={`absolute top-0 left-0 right-0 bottom-0 flex items-center justify-center text-lg text-[#9ca3af] dark:text-slate-500 font-sans pointer-events-none z-10 ${!text && placeholder ? 'flex' : 'hidden'}`}
+          className={`absolute top-0 left-0 right-0 bottom-0 flex items-center justify-center text-lg text-[#9ca3af] dark:text-slate-500 font-sans pointer-events-none z-10 ${!text && (aiStt.isProcessing || aiStt.isRecording || placeholder) ? 'flex' : 'hidden'}`}
         >
-          {placeholder}<span className="inline-block w-2 h-2 bg-[#9ca3af] dark:bg-slate-500 rounded-full ml-1 align-baseline relative -top-0.5 animate-blink" />
+          {aiStt.isProcessing ? (
+            <span className="text-blue-500 font-medium animate-pulse">Transcribing...</span>
+          ) : aiStt.isRecording ? (
+            <span className="flex items-center gap-2">
+              <span className={`inline-block w-3 h-3 rounded-full transition-colors duration-200 ${aiStt.isVoiceActive ? 'bg-green-500 shadow-[0_0_8px_rgba(34,197,94,0.6)]' : 'bg-red-400 animate-pulse'}`} />
+              <span className={aiStt.isVoiceActive ? "text-green-600 dark:text-green-500 font-medium" : "text-[#9ca3af] dark:text-slate-500"}>
+                {aiStt.isVoiceActive ? "Listening..." : "Waiting..."}
+              </span>
+            </span>
+          ) : (
+            <>
+              {placeholder}<span className="inline-block w-2 h-2 bg-[#9ca3af] dark:bg-slate-500 rounded-full ml-1 align-baseline relative -top-0.5 animate-blink" />
+            </>
+          )}
         </div>
         <textarea
           ref={textareaRef}

@@ -120,13 +120,7 @@ const AISpeechToText = ({
                     : "bg-red-400 animate-pulse"
                 }`}
               />
-              <span className="text-[10px] text-slate-400 dark:text-slate-500 whitespace-nowrap">
-                {isVoiceActive ? "Listening..." : "Waiting..."}
-              </span>
             </span>
-          )}
-          {isProcessing && (
-            <span className="text-xs text-blue-500 animate-pulse whitespace-nowrap">Transcribing...</span>
           )}
         </>
       )}
