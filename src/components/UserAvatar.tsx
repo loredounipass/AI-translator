@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect } from "react";
 import type { User } from "@supabase/supabase-js";
-import { useAuth } from "hooks/useAuth";
+import { useAuth } from "contexts/AuthContext";
 
 interface UserAvatarProps {
     user: User;
@@ -122,11 +122,9 @@ const UserAvatar = ({ user, onOpenApiSettings }: UserAvatarProps) => {
                             API Keys
                         </button>
                         <button
-                            onClick={() => {
-                                logout();
+                            onClick={async () => {
+                                await logout();
                                 setOpen(false);
-                                sessionStorage.setItem("app_toast", "logged_out");
-                                window.location.reload();
                             }}
                             className="w-full flex items-center gap-2 px-3 py-2 text-sm text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-colors"
                         >

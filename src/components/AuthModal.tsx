@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { message, Select } from "antd";
-import { useAuth } from "hooks/useAuth";
+import { useAuth } from "contexts/AuthContext";
 import { AUTH_MESSAGES } from "utils/authConstants";
 import { COUNTRY_CODES, DEFAULT_COUNTRY_KEY } from "utils/phoneCodes";
 
@@ -105,9 +105,7 @@ const AuthModal = ({ isOpen, onClose }: AuthModalProps) => {
             return;
         }
 
-        sessionStorage.setItem("app_toast", "logged_in");
         handleClose();
-        window.location.reload();
     };
 
     if (!isOpen) return null;
@@ -181,6 +179,8 @@ const AuthModal = ({ isOpen, onClose }: AuthModalProps) => {
                                                 placeholder="Nombre"
                                                 className="w-full pl-10 pr-3 py-2.5 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-200 placeholder-slate-400 dark:placeholder-slate-500 text-sm outline-none focus:border-blue-400 dark:focus:border-blue-500 transition-colors"
                                                 autoComplete="given-name"
+                                                required
+                                                minLength={2}
                                             />
                                         </div>
                                         <div className="relative flex-1">
@@ -244,6 +244,7 @@ const AuthModal = ({ isOpen, onClose }: AuthModalProps) => {
                                     placeholder="correo@ejemplo.com"
                                     className="w-full pl-10 pr-3 py-2.5 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-200 placeholder-slate-400 dark:placeholder-slate-500 text-sm outline-none focus:border-blue-400 dark:focus:border-blue-500 transition-colors"
                                     autoComplete="email"
+                                    required
                                 />
                             </div>
 
@@ -258,6 +259,8 @@ const AuthModal = ({ isOpen, onClose }: AuthModalProps) => {
                                     placeholder="Contraseña"
                                     className="w-full pl-10 pr-10 py-2.5 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-200 placeholder-slate-400 dark:placeholder-slate-500 text-sm outline-none focus:border-blue-400 dark:focus:border-blue-500 transition-colors"
                                     autoComplete={mode === "login" ? "current-password" : "new-password"}
+                                    required
+                                    minLength={8}
                                 />
                                 <button
                                     type="button"

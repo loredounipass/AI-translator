@@ -11,7 +11,7 @@ import ApiSettingsModal from "./components/ApiSettingsModal";
 import UserAvatar from "./components/UserAvatar";
 import { AI_MODELS, DEFAULT_MODEL } from "utils/constants";
 import { Analytics } from "@vercel/analytics/react";
-import { useAuth } from "hooks/useAuth";
+import { useAuth, AuthProvider } from "contexts/AuthContext";
 import { ApiKeyProvider, useApiKey } from "./contexts/ApiKeyContext";
 import type { User } from "@supabase/supabase-js";
 import { message } from "antd";
@@ -228,38 +228,6 @@ function App() {
     fetch("/api/health").then(r => r.json()).catch(() => {});
   }, []);
 
-  const toastTimerRef = React.useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
-
-  useEffect(() => {
-    const toast = sessionStorage.getItem("app_toast");
-    if (!toast) return;
-
-    if (toast === "logged_in" && (authLoading || !user)) {
-      clearTimeout(toastTimerRef.current);
-      return;
-    }
-    if (toast === "logged_out" && authLoading) return;
-
-    sessionStorage.removeItem("app_toast");
-
-    const show = () => {
-      if (toast === "logged_in") {
-        const metadata = user?.user_metadata;
-        const name = metadata?.full_name || metadata?.name;
-        message.success(name ? `Welcome back, ${name}` : "Welcome back");
-      } else {
-        message.success("You have been logged out.");
-      }
-    };
-
-    if (toast === "logged_in" && !user) {
-      toastTimerRef.current = setTimeout(show, 800);
-      return;
-    }
-
-    show();
-  }, [authLoading, user]);
-
   useEffect(() => {
     if (user) syncRegionsFromSupabase(user.id);
   }, [user]);
@@ -267,6 +235,7 @@ function App() {
   return (
     <Router>
       <div className="min-h-screen bg-slate-50 dark:bg-slate-900 transition-colors duration-200 overflow-x-hidden">
+        <AuthProvider>
         <ApiKeyProvider>
         <Header
           isDark={isDark}
@@ -310,6 +279,7 @@ function App() {
         </Routes>
         <Analytics />
       </ApiKeyProvider>
+      </AuthProvider>
       </div>
     </Router>
   );

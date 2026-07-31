@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useState, useCallback, useEffect } from "react";
 import { apiKeyService, type ApiKeyRow } from "../utils/apiKeyService";
-import { useAuth } from "hooks/useAuth";
+import { useAuth } from "contexts/AuthContext";
 
 export const API_PROVIDERS = [
   { id: "nvidia", name: "NVIDIA", keyPrefix: "nvapi-", docUrl: "https://build.nvidia.com/" },

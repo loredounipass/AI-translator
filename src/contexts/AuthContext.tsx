@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from "react";
+import React, { createContext, useContext, useEffect, useState, useCallback } from "react";
 import type { Session, User, AuthError } from "@supabase/supabase-js";
 import { supabase } from "utils/supabaseClient";
 import { AUTH_ERRORS } from "utils/authConstants";
@@ -10,7 +10,19 @@ interface AuthState {
     needsEmailVerification: boolean;
 }
 
-export const useAuth = () => {
+interface AuthContextType extends AuthState {
+    registerWithEmail: (
+        email: string,
+        password: string,
+        metadata?: { firstName?: string; lastName?: string; phone?: string }
+    ) => Promise<{ error: string | null; needsVerification?: boolean }>;
+    loginWithEmail: (email: string, password: string) => Promise<{ error: string | null }>;
+    logout: () => Promise<void>;
+}
+
+const AuthContext = createContext<AuthContextType | undefined>(undefined);
+
+export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
     const [state, setState] = useState<AuthState>({
         session: null,
         user: null,
@@ -19,27 +31,32 @@ export const useAuth = () => {
     });
 
     useEffect(() => {
-        supabase.auth.getSession().then(({ data: { session } }) => {
+        let mounted = true;
+
+        const updateState = (session: Session | null) => {
+            if (!mounted) return;
             setState({
                 session,
                 user: session?.user ?? null,
                 loading: false,
                 needsEmailVerification: session?.user?.email_confirmed_at ? false : !!session?.user,
             });
+        };
+
+        supabase.auth.getSession().then(({ data: { session } }) => {
+            updateState(session);
         });
 
         const {
             data: { subscription },
         } = supabase.auth.onAuthStateChange((_event, session) => {
-            setState({
-                session,
-                user: session?.user ?? null,
-                loading: false,
-                needsEmailVerification: session?.user?.email_confirmed_at ? false : !!session?.user,
-            });
+            updateState(session);
         });
 
-        return () => subscription.unsubscribe();
+        return () => {
+            mounted = false;
+            subscription.unsubscribe();
+        };
     }, []);
 
     const registerWithEmail = useCallback(
@@ -89,17 +106,22 @@ export const useAuth = () => {
 
     const logout = useCallback(async () => {
         await supabase.auth.signOut({ scope: "global" });
+        // The onAuthStateChange listener will automatically clear the local state
     }, []);
 
-    return {
-        user: state.user,
-        session: state.session,
-        loading: state.loading,
-        needsEmailVerification: state.needsEmailVerification,
-        registerWithEmail,
-        loginWithEmail,
-        logout,
-    };
+    return (
+        <AuthContext.Provider value={{ ...state, registerWithEmail, loginWithEmail, logout }}>
+            {children}
+        </AuthContext.Provider>
+    );
+};
+
+export const useAuth = () => {
+    const context = useContext(AuthContext);
+    if (context === undefined) {
+        throw new Error("useAuth must be used within an AuthProvider");
+    }
+    return context;
 };
 
 function mapSupabaseError(error: AuthError): string {
