@@ -98,7 +98,6 @@ const AISpeechToText = ({
           checked={captureSystemAudio} 
           onChange={onToggleSystemAudio} 
           label="System Audio" 
-          disabled={isRecording || isProcessing}
         />
       )}
 

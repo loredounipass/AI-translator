@@ -549,7 +549,7 @@ const TranslationTextField = () => {
           isProcessing={aiStt.isProcessing}
           isVoiceActive={aiStt.isVoiceActive}
           captureSystemAudio={aiStt.captureSystemAudio}
-          onToggleSystemAudio={() => aiStt.setCaptureSystemAudio(!aiStt.captureSystemAudio)}
+          onToggleSystemAudio={aiStt.toggleSystemAudio}
           error={aiStt.error}
           onStartRecording={aiStt.startRecording}
           onStopRecording={aiStt.stopRecording}

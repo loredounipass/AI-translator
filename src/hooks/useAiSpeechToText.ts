@@ -116,6 +116,7 @@ export const useAiSpeechToText = (
   const streamRef = useRef<MediaStream | null>(null);
   const displayStreamRef = useRef<MediaStream | null>(null);
   const mixAudioContextRef = useRef<AudioContext | null>(null);
+  const isRequestingSystemAudioRef = useRef<boolean>(false);
   const { getKey } = useApiKey();
 
   // VAD refs
@@ -139,6 +140,77 @@ export const useAiSpeechToText = (
   }, []);
 
   const toggleAiStt = useCallback(() => setAiStt(!isAiStt), [isAiStt, setAiStt]);
+
+  // --- System audio capture ---
+  const cleanupDisplayStream = useCallback(() => {
+    if (displayStreamRef.current) {
+      const stream = displayStreamRef.current;
+      displayStreamRef.current = null;
+      stream.getTracks().forEach(t => t.stop());
+    }
+  }, []);
+
+  const stopSystemAudioCapture = useCallback(() => {
+    cleanupDisplayStream();
+    setCaptureSystemAudio(false);
+  }, [cleanupDisplayStream]);
+
+  const startSystemAudioCapture = useCallback(async () => {
+    if (isRequestingSystemAudioRef.current) return;
+    isRequestingSystemAudioRef.current = true;
+    setError(null);
+    try {
+      const displayStream = await navigator.mediaDevices.getDisplayMedia({
+        audio: {
+          sampleRate: 16000,
+          channelCount: 1,
+          echoCancellation: false,
+          noiseSuppression: false,
+          autoGainControl: false
+        },
+        video: true
+      });
+
+      const hasAudioTrack = displayStream.getAudioTracks().length > 0;
+
+      // If the user stops sharing via the browser UI, turn the toggle off
+      const onStreamEnded = () => {
+        cleanupDisplayStream();
+        setCaptureSystemAudio(false);
+        if (hasAudioTrack) {
+          message.info("Compartición de audio del sistema terminada");
+        }
+      };
+      displayStream.getTracks().forEach(track => {
+        track.addEventListener("ended", onStreamEnded);
+      });
+
+      displayStreamRef.current = displayStream;
+
+      if (!hasAudioTrack) {
+        message.warning("No compartiste el audio del sistema.");
+        cleanupDisplayStream();
+        setCaptureSystemAudio(false);
+        return;
+      }
+
+      setCaptureSystemAudio(true);
+    } catch (err) {
+      console.warn("Failed to get display media:", err);
+      message.info("Captura de sistema cancelada");
+      setCaptureSystemAudio(false);
+    } finally {
+      isRequestingSystemAudioRef.current = false;
+    }
+  }, [cleanupDisplayStream]);
+
+  const toggleSystemAudio = useCallback(() => {
+    if (captureSystemAudio) {
+      stopSystemAudioCapture();
+    } else {
+      startSystemAudioCapture();
+    }
+  }, [captureSystemAudio, stopSystemAudioCapture, startSystemAudioCapture]);
 
   // --- Cleanup VAD ---
   const stopVAD = useCallback(() => {
@@ -339,53 +411,34 @@ export const useAiSpeechToText = (
 
       let finalStream = micStream;
 
-      // If system audio capture is requested, try to mix it
+      // If system audio capture is on, mix the already-active display stream
       if (captureSystemAudio) {
-        try {
-          // Re-use existing display stream if user hasn't clicked "Stop sharing" on the browser UI
-          let displayStream = displayStreamRef.current;
-          const isStreamActive = displayStream && displayStream.getTracks().some(t => t.readyState === 'live');
+        const displayStream = displayStreamRef.current;
+        const isStreamActive = displayStream && displayStream.getTracks().some(t => t.readyState === 'live');
 
-          if (!isStreamActive) {
-            displayStream = await navigator.mediaDevices.getDisplayMedia({
-              audio: {
-                sampleRate: 16000,
-                channelCount: 1,
-                echoCancellation: false,
-                noiseSuppression: false,
-                autoGainControl: false
-              },
-              video: true
-            });
-            displayStreamRef.current = displayStream;
-          }
-
-          if (displayStream && displayStream.getAudioTracks().length === 0) {
-            message.warning("No compartiste el audio del sistema. Grabación abortada.");
-            micStream.getTracks().forEach(t => t.stop());
-            return;
-          } else if (displayStream) {
+        if (isStreamActive) {
+          try {
             // Mix the two streams
             const AudioCtx = (window as any).AudioContext || (window as any).webkitAudioContext;
             const mixCtx = new AudioCtx({ sampleRate: 16000 });
             mixAudioContextRef.current = mixCtx;
-            
+
             if (mixCtx.state === 'suspended') {
               mixCtx.resume().catch(console.warn);
             }
-            
+
             const dest = mixCtx.createMediaStreamDestination();
-            
+
             mixCtx.createMediaStreamSource(micStream).connect(dest);
             mixCtx.createMediaStreamSource(displayStream).connect(dest);
-            
+
             finalStream = dest.stream;
+          } catch (err) {
+            console.warn("Failed to mix system audio:", err);
           }
-        } catch (err) {
-          console.warn("Failed to get display media:", err);
-          message.info("Captura de sistema cancelada. Grabación abortada.");
-          micStream.getTracks().forEach(t => t.stop());
-          return;
+        } else {
+          // Toggle is on but there is no active display stream — turn it off
+          setCaptureSystemAudio(false);
         }
       }
 
@@ -426,16 +479,23 @@ export const useAiSpeechToText = (
 
   // If AI STT is toggled off while recording, stop
   useEffect(() => {
-    if (!isAiStt && isRecording) stopRecording();
-  }, [isAiStt, isRecording, stopRecording]);
+    if (!isAiStt) {
+      if (isRecording) stopRecording();
+      stopSystemAudioCapture();
+    }
+  }, [isAiStt, isRecording, stopRecording, stopSystemAudioCapture]);
 
   // Cleanup on unmount
-  useEffect(() => () => stopRecording(), [stopRecording]);
+  useEffect(() => () => {
+    stopRecording();
+    cleanupDisplayStream();
+  }, [stopRecording, cleanupDisplayStream]);
 
   return {
     isAiStt, setAiStt, toggleAiStt,
     isRecording, isProcessing, isVoiceActive,
     captureSystemAudio, setCaptureSystemAudio,
+    toggleSystemAudio,
     error, startRecording, stopRecording,
     selectedModel, setSelectedModel: handleSetModel,
   };
