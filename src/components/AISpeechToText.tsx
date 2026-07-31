@@ -86,7 +86,7 @@ const AISpeechToText = ({
           options={AI_MODELS}
           optionLabelProp="shortLabel"
           size="small"
-          className="w-24 sm:w-28 text-xs"
+          className="w-24 text-xs"
           popupMatchSelectWidth={false}
           disabled={isRecording || isProcessing}
         />

@@ -501,7 +501,7 @@ const TranslationTextField = () => {
           className={`absolute top-0 left-0 right-0 bottom-0 flex items-center justify-center text-lg text-[#9ca3af] dark:text-slate-500 font-sans pointer-events-none z-10 ${!text && (aiStt.isProcessing || aiStt.isRecording || placeholder) ? 'flex' : 'hidden'}`}
         >
           {aiStt.isProcessing ? (
-            <span className="text-blue-500 font-medium animate-pulse">Transcribing...</span>
+            <span className="animate-pulse">Transcribing...</span>
           ) : aiStt.isRecording ? (
             <span className="flex items-center gap-2">
               <span className={`inline-block w-3 h-3 rounded-full transition-colors duration-200 ${aiStt.isVoiceActive ? 'bg-green-500 shadow-[0_0_8px_rgba(34,197,94,0.6)]' : 'bg-red-400 animate-pulse'}`} />
