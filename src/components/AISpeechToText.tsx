@@ -111,17 +111,6 @@ const AISpeechToText = ({
           >
             {isRecording ? <PauseIcon size={30} /> : <MicIcon size={30} />}
           </button>
-          {isRecording && (
-            <span className="flex items-center gap-1.5">
-              <span
-                className={`inline-block w-2.5 h-2.5 rounded-full transition-colors duration-200 ${
-                  isVoiceActive
-                    ? "bg-green-500 shadow-[0_0_6px_rgba(34,197,94,0.6)]"
-                    : "bg-red-400 animate-pulse"
-                }`}
-              />
-            </span>
-          )}
         </>
       )}
     </div>

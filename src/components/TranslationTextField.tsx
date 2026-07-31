@@ -600,8 +600,8 @@ const TranslationTextField = () => {
                   onChange={handleChangeRegion}
                   options={(regionesFiltradas ?? regionesActuales).map(r => ({ value: r.code, label: r.nombre }))}
                   popupMatchSelectWidth={false}
-                  className="region-select"
-                  style={{ width: 100 }}
+                  size="small"
+                  className="region-select w-28 text-xs"
                 />
               </div>
             )}
