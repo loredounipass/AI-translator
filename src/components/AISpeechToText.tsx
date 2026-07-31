@@ -95,7 +95,7 @@ const AISpeechToText = ({
         <ToggleSwitch 
           checked={captureSystemAudio} 
           onChange={onToggleSystemAudio} 
-          label="Mix System Audio" 
+          label="System Audio" 
           disabled={isRecording || isProcessing}
         />
       )}
