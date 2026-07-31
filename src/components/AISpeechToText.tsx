@@ -1,5 +1,5 @@
-import React from "react";
-import { Select } from "antd";
+import React, { useEffect } from "react";
+import { Select, message } from "antd";
 import MicIcon from "../assets/MicIcon";
 import PauseIcon from "../assets/PauseIcon";
 
@@ -22,6 +22,38 @@ const AI_MODELS = [
   { value: "nvidia/nemotron-3-nano-omni-30b-a3b-reasoning", label: "Nemotron Omni 30B" },
 ];
 
+const ToggleSwitch = ({ checked, onChange, label, disabled }: { checked: boolean; onChange: () => void; label: string; disabled?: boolean }) => (
+  <div className="flex items-center gap-1.5 shrink-0">
+    <button
+      type="button"
+      role="switch"
+      aria-checked={checked}
+      onClick={onChange}
+      disabled={disabled}
+      className={`w-11 h-6 rounded-full border-none relative cursor-pointer p-0 transition-colors disabled:opacity-50 disabled:cursor-not-allowed ${
+        checked ? "bg-blue-500" : "bg-black dark:bg-slate-600"
+      }`}
+    >
+      <span
+        style={{
+          position: "absolute",
+          top: 2,
+          left: checked ? 22 : 2,
+          width: 20,
+          height: 20,
+          borderRadius: "50%",
+          background: "#fff",
+          transition: "left 0.15s",
+          boxShadow: "0 1px 2px rgba(0,0,0,0.2)",
+        }}
+      />
+    </button>
+    <span className="text-[#333] dark:text-slate-300 text-xs whitespace-nowrap cursor-pointer select-none" onClick={!disabled ? onChange : undefined}>
+      {label}
+    </span>
+  </div>
+);
+
 const AISpeechToText = ({
   aiEnabled,
   onToggle,
@@ -36,35 +68,16 @@ const AISpeechToText = ({
   selectedModel,
   onModelChange,
 }: AISpeechToTextProps) => {
+
+  useEffect(() => {
+    if (error && !isRecording) {
+      message.error(error);
+    }
+  }, [error, isRecording]);
+
   return (
-    <div className="flex items-center gap-2">
-      <button
-        type="button"
-        role="switch"
-        aria-checked={aiEnabled}
-        aria-label="Toggle AI Speech-to-Text"
-        onClick={onToggle}
-        className={`w-11 h-6 rounded-full border-none relative cursor-pointer p-0 transition-colors ${
-          aiEnabled ? "bg-blue-500" : "bg-black dark:bg-slate-600"
-        }`}
-      >
-        <span
-          style={{
-            position: "absolute",
-            top: 2,
-            left: aiEnabled ? 22 : 2,
-            width: 20,
-            height: 20,
-            borderRadius: "50%",
-            background: "#fff",
-            transition: "left 0.15s",
-            boxShadow: "0 1px 2px rgba(0,0,0,0.2)",
-          }}
-        />
-      </button>
-      <span className="text-[#333] dark:text-slate-300 text-xs whitespace-nowrap">
-        AI STT
-      </span>
+    <div className="flex flex-wrap items-center gap-2 sm:gap-3 mt-2 sm:mt-0 w-full sm:w-auto">
+      <ToggleSwitch checked={aiEnabled} onChange={onToggle} label="AI STT" />
       
       {aiEnabled && (
         <Select
@@ -72,23 +85,19 @@ const AISpeechToText = ({
           onChange={onModelChange}
           options={AI_MODELS}
           size="small"
-          className="w-40 ml-1 text-xs"
+          className="w-36 sm:w-40 text-xs"
           popupMatchSelectWidth={false}
           disabled={isRecording || isProcessing}
         />
       )}
 
       {aiEnabled && (
-        <label className="flex items-center gap-1 cursor-pointer ml-1 text-xs text-[#333] dark:text-slate-300 hover:text-blue-500 transition-colors" title="Capturar audio interno de Zoom/Llamadas">
-          <input 
-            type="checkbox" 
-            checked={captureSystemAudio} 
-            onChange={onToggleSystemAudio} 
-            disabled={isRecording || isProcessing}
-            className="cursor-pointer"
-          />
-          Mix System Audio
-        </label>
+        <ToggleSwitch 
+          checked={captureSystemAudio} 
+          onChange={onToggleSystemAudio} 
+          label="Mix System Audio" 
+          disabled={isRecording || isProcessing}
+        />
       )}
 
       {aiEnabled && (
@@ -97,7 +106,7 @@ const AISpeechToText = ({
             onClick={isRecording ? onStopRecording : onStartRecording}
             disabled={isProcessing}
             aria-label={isRecording ? "Stop AI recording" : "Start AI recording"}
-            className="bg-none border-none cursor-pointer p-1 transition-all duration-200 text-[#111] dark:text-slate-300 disabled:cursor-not-allowed disabled:opacity-50 hover:not-disabled:scale-105"
+            className="bg-none border-none cursor-pointer p-1 transition-all duration-200 text-[#111] dark:text-slate-300 disabled:cursor-not-allowed disabled:opacity-50 hover:not-disabled:scale-105 shrink-0"
           >
             {isRecording ? <PauseIcon size={30} /> : <MicIcon size={30} />}
           </button>
@@ -111,15 +120,12 @@ const AISpeechToText = ({
                 }`}
               />
               <span className="text-[10px] text-slate-400 dark:text-slate-500 whitespace-nowrap">
-                {isVoiceActive ? "Listening..." : "Waiting for voice..."}
+                {isVoiceActive ? "Listening..." : "Waiting..."}
               </span>
             </span>
           )}
           {isProcessing && (
-            <span className="text-xs text-blue-500 animate-pulse">Transcribing...</span>
-          )}
-          {error && !isRecording && (
-            <span className="text-xs text-red-500">{error}</span>
+            <span className="text-xs text-blue-500 animate-pulse whitespace-nowrap">Transcribing...</span>
           )}
         </>
       )}
