@@ -43,7 +43,7 @@ const FeedbackModal = ({ isOpen, onClose }: FeedbackModalProps) => {
     e.preventDefault();
 
     if (!user) {
-      message.error("Debes iniciar sesión para enviar feedback");
+      message.error("You must be signed in to send feedback");
       return;
     }
 
@@ -52,7 +52,7 @@ const FeedbackModal = ({ isOpen, onClose }: FeedbackModalProps) => {
     const trimmedMessage = messageText.trim();
 
     if (!trimmedFirstName || !trimmedSubject || !trimmedMessage) {
-      message.error("Completa todos los campos obligatorios");
+      message.error("Please fill in all required fields");
       return;
     }
 
@@ -71,10 +71,10 @@ const FeedbackModal = ({ isOpen, onClose }: FeedbackModalProps) => {
 
       if (error) throw error;
 
-      message.success("¡Gracias por tu feedback!");
+      message.success("Thank you for your feedback!");
       handleClose();
     } catch (err) {
-      message.error("Error al enviar feedback. Intenta de nuevo.");
+      message.error("Error sending feedback. Please try again.");
     } finally {
       setSending(false);
     }
@@ -93,12 +93,12 @@ const FeedbackModal = ({ isOpen, onClose }: FeedbackModalProps) => {
         <div className="bg-white dark:bg-slate-900 rounded-2xl shadow-2xl border border-slate-200 dark:border-slate-700 w-full max-w-md overflow-hidden animate-fadeIn">
           <div className="flex items-center justify-between p-5 pb-0">
             <h2 className="text-lg font-semibold text-slate-800 dark:text-slate-100">
-              Dejar Feedback
+              Leave Feedback
             </h2>
             <button
               onClick={handleClose}
               className="p-1.5 rounded-full text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
-              aria-label="Cerrar"
+              aria-label="Close"
             >
               <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                 <line x1="18" y1="6" x2="6" y2="18" />
@@ -108,7 +108,7 @@ const FeedbackModal = ({ isOpen, onClose }: FeedbackModalProps) => {
           </div>
           <form onSubmit={handleSubmit} className="p-5 space-y-4">
             <p className="text-sm text-slate-500 dark:text-slate-400 leading-relaxed">
-              Tus comentarios nos ayudan a mejorar. Tu correo (<strong className="text-slate-700 dark:text-slate-300">{user?.email || ""}</strong>) se incluirá automáticamente.
+              Your feedback helps us improve. Your email (<strong className="text-slate-700 dark:text-slate-300">{user?.email || ""}</strong>) will be included automatically.
             </p>
 
             <div className="flex gap-2">
@@ -117,7 +117,7 @@ const FeedbackModal = ({ isOpen, onClose }: FeedbackModalProps) => {
                   type="text"
                   value={firstName}
                   onChange={(e) => setFirstName(e.target.value)}
-                  placeholder="Nombre *"
+                  placeholder="First Name *"
                   className={`${BASE_INPUT_CLASSES} pl-3 pr-3`}
                   autoComplete="given-name"
                   required
@@ -129,7 +129,7 @@ const FeedbackModal = ({ isOpen, onClose }: FeedbackModalProps) => {
                   type="text"
                   value={lastName}
                   onChange={(e) => setLastName(e.target.value)}
-                  placeholder="Apellido"
+                  placeholder="Last Name"
                   className={`${BASE_INPUT_CLASSES} pl-3 pr-3`}
                   autoComplete="family-name"
                 />
@@ -141,7 +141,7 @@ const FeedbackModal = ({ isOpen, onClose }: FeedbackModalProps) => {
                 type="tel"
                 value={phone}
                 onChange={(e) => setPhone(e.target.value.replace(/\D/g, ""))}
-                placeholder="Teléfono (opcional)"
+                placeholder="Phone (optional)"
                 className={`${BASE_INPUT_CLASSES} pl-3 pr-3`}
                 autoComplete="tel"
               />
@@ -152,7 +152,7 @@ const FeedbackModal = ({ isOpen, onClose }: FeedbackModalProps) => {
                 type="text"
                 value={subject}
                 onChange={(e) => setSubject(e.target.value)}
-                placeholder="Asunto *"
+                placeholder="Subject *"
                 className={`${BASE_INPUT_CLASSES} pl-3 pr-3`}
                 required
               />
@@ -162,7 +162,7 @@ const FeedbackModal = ({ isOpen, onClose }: FeedbackModalProps) => {
               <textarea
                 value={messageText}
                 onChange={(e) => setMessageText(e.target.value)}
-                placeholder="Mensaje *"
+                placeholder="Message *"
                 rows={4}
                 className={`${BASE_INPUT_CLASSES} pl-3 pr-3 resize-none`}
                 required
@@ -175,7 +175,7 @@ const FeedbackModal = ({ isOpen, onClose }: FeedbackModalProps) => {
               className="w-full py-2.5 rounded-lg bg-slate-800 dark:bg-slate-200 text-white dark:text-slate-900 text-sm font-medium hover:bg-slate-700 dark:hover:bg-slate-300 disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center justify-center gap-2"
             >
               <FeedbackIcon />
-              {sending ? "Enviando..." : "Enviar feedback"}
+              {sending ? "Sending..." : "Send Feedback"}
             </button>
           </form>
         </div>
