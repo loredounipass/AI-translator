@@ -40,6 +40,7 @@ interface HeaderProps {
   user: User | null;
   onApiKeyNeeded: (provider: string) => void;
   onOpenApiSettings: () => void;
+  onOpenFeedback?: () => void;
 }
 
 const Header = ({
@@ -50,6 +51,7 @@ const Header = ({
   user,
   onApiKeyNeeded,
   onOpenApiSettings,
+  onOpenFeedback,
 }: HeaderProps) => {
   const [searchParams, setSearchParams] = useSearchParams();
   const currentModel = searchParams.get("model") || DEFAULT_MODEL;
@@ -154,7 +156,7 @@ const Header = ({
           </div>
 
           {user ? (
-            <UserAvatar user={user} onOpenApiSettings={onOpenApiSettings} />
+            <UserAvatar user={user} onOpenApiSettings={onOpenApiSettings} onOpenFeedback={onOpenFeedback} />
           ) : (
             <div className="relative group">
               <button

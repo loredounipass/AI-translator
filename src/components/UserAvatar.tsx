@@ -5,6 +5,7 @@ import { useAuth } from "contexts/AuthContext";
 interface UserAvatarProps {
     user: User;
     onOpenApiSettings?: () => void;
+    onOpenFeedback?: () => void;
 }
 
 const md5 = (s: string): string => {
@@ -36,13 +37,19 @@ const md5 = (s: string): string => {
   return ch(a0) + ch(b0) + ch(c0) + ch(d0);
 };
 
+const FeedbackIcon = () => (
+  <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
+  </svg>
+);
+
 const KeyIcon = () => (
   <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
     <path d="M21 2l-2 2m-7.61 7.61a5.5 5.5 0 1 1-7.778 7.778 5.5 5.5 0 0 1 7.777-7.777zm0 0L15.5 7.5m0 0l3 3L22 7l-3-3m-3.5 3.5L19 4" />
   </svg>
 );
 
-const UserAvatar = ({ user, onOpenApiSettings }: UserAvatarProps) => {
+const UserAvatar = ({ user, onOpenApiSettings, onOpenFeedback }: UserAvatarProps) => {
     const [open, setOpen] = useState(false);
     const [imgError, setImgError] = useState(false);
     const menuRef = useRef<HTMLDivElement>(null);
@@ -111,6 +118,16 @@ const UserAvatar = ({ user, onOpenApiSettings }: UserAvatarProps) => {
                     </div>
 
                     <div className="p-1">
+                        <button
+                            onClick={() => {
+                                setOpen(false);
+                                onOpenFeedback?.();
+                            }}
+                            className="w-full flex items-center gap-2 px-3 py-2 text-sm text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg transition-colors"
+                        >
+                            <FeedbackIcon />
+                            Dejar Feedback
+                        </button>
                         <button
                             onClick={() => {
                                 setOpen(false);

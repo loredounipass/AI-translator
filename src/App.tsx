@@ -8,6 +8,7 @@ import HistoryPanel from "./components/HistoryPanel";
 import AuthModal from "./components/AuthModal";
 import ApiKeyModal from "./components/ApiKeyModal";
 import ApiSettingsModal from "./components/ApiSettingsModal";
+import FeedbackModal from "./components/FeedbackModal";
 import UserAvatar from "./components/UserAvatar";
 import { AI_MODELS, DEFAULT_MODEL } from "utils/constants";
 import { Analytics } from "@vercel/analytics/react";
@@ -32,6 +33,7 @@ function App() {
   const [isApiKeyOpen, setIsApiKeyOpen] = useState(false);
   const [pendingProvider, setPendingProvider] = useState("nvidia");
   const [isApiSettingsOpen, setIsApiSettingsOpen] = useState(false);
+  const [isFeedbackOpen, setIsFeedbackOpen] = useState(false);
   const { user, loading: authLoading } = useAuth();
 
   const prevUserRef = React.useRef(user);
@@ -73,6 +75,7 @@ function App() {
           user={user}
           onApiKeyNeeded={(provider) => { setPendingProvider(provider); setIsApiKeyOpen(true); }}
           onOpenApiSettings={() => setIsApiSettingsOpen(true)}
+          onOpenFeedback={() => setIsFeedbackOpen(true)}
         />
         <HistoryPanel isOpen={isHistoryOpen} onClose={() => setIsHistoryOpen(false)} />
         <AuthModal isOpen={isAuthOpen} onClose={() => setIsAuthOpen(false)} />
@@ -89,6 +92,12 @@ function App() {
             isOpen={isApiSettingsOpen}
             onClose={() => setIsApiSettingsOpen(false)}
             userId={user.id}
+          />
+        )}
+        {user && (
+          <FeedbackModal
+            isOpen={isFeedbackOpen}
+            onClose={() => setIsFeedbackOpen(false)}
           />
         )}
         <Routes>
