@@ -19,7 +19,7 @@ interface AISpeechToTextProps {
 }
 
 const AI_MODELS = [
-  { value: "nvidia/nemotron-3-nano-omni-30b-a3b-reasoning", label: "Nemotron Omni" },
+  { value: "nvidia/nemotron-3-nano-omni-30b-a3b-reasoning", label: "Nemotron Omni 30B", shortLabel: "Nemotron Omni" },
 ];
 
 const ToggleSwitch = ({ checked, onChange, label, disabled }: { checked: boolean; onChange: () => void; label: string; disabled?: boolean }) => (
@@ -84,8 +84,9 @@ const AISpeechToText = ({
           value={selectedModel}
           onChange={onModelChange}
           options={AI_MODELS}
+          optionLabelProp="shortLabel"
           size="small"
-          className="w-28 sm:w-32 text-xs"
+          className="w-24 sm:w-28 text-xs"
           popupMatchSelectWidth={false}
           disabled={isRecording || isProcessing}
         />
