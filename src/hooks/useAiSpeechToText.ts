@@ -361,7 +361,9 @@ export const useAiSpeechToText = (
           }
 
           if (displayStream && displayStream.getAudioTracks().length === 0) {
-            message.warning("No compartiste el audio del sistema. Grabando solo micrófono.");
+            message.warning("No compartiste el audio del sistema. Grabación abortada.");
+            micStream.getTracks().forEach(t => t.stop());
+            return;
           } else if (displayStream) {
             // Mix the two streams
             const AudioCtx = (window as any).AudioContext || (window as any).webkitAudioContext;
@@ -381,7 +383,9 @@ export const useAiSpeechToText = (
           }
         } catch (err) {
           console.warn("Failed to get display media:", err);
-          message.warning("Captura de sistema cancelada o fallida. Grabando solo micrófono.");
+          message.info("Captura de sistema cancelada. Grabación abortada.");
+          micStream.getTracks().forEach(t => t.stop());
+          return;
         }
       }
 
