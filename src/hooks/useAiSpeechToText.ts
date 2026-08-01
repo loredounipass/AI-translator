@@ -34,7 +34,7 @@ const blobToWavBase64 = async (blob: Blob): Promise<string> => {
   if (!sharedAudioContext) {
     sharedAudioContext = getOfflineAudioContext();
   }
-  const audioContext = sharedAudioContext;
+  const audioContext = sharedAudioContext!;
   try {
     const arrayBuffer = await blob.arrayBuffer();
     const audioBuffer = await audioContext.decodeAudioData(arrayBuffer);
