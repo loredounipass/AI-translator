@@ -134,6 +134,17 @@ const isTrivialText = (text: string): boolean => {
   return trivialRegex.test(text) || urlEmailRegex.test(text);
 };
 
+/**
+ * Strip all known XML wrapper tags that the model might echo back.
+ * This is the last line of defense when structured parsing fails.
+ */
+const stripXmlWrapper = (text: string): string => {
+  return text
+    .replace(/<\/?(source_text|thinking|translation|execution_instructions|response|output|result|answer)[^>]*>/gi, "")
+    .replace(/^\s*\n/, "")
+    .trim();
+};
+
 export const translate = async (
   targetLang: string,
   sourceLang: string,
@@ -249,6 +260,17 @@ export const translate = async (
                     if (streamText && !isLeaking) {
                       options.onData(streamText);
                     }
+                  } else if (
+                    accumulatedRawText.length > 100 &&
+                    !accumulatedRawText.includes("<thinking>") &&
+                    !accumulatedRawText.includes("<translation>")
+                  ) {
+                    // Fallback: model is not following XML format at all
+                    // Strip any echoed XML tags and emit cleaned text progressively
+                    const cleaned = stripXmlWrapper(accumulatedRawText);
+                    if (cleaned) {
+                      options.onData(cleaned);
+                    }
                   }
                   // While inside <thinking> or before any tag, emit nothing to the user
                 }
@@ -277,10 +299,10 @@ export const translate = async (
           const thinkingMatch = accumulatedRawText.match(/<\/thinking>([\s\S]*)/);
           if (thinkingMatch && thinkingMatch[1]) {
             translated = thinkingMatch[1].trim();
-            // Strip any residual XML tags from the fallback
-            translated = translated.replace(/<\/?translation>/g, "").trim();
           }
         }
+        // Final safety net: strip any residual XML wrapper tags the model echoed back
+        translated = stripXmlWrapper(translated);
 
         // Hard filter contra Prompt Leakage en el resultado final
         const isLeaking = translated.includes("CONTEXT ABOUT THE USER") || translated.includes("CRITICAL RULES") || translated.includes("MANDATORY");
@@ -324,12 +346,14 @@ export const translate = async (
         if (translationMatch && translationMatch[1]) {
           translated = translationMatch[1].trim();
         } else {
-          // Fallback robusto en caso de que el modelo ignore las etiquetas XML (poco probable con Few-Shot)
+          // Fallback robusto en caso de que el modelo ignore las etiquetas XML
           const thinkingMatch = rawContent.match(/<\/thinking>([\s\S]*)/);
           if (thinkingMatch && thinkingMatch[1]) {
             translated = thinkingMatch[1].trim();
           }
         }
+        // Final safety net: strip any residual XML wrapper tags the model echoed back
+        translated = stripXmlWrapper(translated);
 
         // Hard filter contra Prompt Leakage (Non-streaming fallback)
         const isLeaking = translated.includes("CONTEXT ABOUT THE USER") || translated.includes("CRITICAL RULES") || translated.includes("MANDATORY");
