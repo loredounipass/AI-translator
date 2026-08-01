@@ -25,12 +25,8 @@ const LanguagesBar = () => {
   }, []);
 
   const [searchParams, setURLSearchParams] = useSearchParams();
-  const [sourceLang, setSourceLang] = React.useState(
-    validateLang(searchParams.get("sl"), DEFAULT_SOURCE_LANGUAGE)
-  );
-  const [targetLang, setTargetLang] = React.useState(
-    validateLang(searchParams.get("tl"), DEFAULT_TARGET_LANGUAGE)
-  );
+  const sourceLang = validateLang(searchParams.get("sl"), DEFAULT_SOURCE_LANGUAGE);
+  const targetLang = validateLang(searchParams.get("tl"), DEFAULT_TARGET_LANGUAGE);
 
   const languageOptions = React.useMemo(() => 
     AVAILABLE_LANGUAGES.map(lang => ({
@@ -55,8 +51,6 @@ const LanguagesBar = () => {
       ? (getSavedRegion(newSource) || regiones[0].code)
       : null;
 
-    setSourceLang(newSource);
-    setTargetLang(newTarget);
     setURLSearchParams(params => {
       params.set("sl", newSource);
       params.set("tl", newTarget);
@@ -84,7 +78,6 @@ const LanguagesBar = () => {
         ? (getSavedRegion(value) || regiones[0].code)
         : null;
 
-      setSourceLang(value);
       setURLSearchParams(params => {
         params.set("sl", value);
         if (nuevoSr) params.set("sr", nuevoSr);
@@ -102,7 +95,7 @@ const LanguagesBar = () => {
   const handleChangeTargetLang = (value: string) => {
     if(value === sourceLang) switchLangsHandler();
     else {
-      updateLang(value, setTargetLang, "tl");
+      updateLang(value, "tl");
       if (user) {
         languagePrefsService.savePrefs(user.id, sourceLang, value);
       }
@@ -112,11 +105,9 @@ const LanguagesBar = () => {
   const updateLang = React.useCallback(
     (
       value: string,
-      setter: React.Dispatch<React.SetStateAction<string>>,
       paramKey: "sl" | "tl"
     ) => {
       if (AVAILABLE_LANGUAGES.some((lang) => lang.code === value)) {
-        setter(value);
         setLangParam(paramKey, value);
       }
     },
@@ -131,8 +122,6 @@ const LanguagesBar = () => {
         if (prefs) {
           const validSl = validateLang(prefs.source_lang, DEFAULT_SOURCE_LANGUAGE);
           const validTl = validateLang(prefs.target_lang, DEFAULT_TARGET_LANGUAGE);
-          setSourceLang(validSl);
-          setTargetLang(validTl);
           setURLSearchParams(params => {
             params.set("sl", validSl);
             params.set("tl", validTl);
@@ -161,18 +150,8 @@ const LanguagesBar = () => {
         }
         return params;
       });
-      return; // El cambio de URL re-ejecutará el useEffect
     }
-
-    // 2. Sincronizar siempre el estado de React con la URL real 
-    // (Útil por si el usuario presiona el botón "Atrás" del navegador)
-    const validUrlSl = validateLang(urlSl, DEFAULT_SOURCE_LANGUAGE);
-    const validUrlTl = validateLang(urlTl, DEFAULT_TARGET_LANGUAGE);
-    
-    if (sourceLang !== validUrlSl) setSourceLang(validUrlSl);
-    if (targetLang !== validUrlTl) setTargetLang(validUrlTl);
-    
-  }, [searchParams, setURLSearchParams, sourceLang, targetLang]);
+  }, [searchParams, setURLSearchParams]);
 
   return (
     <div className="bg-white/80 dark:bg-slate-800/80 backdrop-blur-sm flex items-center justify-between p-2 md:p-3 px-5 md:px-6 gap-2 md:gap-4 border-b border-slate-200 dark:border-slate-700 w-full overflow-hidden transition-colors">
