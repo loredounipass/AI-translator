@@ -19,6 +19,7 @@ const wait = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
 const LANGUAGE_NAMES: Record<string, string> = {
   ar: "Arabic",
   bn: "Bengali",
+  da: "Danish",
   de: "German",
   en: "English",
   es: "Spanish",
@@ -31,10 +32,15 @@ const LANGUAGE_NAMES: Record<string, string> = {
   ko: "Korean",
   la: "Latin",
   ms: "Malay",
+  nl: "Dutch",
+  pl: "Polish",
   pt: "Portuguese",
   ru: "Russian",
+  sv: "Swedish",
+  th: "Thai",
   tr: "Turkish",
   ur: "Urdu",
+  vi: "Vietnamese",
   zh: "Chinese",
 };
 
@@ -190,15 +196,15 @@ export const translate = async (
 
   const systemPrompt = buildSystemPrompt(targetLang, sourceLang, modelId);
   const isLightweight = isLightweightModel(modelId);
-  
-  const recencyInstruction = isLightweight 
+
+  const recencyInstruction = isLightweight
     ? `\n\nFINAL INSTRUCTION:\nTranslate the source text into ${getLanguageName(targetLang)}. Output ONLY the raw translated text. Do not wrap it in any tags.`
     : `\n\nFINAL INSTRUCTION:\nTranslate the source text into ${getLanguageName(targetLang)}. ONLY output the <thinking> block followed by the <translation> block. Do not include any other text.`;
-  
+
   const finalSystemPrompt = systemPrompt + recencyInstruction;
-  
-  const userPrompt = isLightweight 
-    ? cleanedText 
+
+  const userPrompt = isLightweight
+    ? cleanedText
     : `<source_text>\n${cleanedText}\n</source_text>`;
 
   const messages = [
@@ -279,19 +285,20 @@ export const translate = async (
                       streamText = streamText.substring(0, endIndex);
                     }
                     streamText = streamText.trimStart();
-                    
+
                     // Prevenir fugas de prompt incluso durante el stream (State safety net)
                     const isLeaking = streamText.includes("CONTEXT ABOUT THE USER") || streamText.includes("CRITICAL RULES") || streamText.includes("MANDATORY");
-                    
+
                     if (streamText && !isLeaking) {
                       options.onData(streamText);
                     }
                   } else if (
-                    accumulatedRawText.length > 100 &&
+                    isLightweight ||
+                    (accumulatedRawText.length > 100 &&
                     !accumulatedRawText.includes("<thinking>") &&
-                    !accumulatedRawText.includes("<translation>")
+                    !accumulatedRawText.includes("<translation>"))
                   ) {
-                    // Fallback: model is not following XML format at all
+                    // Fallback: model is not following XML format at all (or is lightweight)
                     // Strip any echoed XML tags and emit cleaned text progressively
                     const cleaned = stripXmlWrapper(accumulatedRawText);
                     if (cleaned) {
