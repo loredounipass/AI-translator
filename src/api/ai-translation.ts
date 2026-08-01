@@ -45,7 +45,12 @@ const getLanguageName = (code: string): string => {
 
 // 2. Glosario Modularizado importado desde glossary.ts
 
-const buildSystemPrompt = (targetLang: string, sourceLang: string): string => {
+const isLightweightModel = (modelId: string): boolean => {
+  const lowerId = modelId.toLowerCase();
+  return lowerId.includes("riva") || lowerId.includes("nemotron");
+};
+
+const buildSystemPrompt = (targetLang: string, sourceLang: string, modelId: string): string => {
   const targetName = getLanguageName(targetLang);
 
   const exactKey = `${sourceLang}-${targetLang}`;
@@ -88,6 +93,20 @@ ${termsOutput.trimEnd()}
   const styleRules = `
 STYLE RULES & DOMAIN TERMINOLOGY - MANDATORY:
 - Maintain formal/professional tone appropriate for business, medical, and legal contexts.${dialectRule}${domainRules}`;
+
+  if (isLightweightModel(modelId)) {
+    return `You are a highly precise professional translator.
+Your ONLY job is to translate the source text into ${targetName}.
+
+CRITICAL RULES:
+1. Translate EVERYTHING exactly as requested. NEVER omit, summarize, or skip any factual content.
+2. Maintain strict semantic fidelity. Do not add foreign commentary or explanations.
+3. PRESERVE numbers, dates, and codes exactly as they appear: "123", "45.6", "$50".
+4. If the text is already in ${targetName}, return it AS-IS.
+5. Preserve original formatting and line breaks.
+6. OUTPUT ONLY THE TRANSLATION. NO conversational filler. NO thinking steps.
+${styleRules}`;
+  }
 
   const interpreterContext = `CONTEXT ABOUT THE USER'S JOB (FOR YOUR UNDERSTANDING ONLY):
 The user you are assisting is a professional over-the-phone interpreter. Their job involves strict training based on the following module:
@@ -169,11 +188,18 @@ export const translate = async (
     return cached;
   }
 
-  const systemPrompt = buildSystemPrompt(targetLang, sourceLang);
-  const recencyInstruction = `\n\nFINAL INSTRUCTION:\nTranslate the source text into ${getLanguageName(targetLang)}. ONLY output the <thinking> block followed by the <translation> block. Do not include any other text.`;
+  const systemPrompt = buildSystemPrompt(targetLang, sourceLang, modelId);
+  const isLightweight = isLightweightModel(modelId);
+  
+  const recencyInstruction = isLightweight 
+    ? `\n\nFINAL INSTRUCTION:\nTranslate the source text into ${getLanguageName(targetLang)}. Output ONLY the raw translated text. Do not wrap it in any tags.`
+    : `\n\nFINAL INSTRUCTION:\nTranslate the source text into ${getLanguageName(targetLang)}. ONLY output the <thinking> block followed by the <translation> block. Do not include any other text.`;
+  
   const finalSystemPrompt = systemPrompt + recencyInstruction;
   
-  const userPrompt = `<source_text>\n${cleanedText}\n</source_text>`;
+  const userPrompt = isLightweight 
+    ? cleanedText 
+    : `<source_text>\n${cleanedText}\n</source_text>`;
 
   const messages = [
     { role: "system", content: finalSystemPrompt },
