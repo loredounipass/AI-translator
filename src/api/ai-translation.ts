@@ -197,14 +197,19 @@ export const translate = async (
   const systemPrompt = buildSystemPrompt(targetLang, sourceLang, modelId);
   const isLightweight = isLightweightModel(modelId);
 
-  const recencyInstruction = isLightweight
-    ? `\n\nFINAL INSTRUCTION:\nTranslate the source text into ${getLanguageName(targetLang)}. Output ONLY the raw translated text. Do not wrap it in any tags.`
-    : `\n\nFINAL INSTRUCTION:\nTranslate the source text into ${getLanguageName(targetLang)}. ONLY output the <thinking> block followed by the <translation> block. Do not include any other text.`;
+  const sourceName = getLanguageName(sourceLang);
+  const targetName = getLanguageName(targetLang);
 
-  const finalSystemPrompt = systemPrompt + recencyInstruction;
+  const recencyInstruction = isLightweight
+    ? "" // Moved to user prompt for lightweight
+    : `\n\nFINAL INSTRUCTION:\nTranslate the source text into ${targetName}. ONLY output the <thinking> block followed by the <translation> block. Do not include any other text.`;
+
+  const finalSystemPrompt = isLightweight
+    ? systemPrompt // Keep system rules, but instruction goes to user prompt
+    : systemPrompt + recencyInstruction;
 
   const userPrompt = isLightweight
-    ? cleanedText
+    ? `Translate the following text from ${sourceName} to ${targetName}. Output ONLY the raw translated text. Do not wrap it in any tags or conversational filler.\n\nText to translate:\n${cleanedText}`
     : `<source_text>\n${cleanedText}\n</source_text>`;
 
   const messages = [
