@@ -11,6 +11,7 @@ interface HistoryPanelProps {
 
 const HistoryPanel = ({ isOpen, onClose }: HistoryPanelProps) => {
   const [history, setHistory] = useState<HistoryItem[]>([]);
+  const [showClearConfirm, setShowClearConfirm] = useState(false);
   const [searchParams, setSearchParams] = useSearchParams();
   const { user } = useAuth();
 
@@ -38,6 +39,7 @@ const HistoryPanel = ({ isOpen, onClose }: HistoryPanelProps) => {
     if (!user) return;
     await historyService.clearAll(user.id);
     setHistory([]);
+    setShowClearConfirm(false);
   };
 
   const deleteItem = async (id: string) => {
@@ -115,12 +117,20 @@ const HistoryPanel = ({ isOpen, onClose }: HistoryPanelProps) => {
           ) : (
             <div className="flex flex-col gap-3">
               <div className="flex justify-end mb-1">
-                <button
-                  onClick={clearHistory}
-                  className="text-xs text-red-400 hover:text-red-500 dark:hover:text-red-400 font-medium transition-colors"
-                >
-                  Borrar historial
-                </button>
+                {showClearConfirm ? (
+                  <div className="flex items-center gap-3 text-xs bg-red-50 dark:bg-red-900/20 px-3 py-1.5 rounded text-slate-700 dark:text-slate-300">
+                    <span>Are you sure you want to delete?</span>
+                    <button onClick={clearHistory} className="font-bold text-red-600 dark:text-red-400 hover:underline">Yes</button>
+                    <button onClick={() => setShowClearConfirm(false)} className="font-medium text-slate-500 dark:text-slate-400 hover:underline">No</button>
+                  </div>
+                ) : (
+                  <button
+                    onClick={() => setShowClearConfirm(true)}
+                    className="text-xs text-red-400 hover:text-red-500 dark:hover:text-red-400 font-medium transition-colors"
+                  >
+                    Borrar historial
+                  </button>
+                )}
               </div>
               {history.map((item) => (
                 <div
