@@ -6,7 +6,7 @@ import {
   DEFAULT_SOURCE_LANGUAGE, 
   DEFAULT_TARGET_LANGUAGE 
 } from "utils/constants";
-import { REGIONES_POR_IDIOMA, getSavedRegion, saveRegion } from "../utils/mapeoLocales";
+import { REGIONES_POR_IDIOMA, getSavedRegion, saveRegion, syncRegionsFromSupabase } from "../utils/mapeoLocales";
 import { SwitchIcon } from "../assets/SwitchIcon";
 import { useAuth } from "contexts/AuthContext";
 import { languagePrefsService } from "../utils/languagePrefsService";
@@ -114,9 +114,12 @@ const LanguagesBar = () => {
     [setLangParam]
   );
 
+  const hasLoadedPrefsForUser = React.useRef<string | null>(null);
+
   React.useEffect(() => {
-    if (user) {
-      import("../utils/mapeoLocales").then(m => m.syncRegionsFromSupabase(user.id));
+    if (user && hasLoadedPrefsForUser.current !== user.id) {
+      hasLoadedPrefsForUser.current = user.id;
+      syncRegionsFromSupabase(user.id);
       
       languagePrefsService.getPrefs(user.id).then(prefs => {
         if (prefs) {
@@ -130,7 +133,7 @@ const LanguagesBar = () => {
         }
       });
     }
-  }, [user, setURLSearchParams]);
+  }, [user]); // Quitamos setURLSearchParams para evitar loops infinitos si cambia su referencia
 
   React.useEffect(() => {
     const urlSl = searchParams.get("sl");
