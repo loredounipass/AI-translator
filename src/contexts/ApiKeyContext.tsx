@@ -18,6 +18,7 @@ interface ApiKeyContextValue {
   allKeys: Record<string, string>;
   keysLoaded: boolean;
   keysLoading: boolean;
+  keysForUserId: string | null;
 }
 
 const ApiKeyContext = createContext<ApiKeyContextValue>({
@@ -28,6 +29,7 @@ const ApiKeyContext = createContext<ApiKeyContextValue>({
   allKeys: {},
   keysLoaded: false,
   keysLoading: false,
+  keysForUserId: null,
 });
 
 export const ApiKeyProvider = ({ children }: { children: React.ReactNode }) => {
@@ -35,10 +37,12 @@ export const ApiKeyProvider = ({ children }: { children: React.ReactNode }) => {
   const [keys, setKeys] = useState<Record<string, string>>({});
   const [keysLoaded, setKeysLoaded] = useState(false);
   const [keysLoading, setKeysLoading] = useState(true); // true desde el inicio para bloquear hasta que la carga real termine
+  const [keysForUserId, setKeysForUserId] = useState<string | null>(null);
 
   const fetchKeys = useCallback(async () => {
     setKeysLoading(true);
     setKeysLoaded(false);
+    setKeysForUserId(null);
     if (!user) {
       setKeys({});
       setKeysLoaded(true);
@@ -53,6 +57,7 @@ export const ApiKeyProvider = ({ children }: { children: React.ReactNode }) => {
     setKeys(mapped);
     setKeysLoaded(true);
     setKeysLoading(false);
+    setKeysForUserId(user.id);
   }, [user]);
 
   useEffect(() => {
@@ -83,7 +88,7 @@ export const ApiKeyProvider = ({ children }: { children: React.ReactNode }) => {
   );
 
   return (
-    <ApiKeyContext.Provider value={{ getKey, setKey, removeKey, fetchKeys, allKeys: keys, keysLoaded, keysLoading }}>
+    <ApiKeyContext.Provider value={{ getKey, setKey, removeKey, fetchKeys, allKeys: keys, keysLoaded, keysLoading, keysForUserId }}>
       {children}
     </ApiKeyContext.Provider>
   );

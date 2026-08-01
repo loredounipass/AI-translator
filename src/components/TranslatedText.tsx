@@ -39,7 +39,7 @@ const TranslatedText = () => {
   const { user, loading: authLoading } = useAuth();
   const userRef = React.useRef(user);
   userRef.current = user;
-  const { getKey, keysLoaded, keysLoading } = useApiKey();
+  const { getKey, keysLoaded, keysLoading, keysForUserId } = useApiKey();
   const apiKey = getKey(apiProvider);
   const apiKeyRef = React.useRef(apiKey);
   apiKeyRef.current = apiKey;
@@ -166,6 +166,9 @@ const TranslatedText = () => {
 
     if (keysLoading || !keysLoaded) return;
 
+    // Guard: don't check apiKey until keys have been fetched for the CURRENT user
+    if (user && keysForUserId !== user.id) return;
+
     if (!apiKey) {
       if (!apiKeyNotifiedRef.current) {
         apiKeyNotifiedRef.current = true;
@@ -191,7 +194,7 @@ const TranslatedText = () => {
         abortControllerRef.current.abort();
       }
     };
-  }, [text, tl, sl, modelId, debouncedTranslateHandler, user, apiKey, apiProvider, authLoading, keysLoaded, keysLoading]);
+  }, [text, tl, sl, modelId, debouncedTranslateHandler, user, apiKey, apiProvider, authLoading, keysLoaded, keysLoading, keysForUserId]);
 
   React.useEffect(() => {
     const event = new CustomEvent("translatedTextChanged", {
