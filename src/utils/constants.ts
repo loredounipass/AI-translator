@@ -60,7 +60,7 @@ export const AI_MODELS: Record<string, AIModel> = {
     name: "Gemini 3.5 Flash",
     provider: "Google",
     apiProvider: "google",
-    free: false,
+    free: true,
   },
   "google-gemini-3-1-pro": {
     id: "gemini-3.1-pro",
@@ -74,7 +74,7 @@ export const AI_MODELS: Record<string, AIModel> = {
     name: "Gemini 3.5 Flash-Lite",
     provider: "Google",
     apiProvider: "google",
-    free: false,
+    free: true,
   },
 };
 
