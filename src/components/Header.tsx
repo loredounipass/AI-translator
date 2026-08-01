@@ -55,6 +55,7 @@ const Header = ({
 }: HeaderProps) => {
   const [searchParams, setSearchParams] = useSearchParams();
   const currentModel = searchParams.get("model") || DEFAULT_MODEL;
+  const currentProvider = searchParams.get("provider") || AI_MODELS[currentModel]?.apiProvider || "nvidia";
   const { getKey } = useApiKey();
 
   const handleModelChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
@@ -94,7 +95,7 @@ const Header = ({
 
         <div className="flex items-center gap-1 sm:gap-2">
           <div className="relative flex items-center gap-1.5 group">
-            <span className="hidden sm:inline text-xs text-slate-500 dark:text-slate-400 font-medium tracking-wide">AI model</span>
+            <span className="hidden sm:inline text-xs text-slate-500 dark:text-slate-400 font-medium tracking-wide">AI</span>
             <div className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-300 cursor-help transition-colors">
               <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                 <circle cx="12" cy="12" r="10"></circle>
@@ -110,24 +111,53 @@ const Header = ({
                   <line x1="12" y1="9" x2="12" y2="13"></line>
                   <line x1="12" y1="17" x2="12.01" y2="17"></line>
                 </svg>
-                Attention
+                Providers & Models
               </div>
-              These open-source neural network models vary in inference speed and translation accuracy. <strong className="text-slate-100 font-medium">Mistral</strong> and <strong className="text-slate-100 font-medium">Llama</strong> offer the fastest response times, while Mistral typically delivers the highest quality results for this application.
+              Select your preferred AI provider and model. Open-source neural network models vary in inference speed and translation accuracy.
               <div className="absolute top-0 right-[7.5rem] -mt-1.5 w-3 h-3 bg-slate-800 transform rotate-45"></div>
             </div>
           </div>
-          <select
-            value={currentModel}
-            onChange={handleModelChange}
-            className="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-200 text-xs rounded px-2 py-1 outline-none focus:border-blue-400 shadow-sm font-sans max-w-[120px] sm:max-w-none truncate transition-colors"
-          >
-            {Object.entries(AI_MODELS).map(([key, model]) => (
-              <option key={key} value={key}>
-                {model.name}
-              </option>
-            ))}
-            <option value="__settings__">── API Keys ──</option>
-          </select>
+          <div className="flex gap-2">
+            <select
+              value={currentProvider}
+              onChange={(e) => {
+                const newProvider = e.target.value;
+                const newParams = new URLSearchParams(searchParams);
+                newParams.set("provider", newProvider);
+                if (newProvider === "nvidia") {
+                  newParams.set("model", DEFAULT_MODEL);
+                } else {
+                  newParams.delete("model");
+                }
+                setSearchParams(newParams);
+              }}
+              className="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-200 text-xs rounded px-2 py-1 outline-none focus:border-blue-400 shadow-sm font-sans max-w-[100px] sm:max-w-none truncate transition-colors"
+            >
+              <option value="nvidia">NVIDIA</option>
+              <option value="openai">OpenAI</option>
+              <option value="anthropic">Anthropic</option>
+            </select>
+
+            <select
+              value={currentProvider === "nvidia" ? (currentModel || "") : "coming_soon"}
+              onChange={handleModelChange}
+              disabled={currentProvider !== "nvidia"}
+              className="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-200 text-xs rounded px-2 py-1 outline-none focus:border-blue-400 shadow-sm font-sans max-w-[120px] sm:max-w-none truncate transition-colors disabled:opacity-50 disabled:bg-slate-50 disabled:dark:bg-slate-800/50"
+            >
+              {currentProvider === "nvidia" ? (
+                <>
+                  {Object.entries(AI_MODELS).map(([key, model]) => (
+                    <option key={key} value={key}>
+                      {model.name}
+                    </option>
+                  ))}
+                  <option value="__settings__">── API Keys ──</option>
+                </>
+              ) : (
+                <option value="coming_soon" disabled>Coming soon...</option>
+              )}
+            </select>
+          </div>
 
           <div className="relative group">
             <button

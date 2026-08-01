@@ -28,7 +28,7 @@ const TranslatedText = () => {
   const modelKey = searchParams.get("model") || DEFAULT_MODEL;
   const config = AI_MODELS[modelKey as keyof typeof AI_MODELS] || AI_MODELS[DEFAULT_MODEL as keyof typeof AI_MODELS];
   const modelId = config.id;
-  const apiProvider = config.apiProvider;
+  const apiProvider = searchParams.get("provider") || config.apiProvider;
   const isRTL = ["ar", "fa", "ur"].includes(tl);
   const [translatedText, setTranslatedText] = React.useState<string[]>([]);
   const [isTranslating, setIsTranslating] = React.useState(false);
