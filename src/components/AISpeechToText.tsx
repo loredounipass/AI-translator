@@ -20,7 +20,8 @@ interface AISpeechToTextProps {
 
 const AI_MODELS = [
   { value: "nvidia/nemotron-3-nano-omni-30b-a3b-reasoning", label: "Nemotron Omni 30B", shortLabel: "Nemotron Omni" },
-  { value: "google/gemini-3.5-flash", label: "Gemini 3.5 Flash", shortLabel: "Gemini 3.5" },
+  { value: "google/gemini-3.5-flash", label: "Gemini 3.5 Flash", shortLabel: "Gemini Flash" },
+  { value: "google/gemini-3.5-flash-lite", label: "Gemini 3.5 Flash-Lite", shortLabel: "Gemini Lite" },
 ];
 
 const ToggleSwitch = ({ checked, onChange, label, disabled }: { checked: boolean; onChange: () => void; label: string; disabled?: boolean }) => (
