@@ -144,18 +144,35 @@ const LanguagesBar = () => {
   }, [user, setURLSearchParams]);
 
   React.useEffect(() => {
-    if (!searchParams.get("sl")) {
-      const sl = DEFAULT_SOURCE_LANGUAGE;
-      const regiones = REGIONES_POR_IDIOMA[sl];
-      const savedSr = getSavedRegion(sl);
+    const urlSl = searchParams.get("sl");
+    const urlTl = searchParams.get("tl");
+
+    // 1. Si faltan parámetros en la URL, los rellenamos (en una sola navegación)
+    if (!urlSl || !urlTl) {
       setURLSearchParams(params => {
-        params.set("sl", sl);
-        if (regiones) params.set("sr", savedSr || regiones[0].code);
+        if (!params.get("sl")) {
+          const sl = DEFAULT_SOURCE_LANGUAGE;
+          const regiones = REGIONES_POR_IDIOMA[sl];
+          params.set("sl", sl);
+          if (regiones) params.set("sr", getSavedRegion(sl) || regiones[0].code);
+        }
+        if (!params.get("tl")) {
+          params.set("tl", DEFAULT_TARGET_LANGUAGE);
+        }
         return params;
       });
+      return; // El cambio de URL re-ejecutará el useEffect
     }
-    if (!searchParams.get("tl")) setLangParam("tl", DEFAULT_TARGET_LANGUAGE);
-  }, [searchParams, setLangParam, setURLSearchParams]);
+
+    // 2. Sincronizar siempre el estado de React con la URL real 
+    // (Útil por si el usuario presiona el botón "Atrás" del navegador)
+    const validUrlSl = validateLang(urlSl, DEFAULT_SOURCE_LANGUAGE);
+    const validUrlTl = validateLang(urlTl, DEFAULT_TARGET_LANGUAGE);
+    
+    if (sourceLang !== validUrlSl) setSourceLang(validUrlSl);
+    if (targetLang !== validUrlTl) setTargetLang(validUrlTl);
+    
+  }, [searchParams, setURLSearchParams, sourceLang, targetLang]);
 
   return (
     <div className="bg-white/80 dark:bg-slate-800/80 backdrop-blur-sm flex items-center justify-between p-2 md:p-3 px-5 md:px-6 gap-2 md:gap-4 border-b border-slate-200 dark:border-slate-700 w-full overflow-hidden transition-colors">
