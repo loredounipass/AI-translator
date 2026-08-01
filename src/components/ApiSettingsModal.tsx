@@ -1,7 +1,6 @@
-import { useState, useEffect } from "react";
-import { message } from "antd";
-import { apiKeyService } from "../utils/apiKeyService";
-import { API_PROVIDERS, useApiKey } from "../contexts/ApiKeyContext";
+import React from "react";
+import { API_PROVIDERS } from "../contexts/ApiKeyContext";
+import { useApiSettingsModalLogic } from "../hooks/useApiSettingsModalLogic";
 
 interface ApiSettingsModalProps {
   isOpen: boolean;
@@ -41,7 +40,7 @@ const CheckIcon = () => (
 const TrashIcon = () => (
   <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
     <polyline points="3 6 5 6 21 6" />
-    <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
+    <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2-2v2" />
   </svg>
 );
 
@@ -59,61 +58,19 @@ const maskKey = (key: string): string => {
 };
 
 const ApiSettingsModal = ({ isOpen, onClose, userId }: ApiSettingsModalProps) => {
-  const { setKey, removeKey, allKeys } = useApiKey();
-  const [editProvider, setEditProvider] = useState<string | null>(null);
-  const [inputValue, setInputValue] = useState("");
-  const [showInput, setShowInput] = useState(false);
-  const [saving, setSaving] = useState(false);
-
-  useEffect(() => {
-    if (!isOpen) {
-      setEditProvider(null);
-      setInputValue("");
-      setShowInput(false);
-    }
-  }, [isOpen]);
-
-  const handleSave = async (provider: string) => {
-    const trimmed = inputValue.trim();
-    if (!trimmed) return;
-    setSaving(true);
-    try {
-      await apiKeyService.upsert(userId, provider, trimmed);
-      setKey(provider, trimmed);
-      message.success(`API key de ${API_PROVIDERS.find((p) => p.id === provider)?.name || provider} guardada`);
-      setEditProvider(null);
-      setInputValue("");
-      setShowInput(false);
-    } catch (err) {
-      message.error((err as Error).message);
-    } finally {
-      setSaving(false);
-    }
-  };
-
-  const handleDelete = async (provider: string) => {
-    setSaving(true);
-    try {
-      await apiKeyService.remove(userId, provider);
-      removeKey(provider);
-      message.success(`API key de ${API_PROVIDERS.find((p) => p.id === provider)?.name || provider} eliminada`);
-      if (editProvider === provider) {
-        setEditProvider(null);
-        setInputValue("");
-        setShowInput(false);
-      }
-    } catch (err) {
-      message.error((err as Error).message);
-    } finally {
-      setSaving(false);
-    }
-  };
-
-  const startEdit = (provider: string) => {
-    setEditProvider(provider);
-    setInputValue("");
-    setShowInput(false);
-  };
+  const {
+    editProvider,
+    setEditProvider,
+    inputValue,
+    setInputValue,
+    showInput,
+    setShowInput,
+    saving,
+    allKeys,
+    handleSave,
+    handleDelete,
+    startEdit,
+  } = useApiSettingsModalLogic({ isOpen, onClose, userId });
 
   if (!isOpen) return null;
 

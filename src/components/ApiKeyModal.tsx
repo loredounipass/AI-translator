@@ -1,7 +1,6 @@
-import { useState } from "react";
-import { message } from "antd";
-import { apiKeyService } from "../utils/apiKeyService";
-import { API_PROVIDERS, useApiKey } from "../contexts/ApiKeyContext";
+import React from "react";
+import { API_PROVIDERS } from "../contexts/ApiKeyContext";
+import { useApiKeyModalLogic } from "../hooks/useApiKeyModalLogic";
 
 interface ApiKeyModalProps {
   isOpen: boolean;
@@ -33,29 +32,14 @@ const EyeIcon = ({ visible }: { visible: boolean }) => (
 );
 
 const ApiKeyModal = ({ isOpen, onClose, userId, provider = "nvidia" }: ApiKeyModalProps) => {
-  const [apiKey, setApiKey] = useState("");
-  const [showKey, setShowKey] = useState(false);
-  const [saving, setSaving] = useState(false);
-  const { setKey } = useApiKey();
-
-  const handleSave = async (e: React.FormEvent) => {
-    e.preventDefault();
-    const trimmed = apiKey.trim();
-    if (!trimmed) return;
-
-    setSaving(true);
-    try {
-      await apiKeyService.upsert(userId, provider, trimmed);
-      setKey(provider, trimmed);
-      message.success(`API key de ${API_PROVIDERS.find((p) => p.id === provider)?.name || provider} guardada`);
-      setApiKey("");
-      onClose();
-    } catch (err) {
-      message.error((err as Error).message);
-    } finally {
-      setSaving(false);
-    }
-  };
+  const {
+    apiKey,
+    setApiKey,
+    showKey,
+    setShowKey,
+    saving,
+    handleSave,
+  } = useApiKeyModalLogic({ userId, provider, onClose });
 
   if (!isOpen) return null;
 
