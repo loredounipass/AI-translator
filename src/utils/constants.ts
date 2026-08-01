@@ -55,14 +55,13 @@ export const AI_MODELS: Record<string, AIModel> = {
     apiProvider: "nvidia",
     free: true,
   },
-
-  // "nvidia-deepseek": {
-  //   id: "deepseek-ai/deepseek-v4-flash",
-  //   name: "DeepSeek V4 Flash",
-  //   provider: "DeepSeek",
-  //   apiProvider: "nvidia",
-  //   free: true,
-  // },
+  "google-gemini-flash": {
+    id: "gemini-1.5-flash",
+    name: "Gemini 1.5 Flash",
+    provider: "Google",
+    apiProvider: "google",
+    free: false,
+  },
 };
 
 export const DEFAULT_MODEL = "nvidia-nemotron";

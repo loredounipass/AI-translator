@@ -126,6 +126,8 @@ const Header = ({
                 newParams.set("provider", newProvider);
                 if (newProvider === "nvidia") {
                   newParams.set("model", DEFAULT_MODEL);
+                } else if (newProvider === "google") {
+                  newParams.set("model", "google-gemini-flash");
                 } else {
                   newParams.delete("model");
                 }
@@ -140,14 +142,14 @@ const Header = ({
             </select>
 
             <select
-              value={currentProvider === "nvidia" ? (currentModel || "") : "coming_soon"}
+              value={(currentProvider === "nvidia" || currentProvider === "google") ? (currentModel || "") : "coming_soon"}
               onChange={handleModelChange}
-              disabled={currentProvider !== "nvidia"}
+              disabled={currentProvider !== "nvidia" && currentProvider !== "google"}
               className="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-200 text-xs rounded px-2 py-1 outline-none focus:border-blue-400 shadow-sm font-sans max-w-[120px] sm:max-w-none truncate transition-colors disabled:opacity-50 disabled:bg-slate-50 disabled:dark:bg-slate-800/50"
             >
-              {currentProvider === "nvidia" ? (
+              {currentProvider === "nvidia" || currentProvider === "google" ? (
                 <>
-                  {Object.entries(AI_MODELS).map(([key, model]) => (
+                  {Object.entries(AI_MODELS).filter(([_, model]) => model.apiProvider === currentProvider).map(([key, model]) => (
                     <option key={key} value={key}>
                       {model.name}
                     </option>

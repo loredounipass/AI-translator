@@ -37,6 +37,12 @@ const PROVIDERS = {
     authHeaderName: "x-api-key",
     extraHeaders: { "anthropic-version": "2023-06-01" },
   },
+  google: {
+    hostname: "generativelanguage.googleapis.com",
+    path: "/v1beta/openai/chat/completions",
+    authHeader: (key) => `Bearer ${key}`,
+    authHeaderName: "Authorization",
+  },
 };
 
 const generateCacheKey = (bodyObj, apiKey = "") => {

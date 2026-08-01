@@ -6,6 +6,7 @@ export const API_PROVIDERS = [
   { id: "nvidia", name: "NVIDIA", keyPrefix: "nvapi-", docUrl: "https://build.nvidia.com/" },
   { id: "openai", name: "OpenAI", keyPrefix: "sk-", docUrl: "https://platform.openai.com/api-keys" },
   { id: "anthropic", name: "Anthropic", keyPrefix: "sk-ant-", docUrl: "https://console.anthropic.com/settings/keys" },
+  { id: "google", name: "Google", keyPrefix: "AIza", docUrl: "https://aistudio.google.com/app/apikey" },
 ] as const;
 
 export type ProviderId = (typeof API_PROVIDERS)[number]["id"];
