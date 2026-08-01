@@ -1,7 +1,7 @@
 CREATE TABLE IF NOT EXISTS public.user_api_keys (
   id BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
   user_id UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
-  provider TEXT NOT NULL CHECK (provider IN ('nvidia', 'openai', 'anthropic')),
+  provider TEXT NOT NULL CHECK (provider IN ('nvidia', 'openai', 'anthropic', 'google')),
   api_key TEXT NOT NULL,
   created_at TIMESTAMPTZ DEFAULT NOW(),
   updated_at TIMESTAMPTZ DEFAULT NOW(),
