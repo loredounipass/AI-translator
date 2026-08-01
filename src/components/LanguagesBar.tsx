@@ -9,6 +9,7 @@ import {
 import { REGIONES_POR_IDIOMA, getSavedRegion, saveRegion } from "../utils/mapeoLocales";
 import { SwitchIcon } from "../assets/SwitchIcon";
 import { useAuth } from "contexts/AuthContext";
+import { languagePrefsService } from "../utils/languagePrefsService";
 
 const LanguagesBar = () => {
   const { user } = useAuth();
@@ -66,6 +67,10 @@ const LanguagesBar = () => {
       }
       return params;
     });
+
+    if (user) {
+      languagePrefsService.savePrefs(user.id, newSource, newTarget);
+    }
   };
 
   const handleChangeSourceLang = async (value: string) => {
@@ -87,12 +92,21 @@ const LanguagesBar = () => {
         return params;
       });
       if (nuevoSr && user) await saveRegion(value, nuevoSr, user.id);
+      
+      if (user) {
+        languagePrefsService.savePrefs(user.id, value, targetLang);
+      }
     }
   };
 
   const handleChangeTargetLang = (value: string) => {
     if(value === sourceLang) switchLangsHandler();
-    else updateLang(value, setTargetLang, "tl");
+    else {
+      updateLang(value, setTargetLang, "tl");
+      if (user) {
+        languagePrefsService.savePrefs(user.id, sourceLang, value);
+      }
+    }
   };
 
   const updateLang = React.useCallback(
@@ -112,8 +126,22 @@ const LanguagesBar = () => {
   React.useEffect(() => {
     if (user) {
       import("../utils/mapeoLocales").then(m => m.syncRegionsFromSupabase(user.id));
+      
+      languagePrefsService.getPrefs(user.id).then(prefs => {
+        if (prefs) {
+          const validSl = validateLang(prefs.source_lang, DEFAULT_SOURCE_LANGUAGE);
+          const validTl = validateLang(prefs.target_lang, DEFAULT_TARGET_LANGUAGE);
+          setSourceLang(validSl);
+          setTargetLang(validTl);
+          setURLSearchParams(params => {
+            params.set("sl", validSl);
+            params.set("tl", validTl);
+            return params;
+          });
+        }
+      });
     }
-  }, [user]);
+  }, [user, setURLSearchParams]);
 
   React.useEffect(() => {
     if (!searchParams.get("sl")) {
