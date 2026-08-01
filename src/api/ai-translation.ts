@@ -145,13 +145,45 @@ ${styleRules}
 };
 
 // 1. Cortocircuito Inteligente
-const isTrivialText = (text: string): boolean => {
+const isTrivialText = (text: string, sourceLang?: string, targetLang?: string): boolean => {
   // Solo números, puntuación básica o espacios
   const trivialRegex = /^[\d\s.,!?;:'"()[\]{}<>\-_=+*/\\|@#%^&`~]+$/;
   // Emails o URLs puras
   const urlEmailRegex = /^(https?:\/\/[^\s]+|[^\s@]+@[^\s@]+\.[^\s@]+)$/i;
 
-  return trivialRegex.test(text) || urlEmailRegex.test(text);
+  if (trivialRegex.test(text) || urlEmailRegex.test(text)) {
+    return true;
+  }
+
+  // Detect addresses (mostly from English to Spanish)
+  if (sourceLang === "en" && targetLang === "es") {
+    const normalized = text.toLowerCase().trim();
+    
+    const streetSuffixes = "st|street|ave|avenue|aven|rd|road|blvd|boulevard|ln|lane|dr|drive|ct|court|pkwy|parkway";
+    const aptSuffixes = "apt|apartment|apart|suite|ste|unit|rm|room|bldg|building";
+    
+    // An address starting with a number: "1234 main st" or "1234 main st apt 2"
+    const startsWithNumberAddress = new RegExp(`^\\d+\\s+[a-z0-9\\s.,-]+\\b(${streetSuffixes})\\b`, "i");
+    
+    // An address that might start with a word (e.g. "rodrick ave") but has apt/state/zip
+    const hasAptAddress = new RegExp(`^([a-z0-9\\s.,-]+)?\\b(${streetSuffixes})\\b[\\s.,]+\\b(${aptSuffixes})\\b\\s*\\d+`, "i");
+    const hasStateZip = new RegExp(`^([a-z0-9\\s.,-]+)?\\b(${streetSuffixes})\\b[\\s.,]+\\b([a-z]{2})\\b\\s+\\d{5}`, "i");
+    
+    // A short string ending in a street suffix
+    const isJustStreet = new RegExp(`^[a-z0-9\\s.,-]+\\b(${streetSuffixes})\\b$`, "i");
+    const noPronouns = !/\\b(i|you|he|she|it|we|they|my|your|his|her|our|their|the|a|an|is|are|was|were|am|going|live|address)\\b/i.test(normalized);
+
+    if (
+      startsWithNumberAddress.test(normalized) ||
+      hasAptAddress.test(normalized) ||
+      hasStateZip.test(normalized) ||
+      (isJustStreet.test(normalized) && noPronouns)
+    ) {
+      return true;
+    }
+  }
+
+  return false;
 };
 
 /**
@@ -176,7 +208,7 @@ export const translate = async (
   if (!cleanedText) throw new Error("El texto a traducir no puede estar vacío.");
 
   // Cortocircuito Inteligente: No llamar a la IA para texto que no necesita traducción
-  if (isTrivialText(cleanedText)) {
+  if (isTrivialText(cleanedText, sourceLang, targetLang)) {
     return text.trim(); // Devolvemos el texto original
   }
 
