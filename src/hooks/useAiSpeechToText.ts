@@ -6,30 +6,36 @@ import { vadCheckInterval } from "../utils/vadConstants";
 
 const STORAGE_KEY = "aiSttEnabled";
 
-// Reuse a single AudioContext for decoding (PERF-04)
+
+
+// INITIALIZE OFFLINE AUDIO CONTEXT FOR DECODING
 const getOfflineAudioContext = () => {
   const AudioCtx = (window.AudioContext || (window as any).webkitAudioContext) as any;
   return new AudioCtx({ sampleRate: 16000 });
 };
 let sharedAudioContext: AudioContext | null = null;
 
+
+
+// LOG TO CONSOLE IN DEVELOPMENT MODE
 const logDev = (...args: any[]) => {
   if (process.env.NODE_ENV === "development") {
     console.log(...args);
   }
 };
 
+
+
+// LOG ERROR TO CONSOLE IN DEVELOPMENT MODE
 const errorDev = (...args: any[]) => {
   if (process.env.NODE_ENV === "development") {
     console.error(...args);
   }
 };
 
-/**
- * Convert an audio Blob to a mono WAV base64 string.
- * Forces mono downmix, uses efficient base64 encoding, and properly
- * cleans up the temporary AudioContext.
- */
+
+
+// CONVERT AUDIO BLOB TO MONO WAV BASE64 STRING
 const blobToWavBase64 = async (blob: Blob): Promise<string> => {
   if (!sharedAudioContext) {
     sharedAudioContext = getOfflineAudioContext();
@@ -39,7 +45,6 @@ const blobToWavBase64 = async (blob: Blob): Promise<string> => {
     const arrayBuffer = await blob.arrayBuffer();
     const audioBuffer = await audioContext.decodeAudioData(arrayBuffer);
 
-    // Always downmix to mono for reliable WAV encoding
     const numChannels = audioBuffer.numberOfChannels;
     const sampleRate = audioBuffer.sampleRate;
     const monoLength = audioBuffer.length;
@@ -56,7 +61,6 @@ const blobToWavBase64 = async (blob: Blob): Promise<string> => {
       }
     }
 
-    // Build WAV header + data (mono, 16-bit PCM)
     const dataLength = monoLength * 2;
     const bufferLength = 44 + dataLength;
     const wavBuffer = new ArrayBuffer(bufferLength);
@@ -90,7 +94,6 @@ const blobToWavBase64 = async (blob: Blob): Promise<string> => {
       offset += 2;
     }
 
-    // Efficient base64 conversion using chunked approach (PERF-02)
     const bytes = new Uint8Array(wavBuffer);
     const chunkSize = 8192;
     const parts: string[] = [];
@@ -105,6 +108,9 @@ const blobToWavBase64 = async (blob: Blob): Promise<string> => {
   }
 };
 
+
+
+// CHECK IF ERROR MESSAGE IS FATAL
 const isFatalError = (errorMsg: string): boolean => {
   const fatalPatterns = [
     "API key", "api key", "401", "403", "Unauthorized", "Forbidden",
@@ -113,6 +119,9 @@ const isFatalError = (errorMsg: string): boolean => {
   return fatalPatterns.some(p => errorMsg.includes(p));
 };
 
+
+
+// MAIN HOOK FOR AI SPEECH TO TEXT
 export const useAiSpeechToText = (
   onChunk: (text: string) => void,
   sourceLang: string
@@ -136,7 +145,6 @@ export const useAiSpeechToText = (
   const isRequestingSystemAudioRef = useRef<boolean>(false);
   const { getKey } = useApiKey();
 
-  // VAD refs
   const audioContextRef = useRef<AudioContext | null>(null);
   const analyserRef = useRef<AnalyserNode | null>(null);
   const vadIntervalRef = useRef<number | null>(null);
@@ -148,19 +156,30 @@ export const useAiSpeechToText = (
   const prevVoiceActiveRef = useRef<boolean>(false);
   const maxDurationTimeoutRef = useRef<number | null>(null);
 
+
+
+  // PERSIST AI SPEECH TO TEXT TOGGLE STATE
   const setAiStt = useCallback((value: boolean) => {
     setIsAiStt(value);
     try { localStorage.setItem(STORAGE_KEY, value ? "true" : "false"); } catch { }
   }, []);
 
+
+
+  // PERSIST SELECTED AI MODEL
   const handleSetModel = useCallback((model: string) => {
     setSelectedModel(model);
     try { localStorage.setItem("aiSttModel", model); } catch { }
   }, []);
 
+
+
+  // TOGGLE AI SPEECH TO TEXT STATE
   const toggleAiStt = useCallback(() => setAiStt(!isAiStt), [isAiStt, setAiStt]);
 
-  // --- System audio capture ---
+
+
+  // CLEANUP DISPLAY MEDIA STREAM FOR SYSTEM AUDIO
   const cleanupDisplayStream = useCallback(() => {
     if (displayStreamRef.current) {
       const stream = displayStreamRef.current;
@@ -169,11 +188,17 @@ export const useAiSpeechToText = (
     }
   }, []);
 
+
+
+  // STOP SYSTEM AUDIO CAPTURE
   const stopSystemAudioCapture = useCallback(() => {
     cleanupDisplayStream();
     setCaptureSystemAudio(false);
   }, [cleanupDisplayStream]);
 
+
+
+  // REQUEST AND START SYSTEM AUDIO CAPTURE
   const startSystemAudioCapture = useCallback(async () => {
     if (isRequestingSystemAudioRef.current) return;
     isRequestingSystemAudioRef.current = true;
@@ -192,7 +217,6 @@ export const useAiSpeechToText = (
 
       const hasAudioTrack = displayStream.getAudioTracks().length > 0;
 
-      // If the user stops sharing via the browser UI, turn the toggle off
       const onStreamEnded = () => {
         cleanupDisplayStream();
         setCaptureSystemAudio(false);
@@ -223,6 +247,9 @@ export const useAiSpeechToText = (
     }
   }, [cleanupDisplayStream]);
 
+
+
+  // TOGGLE SYSTEM AUDIO CAPTURE
   const toggleSystemAudio = useCallback(() => {
     if (captureSystemAudio) {
       stopSystemAudioCapture();
@@ -231,7 +258,9 @@ export const useAiSpeechToText = (
     }
   }, [captureSystemAudio, stopSystemAudioCapture, startSystemAudioCapture]);
 
-  // --- Cleanup VAD ---
+
+
+  // STOP VOICE ACTIVITY DETECTION AND RESET BUFFERS
   const stopVAD = useCallback(() => {
     if (vadIntervalRef.current) {
       window.clearInterval(vadIntervalRef.current);
@@ -247,7 +276,9 @@ export const useAiSpeechToText = (
     setIsVoiceActive(false);
   }, []);
 
-  // --- Start VAD on existing stream ---
+
+
+  // INITIALIZE AND START VOICE ACTIVITY DETECTION ON AUDIO STREAM
   const startVAD = useCallback((stream: MediaStream) => {
     stopVAD();
 
@@ -255,7 +286,6 @@ export const useAiSpeechToText = (
     const audioCtx: AudioContext = new AudioCtx();
     audioContextRef.current = audioCtx;
     
-    // Ensure AudioContext is running (might be suspended if delayed by permissions)
     if (audioCtx.state === 'suspended') {
       audioCtx.resume().catch(console.warn);
     }
@@ -300,13 +330,14 @@ export const useAiSpeechToText = (
     }, vadCheckInterval);
   }, [stopVAD]);
 
-  // --- Stop Recording (user presses stop) => sends audio ---
+
+
+  // STOP RECORDING AUDIO AND VAD AND TRIGGER AUDIO SEND
   const stopRecording = useCallback(() => {
     if (maxDurationTimeoutRef.current) {
       window.clearTimeout(maxDurationTimeoutRef.current);
       maxDurationTimeoutRef.current = null;
     }
-    // Stop VAD first
     stopVAD();
     if (audioContextRef.current) {
       try { audioContextRef.current.close(); } catch { }
@@ -318,13 +349,11 @@ export const useAiSpeechToText = (
       mixAudioContextRef.current = null;
     }
 
-    // Stop MediaRecorder — this triggers ondataavailable with the full recording
     const recorder = mediaRecorderRef.current;
     if (recorder && recorder.state !== "inactive") {
-      try { recorder.stop(); } catch { /* already stopped */ }
+      try { recorder.stop(); } catch { }
     }
 
-    // Stop all tracks (except display stream, we keep it alive until user stops it via browser UI)
     if (streamRef.current) {
       streamRef.current.getTracks().forEach((t) => t.stop());
       streamRef.current = null;
@@ -334,7 +363,9 @@ export const useAiSpeechToText = (
     setIsRecording(false);
   }, [stopVAD]);
 
-  // --- Send audio to API (only called when user stops) ---
+
+
+  // CONVERT AUDIO BLOB SEND TO API FOR TRANSCRIPTION AND PROCESS RESPONSE
   const sendAudioChunk = useCallback(async (blob: Blob) => {
     const provider = selectedModel.includes("google") ? "google" : "nvidia";
     const apiKey = getKey(provider);
@@ -346,7 +377,6 @@ export const useAiSpeechToText = (
       return;
     }
 
-    // Skip very small blobs (likely silence — user pressed stop immediately)
     if (blob.size < 1000) {
       logDev("[AI-STT:send] Skipping tiny blob (no speech detected)");
       return;
@@ -401,14 +431,12 @@ export const useAiSpeechToText = (
           message.error("Error: " + errorMsg);
           setError(errorMsg);
         }
-        // If no text and no fatal error, silently ignore (silence/empty audio)
       }
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : String(err);
       errorDev("[AI-STT:send] Error:", errorMessage);
 
       if (errorMessage.includes("Unable to decode audio data")) {
-        // Silent audio chunk — ignore completely
         return;
       }
 
@@ -423,7 +451,9 @@ export const useAiSpeechToText = (
     }
   }, [getKey, onChunk, selectedModel, sourceLang]);
 
-  // --- Start Recording (user presses mic) ---
+
+
+  // REQUEST MICROPHONE MIX SYSTEM AUDIO AND START CONTINUOUS RECORDING
   const startRecording = useCallback(async () => {
     setError(null);
     try {
@@ -440,14 +470,12 @@ export const useAiSpeechToText = (
 
       let finalStream = micStream;
 
-      // If system audio capture is on, mix the already-active display stream
       if (captureSystemAudio) {
         const displayStream = displayStreamRef.current;
         const isStreamActive = displayStream && displayStream.getTracks().some(t => t.readyState === 'live');
 
         if (isStreamActive) {
           try {
-            // Mix the two streams
             const AudioCtx = (window as any).AudioContext || (window as any).webkitAudioContext;
             const mixCtx = new AudioCtx({ sampleRate: 16000 });
             mixAudioContextRef.current = mixCtx;
@@ -466,12 +494,10 @@ export const useAiSpeechToText = (
             console.warn("Failed to mix system audio:", err);
           }
         } else {
-          // Toggle is on but there is no active display stream — turn it off
           setCaptureSystemAudio(false);
         }
       }
 
-      // Choose best available MIME type
       let mimeType = "audio/webm;codecs=opus";
       if (!MediaRecorder.isTypeSupported(mimeType)) mimeType = "audio/webm";
       if (!MediaRecorder.isTypeSupported(mimeType)) mimeType = "audio/mp4";
@@ -483,7 +509,6 @@ export const useAiSpeechToText = (
       const recorder = new MediaRecorder(finalStream, recorderOptions);
       mediaRecorderRef.current = recorder;
 
-      // Only fires when recorder.stop() is called (no timeslice)
       recorder.ondataavailable = (event) => {
         if (event.data.size > 0) sendAudioChunk(event.data);
       };
@@ -492,14 +517,11 @@ export const useAiSpeechToText = (
         message.error("Error en la grabación");
       };
 
-      // Start recording continuously — NO timeslice, audio is sent only on stop
       recorder.start();
       setIsRecording(true);
 
-      // Start VAD on the final mixed stream
       startVAD(finalStream);
 
-      // Limitar la grabación a 60 segundos (PERF-03)
       maxDurationTimeoutRef.current = window.setTimeout(() => {
         message.warning("Tiempo máximo de grabación (60s) alcanzado.");
         stopRecording();
@@ -512,7 +534,9 @@ export const useAiSpeechToText = (
     }
   }, [sendAudioChunk, startVAD, captureSystemAudio]);
 
-  // If AI STT is toggled off while recording, stop
+
+
+  // HANDLE SIDE EFFECTS FOR AI STT TOGGLE
   useEffect(() => {
     if (!isAiStt) {
       if (isRecording) stopRecording();
@@ -520,7 +544,9 @@ export const useAiSpeechToText = (
     }
   }, [isAiStt, isRecording, stopRecording, stopSystemAudioCapture]);
 
-  // Cleanup on unmount
+
+
+  // CLEANUP ON UNMOUNT
   useEffect(() => () => {
     stopRecording();
     cleanupDisplayStream();
