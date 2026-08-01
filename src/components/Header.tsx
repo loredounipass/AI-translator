@@ -127,7 +127,7 @@ const Header = ({
                 if (newProvider === "nvidia") {
                   newParams.set("model", DEFAULT_MODEL);
                 } else if (newProvider === "google") {
-                  newParams.set("model", "google-gemini-flash");
+                  newParams.set("model", "google-gemini-3-5-flash");
                 } else {
                   newParams.delete("model");
                 }

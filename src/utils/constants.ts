@@ -55,9 +55,23 @@ export const AI_MODELS: Record<string, AIModel> = {
     apiProvider: "nvidia",
     free: true,
   },
-  "google-gemini-flash": {
-    id: "gemini-1.5-flash",
-    name: "Gemini 1.5 Flash",
+  "google-gemini-3-5-flash": {
+    id: "gemini-3.5-flash",
+    name: "Gemini 3.5 Flash",
+    provider: "Google",
+    apiProvider: "google",
+    free: false,
+  },
+  "google-gemini-3-1-pro": {
+    id: "gemini-3.1-pro",
+    name: "Gemini 3.1 Pro",
+    provider: "Google",
+    apiProvider: "google",
+    free: false,
+  },
+  "google-gemini-3-5-flash-lite": {
+    id: "gemini-3.5-flash-lite",
+    name: "Gemini 3.5 Flash-Lite",
     provider: "Google",
     apiProvider: "google",
     free: false,
