@@ -136,6 +136,7 @@ const Header = ({
               <option value="nvidia">NVIDIA</option>
               <option value="openai">OpenAI</option>
               <option value="anthropic">Anthropic</option>
+              <option value="google">Google</option>
             </select>
 
             <select
