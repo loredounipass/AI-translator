@@ -18,20 +18,16 @@ const wait = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
 
 const LANGUAGE_NAMES: Record<string, string> = {
   ar: "Arabic",
-  bn: "Bengali",
   da: "Danish",
   de: "German",
   en: "English",
   es: "Spanish",
-  fa: "Persian",
   fr: "French",
   hi: "Hindi",
   it: "Italian",
   id: "Indonesian",
   ja: "Japanese",
   ko: "Korean",
-  la: "Latin",
-  ms: "Malay",
   nl: "Dutch",
   pl: "Polish",
   pt: "Portuguese",
@@ -39,7 +35,6 @@ const LANGUAGE_NAMES: Record<string, string> = {
   sv: "Swedish",
   th: "Thai",
   tr: "Turkish",
-  ur: "Urdu",
   vi: "Vietnamese",
   zh: "Chinese",
 };
