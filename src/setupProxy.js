@@ -11,13 +11,14 @@ const cache = new Map();
 // 2. Request Coalescing
 const pendingRequests = new Map();
 
-// 3. Global Rate Limiter (timestamp-based, no race condition)
-const RATE_LIMIT_MAX = 50; // Max requests per window
-const RATE_LIMIT_WINDOW = 60000; // 1 minute
-const requestTimestamps = [];
+// 3. Rate Limiter
+const RATE_LIMIT_MAX = 50;
+const RATE_LIMIT_WINDOW = 60000;
+const rateLimitMap = new Map();
+let requestCounter = 0;
 
-const generateCacheKey = (bodyStr) => {
-  return crypto.createHash("sha256").update(bodyStr || "").digest("hex");
+const generateCacheKey = (bodyStr, apiKey = "") => {
+  return crypto.createHash("sha256").update((bodyStr || "") + apiKey).digest("hex");
 };
 
 const cleanupCache = () => {
@@ -30,6 +31,14 @@ const cleanupCache = () => {
   if (cache.size > MAX_CACHE_SIZE) {
     const keysToRemove = Array.from(cache.keys()).slice(0, cache.size - MAX_CACHE_SIZE);
     keysToRemove.forEach(k => cache.delete(k));
+  }
+  for (const [ip, timestamps] of rateLimitMap.entries()) {
+    const validTimestamps = timestamps.filter(t => t >= now - RATE_LIMIT_WINDOW);
+    if (validTimestamps.length === 0) {
+      rateLimitMap.delete(ip);
+    } else {
+      rateLimitMap.set(ip, validTimestamps);
+    }
   }
 };
 
@@ -44,16 +53,20 @@ module.exports = function (app) {
       return next();
     }
 
+    const MAX_ASR_BODY = 15 * 1024 * 1024;
+    const MAX_TRANSLATE_BODY = 100 * 1024;
+    const contentLength = parseInt(req.headers['content-length'] || '0', 10);
+    
     // --- Rate Limiting ---
     const now = Date.now();
-    while (requestTimestamps.length > 0 && requestTimestamps[0] < now - RATE_LIMIT_WINDOW) {
-      requestTimestamps.shift();
+    const ip = req.headers['x-forwarded-for']?.split(',')[0]?.trim() || req.socket?.remoteAddress || 'unknown';
+    let timestamps = rateLimitMap.get(ip) || [];
+    timestamps = timestamps.filter(t => t >= now - RATE_LIMIT_WINDOW);
+    if (timestamps.length >= RATE_LIMIT_MAX) {
+      return res.status(429).json({ error: "Too Many Requests" });
     }
-    if (requestTimestamps.length >= RATE_LIMIT_MAX) {
-      res.status(429).json({ error: "Too Many Requests" });
-      return;
-    }
-    requestTimestamps.push(now);
+    timestamps.push(now);
+    rateLimitMap.set(ip, timestamps);
 
     const processRequest = async (bodyBuffer) => {
       const bodyStr = bodyBuffer.toString();
@@ -81,8 +94,14 @@ module.exports = function (app) {
       }
 
       if (isAsr && parsedBody) {
-        const model = parsedBody.model || "nvidia/nemotron-3-nano-omni-30b-a3b-reasoning";
-        const { audio, language, mime, interpreterContext } = parsedBody;
+        if (contentLength > MAX_ASR_BODY) {
+          return res.status(413).json({ error: "Payload too large" });
+        }
+        
+        const ALLOWED_ASR_MODELS = new Set(['nvidia/nemotron-3-nano-omni-30b-a3b-reasoning', 'nvidia/canary-1b-asr']);
+        const model = ALLOWED_ASR_MODELS.has(parsedBody.model) ? parsedBody.model : "nvidia/nemotron-3-nano-omni-30b-a3b-reasoning";
+        
+        const { audio, language, mime } = parsedBody;
         if (!audio) return res.status(400).json({ error: "audio is required" });
         
         const lang = language || "multi";
@@ -90,9 +109,7 @@ module.exports = function (app) {
         
         const langInstruction = lang === "multi" ? "Detect the spoken language automatically." : `The spoken language is ${lang}.`;
         
-        const contextInstruction = interpreterContext 
-          ? `\nCONTEXT ABOUT THE USER'S JOB (FOR YOUR UNDERSTANDING ONLY):\nThe user you are assisting is a professional over-the-phone interpreter. Their job involves strict training based on the following module:\n\n${JSON.stringify(interpreterContext, null, 2)}\n\nThat is the USER'S job. YOUR ROLE AS THE AI is to transcribe the text exactly as spoken to help them. You MUST NOT try to do the user's job or intervene in the scenarios.`
-          : "";
+        const contextInstruction = `\nCONTEXT ABOUT THE USER'S JOB (FOR YOUR UNDERSTANDING ONLY):\nThe user you are assisting is a professional over-the-phone interpreter. Their job involves strict training where they must interpret in the 1st person, maintain neutrality, and not break character or assist the parties directly. They use specific 3rd person phrases (e.g. "The interpreter needs repetition") only when necessary.\n\nThat is the USER'S job. YOUR ROLE AS THE AI is to transcribe the text exactly as spoken to help them. You MUST NOT try to do the user's job or intervene in the scenarios.`;
 
         cleanBody = JSON.stringify({
           model,
@@ -126,8 +143,12 @@ CRITICAL RULES:
         res.status(401).json({ error: "API key requerida — proporciona tu propia key de NVIDIA" });
         return;
       }
+      
+      if (!isAsr && contentLength > MAX_TRANSLATE_BODY) {
+        return res.status(413).json({ error: "Payload too large" });
+      }
 
-      const cacheKey = generateCacheKey(cleanBody);
+      const cacheKey = generateCacheKey(cleanBody, apiKey);
       
       let isStreaming = false;
       try {
@@ -137,7 +158,10 @@ CRITICAL RULES:
         // Ignored
       }
       
-      cleanupCache();
+      requestCounter++;
+      if (requestCounter % 50 === 0) {
+        cleanupCache();
+      }
       
       if (!isStreaming) {
         // Return from Cache
@@ -179,19 +203,22 @@ CRITICAL RULES:
 
       if (isStreaming) {
         const proxyReq = https.request(options, (proxyRes) => {
-          // Pass all headers from Nvidia directly back to the client
-          const headersToSet = { ...proxyRes.headers };
+          const safeHeaders = {};
+          const allowedHeaders = ['content-type', 'cache-control', 'transfer-encoding', 'content-encoding'];
+          for (const key of allowedHeaders) {
+            if (proxyRes.headers[key]) safeHeaders[key] = proxyRes.headers[key];
+          }
           // Ensure it's treated as SSE
-          headersToSet['Cache-Control'] = 'no-cache';
-          headersToSet['Connection'] = 'keep-alive';
+          safeHeaders['Cache-Control'] = 'no-cache';
+          safeHeaders['Connection'] = 'keep-alive';
           
-          res.writeHead(proxyRes.statusCode, headersToSet);
+          res.writeHead(proxyRes.statusCode, safeHeaders);
           proxyRes.pipe(res);
         });
 
         proxyReq.on("error", () => {
           if (!res.headersSent) {
-            res.status(500).json({ error: "Proxy streaming error" });
+            res.status(502).json({ error: "Proxy streaming error" });
           }
         });
         proxyReq.end(cleanBody);
@@ -247,6 +274,7 @@ CRITICAL RULES:
         });
 
         proxyReq.on("error", reject);
+        proxyReq.setTimeout(45000, () => { proxyReq.destroy(); reject(new Error("Translation request timed out")); });
         proxyReq.end(cleanBody);
       });
 

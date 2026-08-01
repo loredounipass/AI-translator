@@ -1,11 +1,29 @@
 import { useState, useRef, useCallback, useEffect } from "react";
 import { message } from "antd";
 import { useApiKey } from "../contexts/ApiKeyContext";
-import { INTERPETERAI_TRAINING_MODULE } from "../api/interpreter.guide";
 import { analyzeAudioFrame } from "../utils/vadMath";
 import { vadCheckInterval } from "../utils/vadConstants";
 
 const STORAGE_KEY = "aiSttEnabled";
+
+// Reuse a single AudioContext for decoding (PERF-04)
+const getOfflineAudioContext = () => {
+  const AudioCtx = (window.AudioContext || (window as any).webkitAudioContext) as any;
+  return new AudioCtx({ sampleRate: 16000 });
+};
+let sharedAudioContext: AudioContext | null = null;
+
+const logDev = (...args: any[]) => {
+  if (process.env.NODE_ENV === "development") {
+    console.log(...args);
+  }
+};
+
+const errorDev = (...args: any[]) => {
+  if (process.env.NODE_ENV === "development") {
+    console.error(...args);
+  }
+};
 
 /**
  * Convert an audio Blob to a mono WAV base64 string.
@@ -13,8 +31,10 @@ const STORAGE_KEY = "aiSttEnabled";
  * cleans up the temporary AudioContext.
  */
 const blobToWavBase64 = async (blob: Blob): Promise<string> => {
-  const AudioCtx = (window.AudioContext || (window as any).webkitAudioContext) as any;
-  const audioContext = new AudioCtx({ sampleRate: 16000 });
+  if (!sharedAudioContext) {
+    sharedAudioContext = getOfflineAudioContext();
+  }
+  const audioContext = sharedAudioContext;
   try {
     const arrayBuffer = await blob.arrayBuffer();
     const audioBuffer = await audioContext.decodeAudioData(arrayBuffer);
@@ -70,21 +90,18 @@ const blobToWavBase64 = async (blob: Blob): Promise<string> => {
       offset += 2;
     }
 
-    // Efficient base64 conversion using chunked approach
+    // Efficient base64 conversion using chunked approach (PERF-02)
     const bytes = new Uint8Array(wavBuffer);
     const chunkSize = 8192;
     const parts: string[] = [];
     for (let i = 0; i < bytes.length; i += chunkSize) {
       const chunk = bytes.subarray(i, Math.min(i + chunkSize, bytes.length));
-      let binaryChunk = "";
-      for (let j = 0; j < chunk.length; j++) {
-        binaryChunk += String.fromCharCode(chunk[j]);
-      }
-      parts.push(binaryChunk);
+      parts.push(String.fromCharCode.apply(null, Array.from(chunk)));
     }
     return btoa(parts.join(""));
-  } finally {
-    try { await audioContext.close(); } catch { /* already closed */ }
+  } catch (err) {
+    sharedAudioContext = null;
+    throw err;
   }
 };
 
@@ -128,6 +145,8 @@ export const useAiSpeechToText = (
   const floatDataRef = useRef<Float32Array | null>(null);
   const byteDataRef = useRef<Uint8Array | null>(null);
   const fftDataRef = useRef<Uint8Array | null>(null);
+  const prevVoiceActiveRef = useRef<boolean>(false);
+  const maxDurationTimeoutRef = useRef<number | null>(null);
 
   const setAiStt = useCallback((value: boolean) => {
     setIsAiStt(value);
@@ -224,6 +243,7 @@ export const useAiSpeechToText = (
     byteDataRef.current = null;
     fftDataRef.current = null;
     analyserRef.current = null;
+    prevVoiceActiveRef.current = false;
     setIsVoiceActive(false);
   }, []);
 
@@ -272,12 +292,20 @@ export const useAiSpeechToText = (
 
       rmsSmoothRef.current = newSmooth;
       noiseFloorRef.current = newNoiseFloor;
-      setIsVoiceActive(isVoiceDetected);
+      
+      if (prevVoiceActiveRef.current !== isVoiceDetected) {
+        prevVoiceActiveRef.current = isVoiceDetected;
+        setIsVoiceActive(isVoiceDetected);
+      }
     }, vadCheckInterval);
   }, [stopVAD]);
 
   // --- Stop Recording (user presses stop) => sends audio ---
   const stopRecording = useCallback(() => {
+    if (maxDurationTimeoutRef.current) {
+      window.clearTimeout(maxDurationTimeoutRef.current);
+      maxDurationTimeoutRef.current = null;
+    }
     // Stop VAD first
     stopVAD();
     if (audioContextRef.current) {
@@ -309,7 +337,7 @@ export const useAiSpeechToText = (
   // --- Send audio to API (only called when user stops) ---
   const sendAudioChunk = useCallback(async (blob: Blob) => {
     const apiKey = getKey("nvidia");
-    console.log("[AI-STT:send] blob size:", blob.size, "mime:", blob.type);
+    logDev("[AI-STT:send] blob size:", blob.size, "mime:", blob.type);
 
     if (!apiKey) {
       message.error("No NVIDIA API key configured");
@@ -319,7 +347,7 @@ export const useAiSpeechToText = (
 
     // Skip very small blobs (likely silence — user pressed stop immediately)
     if (blob.size < 1000) {
-      console.log("[AI-STT:send] Skipping tiny blob (no speech detected)");
+      logDev("[AI-STT:send] Skipping tiny blob (no speech detected)");
       return;
     }
 
@@ -338,24 +366,23 @@ export const useAiSpeechToText = (
           language: lang,
           mime: "audio/wav",
           model: selectedModel,
-          interpreterContext: INTERPETERAI_TRAINING_MODULE,
         }),
       });
 
-      console.log("[AI-STT:send] Response status:", res.status);
+      logDev("[AI-STT:send] Response status:", res.status);
 
       const responseText = await res.text();
       let data;
       try {
         data = JSON.parse(responseText);
       } catch {
-        console.error("[AI-STT:send] Invalid JSON:", responseText.substring(0, 300));
+        errorDev("[AI-STT:send] Invalid JSON:", responseText.substring(0, 300));
         message.warning("Error al procesar respuesta del servidor");
         return;
       }
 
       if (data.text && data.text.trim()) {
-        console.log("[AI-STT:send] Transcription:", data.text.substring(0, 100));
+        logDev("[AI-STT:send] Transcription:", data.text.substring(0, 100));
         setError(null);
         onChunk(data.text.trim());
       } else {
@@ -376,7 +403,7 @@ export const useAiSpeechToText = (
       }
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : String(err);
-      console.error("[AI-STT:send] Error:", errorMessage);
+      errorDev("[AI-STT:send] Error:", errorMessage);
 
       if (errorMessage.includes("Unable to decode audio data")) {
         // Silent audio chunk — ignore completely
@@ -470,7 +497,13 @@ export const useAiSpeechToText = (
       // Start VAD on the final mixed stream
       startVAD(finalStream);
 
-      console.log("[AI-STT:start] Recording started (continuous, send on stop), mime:", mimeType || "default");
+      // Limitar la grabación a 60 segundos (PERF-03)
+      maxDurationTimeoutRef.current = window.setTimeout(() => {
+        message.warning("Tiempo máximo de grabación (60s) alcanzado.");
+        stopRecording();
+      }, 60000);
+
+      logDev("[AI-STT:start] Recording started (continuous, send on stop), mime:", mimeType || "default");
     } catch {
       setError("Microphone access denied");
       message.error("No se pudo acceder al micrófono");

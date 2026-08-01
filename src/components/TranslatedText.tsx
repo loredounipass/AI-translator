@@ -133,19 +133,18 @@ const TranslatedText = () => {
       const txt = translatedText.join("\n");
       if (navigator.clipboard && navigator.clipboard.writeText) {
         await navigator.clipboard.writeText(txt);
+        setCopied(true);
+        if (copyTimeoutRef.current) {
+          window.clearTimeout(copyTimeoutRef.current);
+        }
+        copyTimeoutRef.current = window.setTimeout(() => setCopied(false), 2000);
       } else {
-        const textArea = document.createElement("textarea");
-        textArea.value = txt;
-        document.body.appendChild(textArea);
-        textArea.select();
-        document.execCommand("copy");
-        textArea.remove();
+        notification.error({
+          message: "No se pudo copiar",
+          description: "La API de portapapeles no está disponible o requiere conexión segura (HTTPS).",
+          placement: "topRight"
+        });
       }
-      setCopied(true);
-      if (copyTimeoutRef.current) {
-        window.clearTimeout(copyTimeoutRef.current);
-      }
-      copyTimeoutRef.current = window.setTimeout(() => setCopied(false), 2000);
     } catch (error) {
       console.error("Copy error:", error);
     }
@@ -155,7 +154,7 @@ const TranslatedText = () => {
     () =>
       debounce((text: string, targetLang: string, sourceLang: string, mId: string) => {
         translateHandler(text, targetLang, sourceLang, mId);
-      }, 300),
+      }, 600),
     [translateHandler]
   );
 

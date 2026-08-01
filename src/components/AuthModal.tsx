@@ -79,6 +79,14 @@ const AuthModal = ({ isOpen, onClose }: AuthModalProps) => {
     const handleEmailSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
 
+        if (mode === "register") {
+            const strongPasswordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d).{8,}$/;
+            if (!strongPasswordRegex.test(password)) {
+                message.error("La contraseña debe tener al menos 8 caracteres, una mayúscula, una minúscula y un número.");
+                return;
+            }
+        }
+
         setSubmitting(true);
 
         let error: string | null = null;

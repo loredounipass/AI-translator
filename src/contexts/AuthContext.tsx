@@ -105,7 +105,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     );
 
     const logout = useCallback(async () => {
-        await supabase.auth.signOut({ scope: "global" });
+        await supabase.auth.signOut({ scope: "local" });
         // The onAuthStateChange listener will automatically clear the local state
     }, []);
 

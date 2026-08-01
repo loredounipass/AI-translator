@@ -58,15 +58,17 @@ const FeedbackModal = ({ isOpen, onClose }: FeedbackModalProps) => {
 
     setSending(true);
 
+    const sanitizeHtml = (str: string) => str.replace(/<[^>]*>?/gm, '');
+
     try {
       const { error } = await supabase.from("feedback").insert({
         user_id: user.id,
-        first_name: trimmedFirstName,
-        last_name: lastName.trim(),
+        first_name: sanitizeHtml(trimmedFirstName),
+        last_name: sanitizeHtml(lastName.trim()),
         phone: phone.trim(),
         email: user.email || "",
-        subject: trimmedSubject,
-        message: trimmedMessage,
+        subject: sanitizeHtml(trimmedSubject),
+        message: sanitizeHtml(trimmedMessage),
       });
 
       if (error) throw error;

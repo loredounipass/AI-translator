@@ -14,7 +14,8 @@ const cache = new Map();
 const pendingRequests = new Map();
 const RATE_LIMIT_MAX = 50;
 const RATE_LIMIT_WINDOW = 60000;
-const requestTimestamps = [];
+const rateLimitMap = new Map(); // Map<ip, timestamps[]>
+let requestCounter = 0;
 
 const PROVIDERS = {
   nvidia: {
@@ -38,8 +39,8 @@ const PROVIDERS = {
   },
 };
 
-const generateCacheKey = (bodyObj) => {
-  return crypto.createHash("sha256").update(JSON.stringify(bodyObj || {})).digest("hex");
+const generateCacheKey = (bodyObj, apiKey = "") => {
+  return crypto.createHash("sha256").update(JSON.stringify(bodyObj || {}) + apiKey).digest("hex");
 };
 
 const cleanupCache = () => {
@@ -50,6 +51,16 @@ const cleanupCache = () => {
   if (cache.size > MAX_CACHE_SIZE) {
     const keysToRemove = Array.from(cache.keys()).slice(0, cache.size - MAX_CACHE_SIZE);
     keysToRemove.forEach(k => cache.delete(k));
+  }
+  
+  // Cleanup rateLimitMap
+  for (const [ip, timestamps] of rateLimitMap.entries()) {
+    const validTimestamps = timestamps.filter(t => t >= now - RATE_LIMIT_WINDOW);
+    if (validTimestamps.length === 0) {
+      rateLimitMap.delete(ip);
+    } else {
+      rateLimitMap.set(ip, validTimestamps);
+    }
   }
 };
 
@@ -72,15 +83,23 @@ module.exports = async (req, res) => {
     return res.status(405).json({ error: "Method not allowed" });
   }
 
+  const MAX_ASR_BODY = 15 * 1024 * 1024;   // 15MB
+  const MAX_TRANSLATE_BODY = 100 * 1024;    // 100KB
+  const contentLength = parseInt(req.headers['content-length'] || '0', 10);
+
   if (req.body && req.body._type === "asr") {
+    if (contentLength > MAX_ASR_BODY) {
+      return res.status(413).json({ error: "Payload too large" });
+    }
     const apiKey = (req.body && req.body.apiKey) || "";
     if (!apiKey) {
       return res.status(401).json({ error: "NVIDIA API key requerida para ASR" });
     }
 
-    const model = req.body.model || "nvidia/nemotron-3-nano-omni-30b-a3b-reasoning";
+    const ALLOWED_ASR_MODELS = new Set(['nvidia/nemotron-3-nano-omni-30b-a3b-reasoning', 'nvidia/canary-1b-asr']);
+    const model = ALLOWED_ASR_MODELS.has(req.body.model) ? req.body.model : "nvidia/nemotron-3-nano-omni-30b-a3b-reasoning";
 
-    const { audio, language, mime, interpreterContext } = req.body;
+    const { audio, language, mime } = req.body;
     if (!audio) {
       return res.status(400).json({ error: "audio (base64) es requerido" });
     }
@@ -93,9 +112,7 @@ module.exports = async (req, res) => {
       ? "Detect the spoken language automatically."
       : `The spoken language is ${lang}.`;
 
-    const contextInstruction = interpreterContext 
-      ? `\nCONTEXT ABOUT THE USER'S JOB (FOR YOUR UNDERSTANDING ONLY):\nThe user you are assisting is a professional over-the-phone interpreter. Their job involves strict training based on the following module:\n\n${JSON.stringify(interpreterContext, null, 2)}\n\nThat is the USER'S job. YOUR ROLE AS THE AI is to transcribe the text exactly as spoken to help them. You MUST NOT try to do the user's job or intervene in the scenarios.`
-      : "";
+    const contextInstruction = `\nCONTEXT ABOUT THE USER'S JOB (FOR YOUR UNDERSTANDING ONLY):\nThe user you are assisting is a professional over-the-phone interpreter. Their job involves strict training where they must interpret in the 1st person, maintain neutrality, and not break character or assist the parties directly. They use specific 3rd person phrases (e.g. "The interpreter needs repetition") only when necessary.\n\nThat is the USER'S job. YOUR ROLE AS THE AI is to transcribe the text exactly as spoken to help them. You MUST NOT try to do the user's job or intervene in the scenarios.`;
 
     const chatBody = JSON.stringify({
       model,
@@ -183,7 +200,8 @@ CRITICAL RULES:
 
       return res.status(statusCode).json(parsed);
     } catch (err) {
-      return res.status(502).json({ error: "ASR proxy error: " + (err instanceof Error ? err.message : String(err)) });
+      console.error("ASR proxy error:", err);
+      return res.status(502).json({ error: "An error occurred while processing the request." });
     }
   }
 
@@ -203,14 +221,19 @@ CRITICAL RULES:
   delete cleanBody.apiKey;
   delete cleanBody.provider;
 
-  const now = Date.now();
-  while (requestTimestamps.length > 0 && requestTimestamps[0] < now - RATE_LIMIT_WINDOW) {
-    requestTimestamps.shift();
+  if (contentLength > MAX_TRANSLATE_BODY) {
+    return res.status(413).json({ error: "Payload too large" });
   }
-  if (requestTimestamps.length >= RATE_LIMIT_MAX) {
+
+  const now = Date.now();
+  const ip = req.headers['x-forwarded-for']?.split(',')[0]?.trim() || req.socket?.remoteAddress || 'unknown';
+  let timestamps = rateLimitMap.get(ip) || [];
+  timestamps = timestamps.filter(t => t >= now - RATE_LIMIT_WINDOW);
+  if (timestamps.length >= RATE_LIMIT_MAX) {
     return res.status(429).json({ error: "Too Many Requests" });
   }
-  requestTimestamps.push(now);
+  timestamps.push(now);
+  rateLimitMap.set(ip, timestamps);
 
   const isStreaming = cleanBody.stream === true;
 
@@ -232,18 +255,27 @@ CRITICAL RULES:
     };
 
     const proxyReq = https.request(options, (proxyRes) => {
-      res.writeHead(proxyRes.statusCode, proxyRes.headers);
+      const safeHeaders = {};
+      const allowedHeaders = ['content-type', 'cache-control', 'transfer-encoding', 'content-encoding'];
+      for (const key of allowedHeaders) {
+        if (proxyRes.headers[key]) safeHeaders[key] = proxyRes.headers[key];
+      }
+      res.writeHead(proxyRes.statusCode, safeHeaders);
       proxyRes.pipe(res);
     });
     proxyReq.on("error", (err) => {
-      if (!res.headersSent) res.status(500).json({ error: "Proxy stream error" });
+      if (!res.headersSent) res.status(502).json({ error: "Proxy stream error" });
     });
     proxyReq.end(bodyStr);
     return;
   }
 
-  const cacheKey = generateCacheKey(cleanBody);
-  cleanupCache();
+  const cacheKey = generateCacheKey(cleanBody, apiKey);
+  
+  requestCounter++;
+  if (requestCounter % 50 === 0) {
+    cleanupCache();
+  }
 
   if (cache.has(cacheKey)) {
     const cached = cache.get(cacheKey);
@@ -296,6 +328,7 @@ CRITICAL RULES:
       });
     });
     proxyReq.on("error", reject);
+    proxyReq.setTimeout(45000, () => { proxyReq.destroy(); reject(new Error("Translation request timed out")); });
     proxyReq.end(bodyStr);
   });
 

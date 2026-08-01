@@ -111,7 +111,7 @@ const ApiSettingsModal = ({ isOpen, onClose, userId }: ApiSettingsModalProps) =>
 
   const startEdit = (provider: string) => {
     setEditProvider(provider);
-    setInputValue(allKeys[provider] || "");
+    setInputValue("");
     setShowInput(false);
   };
 
