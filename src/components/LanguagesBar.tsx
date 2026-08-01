@@ -119,15 +119,27 @@ const LanguagesBar = () => {
   React.useEffect(() => {
     if (user && hasLoadedPrefsForUser.current !== user.id) {
       hasLoadedPrefsForUser.current = user.id;
-      syncRegionsFromSupabase(user.id);
-      
-      languagePrefsService.getPrefs(user.id).then(prefs => {
+      Promise.all([
+        syncRegionsFromSupabase(user.id),
+        languagePrefsService.getPrefs(user.id)
+      ]).then(([_, prefs]) => {
         if (prefs) {
           const validSl = validateLang(prefs.source_lang, DEFAULT_SOURCE_LANGUAGE);
           const validTl = validateLang(prefs.target_lang, DEFAULT_TARGET_LANGUAGE);
+          
           setURLSearchParams(params => {
             params.set("sl", validSl);
             params.set("tl", validTl);
+            
+            // Set the correct dialect (region) for the newly loaded source language
+            const regiones = REGIONES_POR_IDIOMA[validSl];
+            if (regiones) {
+              const savedSr = getSavedRegion(validSl);
+              params.set("sr", savedSr || regiones[0].code);
+            } else {
+              params.delete("sr");
+            }
+            
             return params;
           });
         }
