@@ -191,7 +191,22 @@ CRITICAL RULES:
           /the audio (?:is|appears|seems) (?:empty|silent|blank)/i,
         ];
         
-        if (metaPatterns.some(p => p.test(transcribedText))) {
+        // Filter out Prompt Leakage (model hallucinating the system prompt during silence)
+        const promptLeakagePatterns = [
+          /professional over-the-phone interpreter/i,
+          /interpret in the 1st person/i,
+          /maintain neutrality/i,
+          /not break character/i,
+          /The interpreter needs repetition/i,
+          /That is the USER'?S job/i,
+          /YOUR ROLE AS THE AI/i,
+          /transcribe the audio exactly as spoken/i,
+          /Output ONLY the transcribed text/i,
+          /NO explanations, NO formatting/i,
+          /DO NOT add any conversational filler/i,
+        ];
+        
+        if (metaPatterns.some(p => p.test(transcribedText)) || promptLeakagePatterns.some(p => p.test(transcribedText))) {
           transcribedText = "";
         }
         

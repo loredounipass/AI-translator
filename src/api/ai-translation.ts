@@ -159,10 +159,13 @@ export const translate = async (
   }
 
   const systemPrompt = buildSystemPrompt(targetLang, sourceLang);
-  const userPrompt = `Translate the following text to ${getLanguageName(targetLang)}.\n\n${cleanedText}`;
+  const recencyInstruction = `\n\nFINAL INSTRUCTION:\nTranslate the source text into ${getLanguageName(targetLang)}. ONLY output the <thinking> block followed by the <translation> block. Do not include any other text.`;
+  const finalSystemPrompt = systemPrompt + recencyInstruction;
+  
+  const userPrompt = `<source_text>\n${cleanedText}\n</source_text>`;
 
   const messages = [
-    { role: "system", content: systemPrompt },
+    { role: "system", content: finalSystemPrompt },
     // Actual Request
     { role: "user", content: userPrompt },
   ];
@@ -239,7 +242,11 @@ export const translate = async (
                       streamText = streamText.substring(0, endIndex);
                     }
                     streamText = streamText.trimStart();
-                    if (streamText) {
+                    
+                    // Prevenir fugas de prompt incluso durante el stream (State safety net)
+                    const isLeaking = streamText.includes("CONTEXT ABOUT THE USER") || streamText.includes("CRITICAL RULES") || streamText.includes("MANDATORY");
+                    
+                    if (streamText && !isLeaking) {
                       options.onData(streamText);
                     }
                   }
@@ -263,7 +270,7 @@ export const translate = async (
 
         // Extract the clean translation from the full accumulated response
         let translated = accumulatedRawText;
-        const translationMatch = accumulatedRawText.match(/<translation>([\s\S]*?)<\/translation>/);
+        const translationMatch = accumulatedRawText.match(/<translation>([\s\S]*?)(?:<\/translation>|$)/);
         if (translationMatch && translationMatch[1]) {
           translated = translationMatch[1].trim();
         } else {
@@ -273,6 +280,12 @@ export const translate = async (
             // Strip any residual XML tags from the fallback
             translated = translated.replace(/<\/?translation>/g, "").trim();
           }
+        }
+
+        // Hard filter contra Prompt Leakage en el resultado final
+        const isLeaking = translated.includes("CONTEXT ABOUT THE USER") || translated.includes("CRITICAL RULES") || translated.includes("MANDATORY");
+        if (isLeaking) {
+          throw new Error("Prompt Leakage detectado y bloqueado por seguridad.");
         }
 
         if (!translated) {
@@ -306,7 +319,7 @@ export const translate = async (
 
         // 4. Extracción de <translation> XML
         let translated = rawContent;
-        const translationMatch = rawContent.match(/<translation>([\s\S]*?)<\/translation>/);
+        const translationMatch = rawContent.match(/<translation>([\s\S]*?)(?:<\/translation>|$)/);
 
         if (translationMatch && translationMatch[1]) {
           translated = translationMatch[1].trim();
@@ -316,6 +329,12 @@ export const translate = async (
           if (thinkingMatch && thinkingMatch[1]) {
             translated = thinkingMatch[1].trim();
           }
+        }
+
+        // Hard filter contra Prompt Leakage (Non-streaming fallback)
+        const isLeaking = translated.includes("CONTEXT ABOUT THE USER") || translated.includes("CRITICAL RULES") || translated.includes("MANDATORY");
+        if (isLeaking) {
+          throw new Error("Prompt Leakage detectado y bloqueado por seguridad.");
         }
 
         if (!translated) throw new Error("Fallo al extraer la traducción de las etiquetas XML");

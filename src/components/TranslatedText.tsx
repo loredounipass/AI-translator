@@ -11,37 +11,12 @@ import { useApiKey } from "../contexts/ApiKeyContext";
 import { historyService } from "utils/historyService";
 
 const cleanText = (rawText: string) => {
-  // 1. Fully formed <translation> block
-  const translationMatch = rawText.match(/<translation[^>]*>([\s\S]*?)(?:<\/translation\s*>|$)/i);
-  if (translationMatch) {
-    let result = translationMatch[1].trimStart();
-    // Hide any incomplete tag being typed at the very end of the stream (e.g. "</", "</trans")
-    return result.replace(/<\/?[a-z]*\s*$/i, "");
-  }
-
-  // 2. Past </thinking>, waiting for or in the middle of <translation>
-  const thinkingMatch = rawText.match(/<\/thinking\s*>([\s\S]*)/i);
-  if (thinkingMatch) {
-    let afterThinking = thinkingMatch[1].trimStart();
-    if ("<translation>".startsWith(afterThinking.toLowerCase())) {
-      return "";
-    }
-    afterThinking = afterThinking.replace(/<translation\s*>/ig, "").trimStart();
-    return afterThinking.replace(/<\/?[a-z]*\s*$/i, "");
-  }
-
-  // 3. Inside <thinking> block
-  if (rawText.toLowerCase().includes("<thinking")) {
-    return "";
-  }
-
-  // 4. At the very beginning, typing out tags
-  const trimmedLower = rawText.trimStart().toLowerCase();
-  if ("<thinking>".startsWith(trimmedLower) || "<translation>".startsWith(trimmedLower)) {
-    return "";
-  }
-
-  // 5. Fallback for cached clean text or model forgetting tags
+  if (!rawText) return "";
+  
+  // La API (ai-translation.ts) ahora garantiza que solo se emita el texto traducido.
+  // Solo aplicamos un filtro final cosmético para ocultar etiquetas XML incompletas 
+  // que el modelo pueda estar tipeando al final del stream (ej. "</trans").
+  
   return rawText.replace(/<\/?[a-z]*\s*$/i, "").trimStart();
 };
 
