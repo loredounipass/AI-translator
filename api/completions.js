@@ -97,13 +97,20 @@ module.exports = async (req, res) => {
     if (contentLength > MAX_ASR_BODY) {
       return res.status(413).json({ error: "Payload too large" });
     }
+    const reqProvider = (req.body && req.body.provider) || "nvidia";
     const apiKey = (req.body && req.body.apiKey) || "";
     if (!apiKey) {
-      return res.status(401).json({ error: "NVIDIA API key requerida para ASR" });
+      return res.status(401).json({ error: `API key requerida para ASR (${reqProvider})` });
     }
 
-    const ALLOWED_ASR_MODELS = new Set(['nvidia/nemotron-3-nano-omni-30b-a3b-reasoning', 'nvidia/canary-1b-asr']);
-    const model = ALLOWED_ASR_MODELS.has(req.body.model) ? req.body.model : "nvidia/nemotron-3-nano-omni-30b-a3b-reasoning";
+    let model = req.body.model || "";
+    if (reqProvider === "nvidia") {
+      const ALLOWED_ASR_MODELS = new Set(['nvidia/nemotron-3-nano-omni-30b-a3b-reasoning', 'nvidia/canary-1b-asr']);
+      model = ALLOWED_ASR_MODELS.has(model) ? model : "nvidia/nemotron-3-nano-omni-30b-a3b-reasoning";
+    } else if (reqProvider === "google") {
+      model = model.replace("google/", ""); // E.g., 'gemini-3.5-flash'
+      if (!model) model = "gemini-3.5-flash";
+    }
 
     const { audio, language, mime } = req.body;
     if (!audio) {
@@ -120,12 +127,7 @@ module.exports = async (req, res) => {
 
     const contextInstruction = `\nCONTEXT ABOUT THE USER'S JOB (FOR YOUR UNDERSTANDING ONLY):\nThe user you are assisting is a professional over-the-phone interpreter. Their job involves strict training where they must interpret in the 1st person, maintain neutrality, and not break character or assist the parties directly. They use specific 3rd person phrases (e.g. "The interpreter needs repetition") only when necessary.\n\nThat is the USER'S job. YOUR ROLE AS THE AI is to transcribe the text exactly as spoken to help them. You MUST NOT try to do the user's job or intervene in the scenarios.`;
 
-    const chatBody = JSON.stringify({
-      model,
-      messages: [
-        {
-          role: "system",
-          content: `You are a highly precise speech-to-text transcription engine.
+    const systemPromptText = `You are a highly precise speech-to-text transcription engine.
 Your ONLY task is to transcribe the audio exactly as spoken.
 ${langInstruction}${contextInstruction}
 
@@ -133,34 +135,65 @@ CRITICAL RULES:
 1. Output ONLY the transcribed text.
 2. NO explanations, NO formatting (no markdown, no bold), NO quotes around the text.
 3. DO NOT add any conversational filler (e.g., "Here is the transcription:").
-4. If there is no speech, return an empty string.`
-        },
-        {
-          role: "user",
-          content: [
-            {
-              type: "audio_url",
-              audio_url: { url: `data:${cleanContentType};base64,${audio}` }
-            }
-          ]
-        }
-      ],
-      max_tokens: 1024,
-      temperature: 0
-    });
+4. If there is no speech, return an empty string.`;
 
-    try {
-      const options = {
+    let payloadStr = "";
+    let options = {};
+
+    if (reqProvider === "google") {
+      // Native Google Gemini REST API payload
+      payloadStr = JSON.stringify({
+        contents: [
+          {
+            parts: [
+              { text: systemPromptText },
+              { inlineData: { mimeType: cleanContentType, data: audio } }
+            ]
+          }
+        ],
+        generationConfig: {
+          temperature: 0,
+          maxOutputTokens: 1024
+        }
+      });
+      options = {
+        hostname: "generativelanguage.googleapis.com",
+        path: `/v1beta/models/${model}:generateContent?key=${apiKey}`,
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Content-Length": Buffer.byteLength(payloadStr),
+        },
+      };
+    } else {
+      // NVIDIA / OpenAI compatible payload
+      payloadStr = JSON.stringify({
+        model,
+        messages: [
+          { role: "system", content: systemPromptText },
+          {
+            role: "user",
+            content: [
+              { type: "audio_url", audio_url: { url: `data:${cleanContentType};base64,${audio}` } }
+            ]
+          }
+        ],
+        max_tokens: 1024,
+        temperature: 0
+      });
+      options = {
         hostname: "integrate.api.nvidia.com",
         path: "/v1/chat/completions",
         method: "POST",
         headers: {
           Authorization: `Bearer ${apiKey}`,
           "Content-Type": "application/json",
-          "Content-Length": Buffer.byteLength(chatBody),
+          "Content-Length": Buffer.byteLength(payloadStr),
         },
       };
+    }
 
+    try {
       const { statusCode, raw } = await new Promise((resolve, reject) => {
         const proxyReq = https.request(options, (proxyRes) => {
           const chunks = [];
@@ -171,7 +204,7 @@ CRITICAL RULES:
         });
         proxyReq.on("error", reject);
         proxyReq.setTimeout(45000, () => { proxyReq.destroy(); reject(new Error("ASR request timed out")); });
-        proxyReq.end(chatBody);
+        proxyReq.end(payloadStr);
       });
 
       let parsed;
@@ -179,9 +212,22 @@ CRITICAL RULES:
         return res.status(statusCode).send(raw);
       }
 
-      // Extract transcribed text from chat completion response
-      if (statusCode === 200 && parsed.choices && parsed.choices[0]) {
-        let transcribedText = (parsed.choices[0].message?.content || "").trim();
+      // Extract transcribed text
+      if (statusCode === 200) {
+        let transcribedText = "";
+
+        if (reqProvider === "google") {
+          // Parse Google Gemini response format
+          const candidate = parsed.candidates && parsed.candidates[0];
+          if (candidate && candidate.content && candidate.content.parts && candidate.content.parts[0]) {
+            transcribedText = (candidate.content.parts[0].text || "").trim();
+          }
+        } else {
+          // Parse OpenAI/NVIDIA response format
+          if (parsed.choices && parsed.choices[0]) {
+            transcribedText = (parsed.choices[0].message?.content || "").trim();
+          }
+        }
         
         // Filter out AI meta-commentary (model "thinking out loud" instead of transcribing)
         const metaPatterns = [

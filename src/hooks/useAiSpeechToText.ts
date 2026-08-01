@@ -336,12 +336,13 @@ export const useAiSpeechToText = (
 
   // --- Send audio to API (only called when user stops) ---
   const sendAudioChunk = useCallback(async (blob: Blob) => {
-    const apiKey = getKey("nvidia");
-    logDev("[AI-STT:send] blob size:", blob.size, "mime:", blob.type);
+    const provider = selectedModel.includes("google") ? "google" : "nvidia";
+    const apiKey = getKey(provider);
+    logDev("[AI-STT:send] blob size:", blob.size, "mime:", blob.type, "provider:", provider);
 
     if (!apiKey) {
-      message.error("No NVIDIA API key configured");
-      setError("No NVIDIA API key");
+      message.error(`No API key configured for ${provider}`);
+      setError(`No API key for ${provider}`);
       return;
     }
 
@@ -362,6 +363,7 @@ export const useAiSpeechToText = (
         body: JSON.stringify({
           _type: "asr",
           apiKey,
+          provider,
           audio: base64,
           language: lang,
           mime: "audio/wav",
