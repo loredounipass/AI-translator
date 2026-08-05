@@ -1,181 +1,26 @@
-const https = require("https");
-const crypto = require("crypto");
-
-// 1. In-memory Cache
-const CACHE_TTL = 5 * 60 * 1000; // 5 minutes
-const MAX_CACHE_SIZE = 1000;
-const cache = new Map();
-
-// 2. Request Coalescing
-const pendingRequests = new Map();
-
-// 3. Global Rate Limiter (timestamp-based, no race condition)
-const RATE_LIMIT_MAX = 50; // Max requests per window
-const RATE_LIMIT_WINDOW = 60000; // 1 minute
-const requestTimestamps = [];
-
-const generateCacheKey = (bodyObj) => {
-  return crypto.createHash("sha256").update(JSON.stringify(bodyObj || {})).digest("hex");
-};
-
-const cleanupCache = () => {
-  const now = Date.now();
-  for (const [key, value] of cache.entries()) {
-    if (now > value.expiry) {
-      cache.delete(key);
-    }
-  }
-  if (cache.size > MAX_CACHE_SIZE) {
-    const keysToRemove = Array.from(cache.keys()).slice(0, cache.size - MAX_CACHE_SIZE);
-    keysToRemove.forEach(k => cache.delete(k));
-  }
-};
+const translationHandler = require("../../_utils/translationHandler");
 
 module.exports = async (req, res) => {
   if (req.method !== "POST") {
     return res.status(405).json({ error: "Method not allowed" });
   }
 
+  // Preserve the debug logs from the original file
   const apiKey = (req.body && req.body.apiKey) || "";
   console.log("[completions] Request received, apiKey present:", !!apiKey, "stream:", req.body?.stream);
+  
   if (!apiKey) {
     console.log("[completions] Missing apiKey in request body");
     return res.status(401).json({ error: "API key requerida — proporciona tu propia key de NVIDIA" });
   }
 
-  // Strip apiKey from body before forwarding
-  const cleanBody = { ...req.body };
-  delete cleanBody.apiKey;
-
-  // --- Rate Limiting ---
-  const now = Date.now();
-  while (requestTimestamps.length > 0 && requestTimestamps[0] < now - RATE_LIMIT_WINDOW) {
-    requestTimestamps.shift();
-  }
-  if (requestTimestamps.length >= RATE_LIMIT_MAX) {
-    return res.status(429).json({ error: "Too Many Requests" });
-  }
-  requestTimestamps.push(now);
-
-  // --- Streaming Bypass ---
-  if (cleanBody.stream === true) {
-    const bodyStr = JSON.stringify(cleanBody);
-    const options = {
-      hostname: "integrate.api.nvidia.com",
-      path: "/v1/chat/completions",
-      method: "POST",
-      headers: {
-        host: "integrate.api.nvidia.com",
-        Authorization: `Bearer ${apiKey}`,
-        "Content-Type": "application/json",
-        "Content-Length": Buffer.byteLength(bodyStr),
-      },
-    };
-    console.log("[completions] Streaming request to NVIDIA");
-
-    const proxyReq = https.request(options, (proxyRes) => {
-      console.log("[completions] NVIDIA stream response status:", proxyRes.statusCode);
-      res.writeHead(proxyRes.statusCode, proxyRes.headers);
-      proxyRes.pipe(res);
-    });
-
-    proxyReq.on("error", (err) => {
-      console.log("[completions] Stream proxy error:", err.message);
-      if (!res.headersSent) {
-        res.status(500).json({ error: "Proxy stream error" });
-      }
-    });
-    proxyReq.end(bodyStr);
-    return;
+  // Enforce NVIDIA provider configuration for this specific endpoint
+  if (req.body) {
+    req.body.provider = "nvidia";
   }
 
-  // --- Cache & Coalescing ---
-  const cacheKey = generateCacheKey(cleanBody);
+  const contentLength = parseInt(req.headers['content-length'] || '0', 10);
   
-  cleanupCache();
-  
-  // Return from Cache
-  if (cache.has(cacheKey)) {
-    const cachedResponse = cache.get(cacheKey);
-    return res.status(cachedResponse.statusCode).json(cachedResponse.data);
-  }
-
-  // Wait for Pending Request (Coalescing)
-  if (pendingRequests.has(cacheKey)) {
-    try {
-      const response = await pendingRequests.get(cacheKey);
-      return res.status(response.statusCode).json(response.data);
-    } catch {
-      return res.status(500).json({ error: "Coalesced request failed" });
-    }
-  }
-
-  // --- Make API Request ---
-  console.log("[completions] Non-streaming request to NVIDIA");
-  const requestPromise = new Promise((resolve, reject) => {
-    const bodyStr = JSON.stringify(cleanBody);
-
-    const options = {
-      hostname: "integrate.api.nvidia.com",
-      path: "/v1/chat/completions",
-      method: "POST",
-      headers: {
-        host: "integrate.api.nvidia.com",
-        Authorization: `Bearer ${apiKey}`,
-        "Content-Type": "application/json",
-        "Content-Length": Buffer.byteLength(bodyStr),
-      },
-    };
-
-    const proxyReq = https.request(options, (proxyRes) => {
-      console.log("[completions] NVIDIA response status:", proxyRes.statusCode);
-      const chunks = [];
-      proxyRes.on("data", (chunk) => chunks.push(chunk));
-      proxyRes.on("end", () => {
-        try {
-          const proxyBody = Buffer.concat(chunks);
-          let data;
-          
-          if (proxyRes.statusCode === 200) {
-            data = JSON.parse(proxyBody.toString());
-            // Store successful requests in cache
-            cache.set(cacheKey, {
-              statusCode: proxyRes.statusCode,
-              data: data,
-              expiry: Date.now() + CACHE_TTL
-            });
-          } else {
-            // Handle error JSON
-            try { data = JSON.parse(proxyBody.toString()); } 
-            catch { data = proxyBody.toString(); }
-          }
-          
-          resolve({ statusCode: proxyRes.statusCode, data });
-        } catch (err) {
-          console.log("[completions] Error parsing NVIDIA response:", err.message);
-          reject(err);
-        }
-      });
-    });
-
-    proxyReq.on("error", (err) => {
-      console.log("[completions] Request to NVIDIA failed:", err.message);
-      reject(err);
-    });
-    proxyReq.end(bodyStr);
-  });
-
-  // Store promise for concurrent identical requests
-  pendingRequests.set(cacheKey, requestPromise);
-
-  try {
-    const response = await requestPromise;
-    pendingRequests.delete(cacheKey);
-    console.log("[completions] Returning response to client, status:", response.statusCode);
-    return res.status(response.statusCode).json(response.data);
-  } catch (err) {
-    pendingRequests.delete(cacheKey);
-    console.log("[completions] Proxy error:", err.message);
-    return res.status(500).json({ error: "Proxy error" });
-  }
+  // Route to the global decoupled translation handler
+  return translationHandler(req, res, contentLength);
 };
