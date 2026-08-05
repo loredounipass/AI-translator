@@ -3,6 +3,9 @@ import { LRUCache } from "lru-cache";
 import { GLOSSARY } from "./glossary";
 import { INTERPETERAI_TRAINING_MODULE } from "./interpreter.guide";
 
+// Pre-serialize once at module load — avoids per-request JSON.stringify cost
+const SERIALIZED_TRAINING_MODULE = JSON.stringify(INTERPETERAI_TRAINING_MODULE, null, 2);
+
 const NVIDIA_API_URL = "/api/completions";
 
 const MAX_RETRIES = 3;
@@ -118,7 +121,7 @@ ${styleRules}`;
   const interpreterContext = `CONTEXT ABOUT THE USER'S JOB (FOR YOUR UNDERSTANDING ONLY):
 The user you are assisting is a professional over-the-phone interpreter. Their job involves strict training based on the following module:
 
-${JSON.stringify(INTERPETERAI_TRAINING_MODULE, null, 2)}
+${SERIALIZED_TRAINING_MODULE}
 
 That is the USER'S job and they will handle all behavioral and cultural nuances described in the module (such as speaking in 1st person, maintaining neutrality, using specific 3rd person phrases).
 
@@ -151,39 +154,32 @@ ${styleRules}
 };
 
 // 1. Cortocircuito Inteligente
-const isTrivialText = (text: string, sourceLang?: string, targetLang?: string): boolean => {
-  // Solo números, puntuación básica o espacios
-  const trivialRegex = /^[\d\s.,!?;:'"()[\]{}<>\-_=+*/\\|@#%^&`~]+$/;
-  // Emails o URLs puras
-  const urlEmailRegex = /^(https?:\/\/[^\s]+|[^\s@]+@[^\s@]+\.[^\s@]+)$/i;
+// Address RegExps compiled once at module level — avoids recompilation on every call
+const TRIVIAL_REGEX = /^[\d\s.,!?;:'"()[\]{}<>\-_=+*/\\|@#%^&`~]+$/;
+const URL_EMAIL_REGEX = /^(https?:\/\/[^\s]+|[^\s@]+@[^\s@]+\.[^\s@]+)$/i;
+const NO_PRONOUNS_REGEX = /\b(i|you|he|she|it|we|they|my|your|his|her|our|their|the|a|an|is|are|was|were|am|going|live|address)\b/i;
+const _SS = "st|street|ave|avenue|aven|rd|road|blvd|boulevard|ln|lane|dr|drive|ct|court|pkwy|parkway";
+const _AS = "apt|apartment|apart|suite|ste|unit|rm|room|bldg|building";
+const ADDR_STARTS_NUMBER = new RegExp(`^\\d+\\s+[a-z0-9\\s.,-]+\\b(${_SS})\\b`, "i");
+const ADDR_HAS_APT      = new RegExp(`^([a-z0-9\\s.,-]+)?\\b(${_SS})\\b[\\s.,]+\\b(${_AS})\\b\\s*\\d+`, "i");
+const ADDR_HAS_STATE_ZIP = new RegExp(`^([a-z0-9\\s.,-]+)?\\b(${_SS})\\b[\\s.,]+\\b([a-z]{2})\\b\\s+\\d{5}`, "i");
+const ADDR_JUST_STREET  = new RegExp(`^[a-z0-9\\s.,-]+\\b(${_SS})\\b$`, "i");
 
-  if (trivialRegex.test(text) || urlEmailRegex.test(text)) {
+const isTrivialText = (text: string, sourceLang?: string, targetLang?: string): boolean => {
+  if (TRIVIAL_REGEX.test(text) || URL_EMAIL_REGEX.test(text)) {
     return true;
   }
 
   // Detect addresses (mostly from English to Spanish)
   if (sourceLang === "en" && targetLang === "es") {
     const normalized = text.toLowerCase().trim();
-    
-    const streetSuffixes = "st|street|ave|avenue|aven|rd|road|blvd|boulevard|ln|lane|dr|drive|ct|court|pkwy|parkway";
-    const aptSuffixes = "apt|apartment|apart|suite|ste|unit|rm|room|bldg|building";
-    
-    // An address starting with a number: "1234 main st" or "1234 main st apt 2"
-    const startsWithNumberAddress = new RegExp(`^\\d+\\s+[a-z0-9\\s.,-]+\\b(${streetSuffixes})\\b`, "i");
-    
-    // An address that might start with a word (e.g. "rodrick ave") but has apt/state/zip
-    const hasAptAddress = new RegExp(`^([a-z0-9\\s.,-]+)?\\b(${streetSuffixes})\\b[\\s.,]+\\b(${aptSuffixes})\\b\\s*\\d+`, "i");
-    const hasStateZip = new RegExp(`^([a-z0-9\\s.,-]+)?\\b(${streetSuffixes})\\b[\\s.,]+\\b([a-z]{2})\\b\\s+\\d{5}`, "i");
-    
-    // A short string ending in a street suffix
-    const isJustStreet = new RegExp(`^[a-z0-9\\s.,-]+\\b(${streetSuffixes})\\b$`, "i");
-    const noPronouns = !/\\b(i|you|he|she|it|we|they|my|your|his|her|our|their|the|a|an|is|are|was|were|am|going|live|address)\\b/i.test(normalized);
+    const noPronouns = !NO_PRONOUNS_REGEX.test(normalized);
 
     if (
-      startsWithNumberAddress.test(normalized) ||
-      hasAptAddress.test(normalized) ||
-      hasStateZip.test(normalized) ||
-      (isJustStreet.test(normalized) && noPronouns)
+      ADDR_STARTS_NUMBER.test(normalized) ||
+      ADDR_HAS_APT.test(normalized) ||
+      ADDR_HAS_STATE_ZIP.test(normalized) ||
+      (ADDR_JUST_STREET.test(normalized) && noPronouns)
     ) {
       return true;
     }
@@ -276,7 +272,7 @@ export const translate = async (
             model: modelId,
             messages,
             temperature: dynamicTemperature,
-            max_tokens: 4096,
+            max_tokens: useThinking ? 2048 : 1024,
             stream: true,
             apiKey: options?.apiKey,
             provider: options?.provider,
@@ -296,6 +292,9 @@ export const translate = async (
         const decoder = new TextDecoder("utf-8");
         let accumulatedRawText = "";
         let buffer = "";
+        // Flag: once we find <translation>, we stop scanning from the start every chunk
+        let translationTagFound = false;
+        let translationStartIndex = -1;
 
         while (true) {
           if (options.signal?.aborted) {
@@ -318,9 +317,16 @@ export const translate = async (
                   accumulatedRawText += content;
 
                   // Filter: only emit the text inside <translation> to the UI
-                  const translationIndex = accumulatedRawText.indexOf("<translation>");
-                  if (translationIndex !== -1) {
-                    let streamText = accumulatedRawText.substring(translationIndex + 13);
+                  if (!translationTagFound) {
+                    const idx = accumulatedRawText.indexOf("<translation>");
+                    if (idx !== -1) {
+                      translationTagFound = true;
+                      translationStartIndex = idx;
+                    }
+                  }
+
+                  if (translationTagFound) {
+                    let streamText = accumulatedRawText.substring(translationStartIndex + 13);
                     const endIndex = streamText.indexOf("</translation>");
                     if (endIndex !== -1) {
                       streamText = streamText.substring(0, endIndex);
@@ -399,7 +405,7 @@ export const translate = async (
             model: modelId,
             messages,
             temperature: dynamicTemperature,
-            max_tokens: 4096,
+            max_tokens: useThinking ? 2048 : 1024,
             stream: false,
             apiKey: options?.apiKey,
             provider: options?.provider,

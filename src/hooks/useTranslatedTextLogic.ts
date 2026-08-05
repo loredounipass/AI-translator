@@ -143,7 +143,7 @@ export const useTranslatedTextLogic = () => {
     () =>
       debounce((text: string, targetLang: string, sourceLang: string, mId: string) => {
         translateHandler(text, targetLang, sourceLang, mId);
-      }, 600),
+      }, 400),
     [translateHandler]
   );
 
