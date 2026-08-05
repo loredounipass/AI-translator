@@ -3,6 +3,7 @@ import { translationCache, getCacheKey } from "./translation/cache";
 import { buildSystemPrompt, isLightweightModel } from "./translation/prompts";
 import { isTrivialText } from "./translation/filters";
 import { executeTranslationRequest } from "./translation/executor";
+import { translationMemory } from "./translation/translationMemory";
 
 
 // TRADUCIR TEXTO INDIVIDUAL MEDIANTE MODELOS DE IA
@@ -48,8 +49,12 @@ export const translate = async (
     ? `<source_text>\n${cleanedText}\n</source_text>`
     : `Translate the following text from ${sourceName} to ${targetName}. Output ONLY the raw translated text. Do not wrap it in any tags or conversational filler.\n\nText to translate:\n${cleanedText}`;
 
+  // Build memory pairs from recent translations for consistency
+  const memoryMessages = translationMemory.buildMemoryMessages(sourceLang, targetLang, cleanedText);
+
   const messages = [
     { role: "system", content: finalSystemPrompt },
+    ...memoryMessages,
     { role: "user", content: userPrompt },
   ];
 
@@ -67,6 +72,10 @@ export const translate = async (
   });
 
   translationCache.set(cacheKey, translated);
+
+  // Save to translation memory for future consistency
+  translationMemory.add(cleanedText, translated, sourceLang, targetLang);
+
   return translated;
 };
 

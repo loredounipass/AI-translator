@@ -3,6 +3,8 @@ import { useSearchParams } from "react-router-dom";
 import { useAuth } from "contexts/AuthContext";
 import { historyService } from "utils/historyService";
 import type { HistoryItem } from "utils/historyService";
+import { translationMemory } from "api/translation/translationMemory";
+import { clearTranslationCache } from "api/translation/cache";
 
 interface HistoryPanelProps {
   isOpen: boolean;
@@ -40,12 +42,25 @@ const HistoryPanel = ({ isOpen, onClose }: HistoryPanelProps) => {
     await historyService.clearAll(user.id);
     setHistory([]);
     setShowClearConfirm(false);
+
+    // Fresh start: clear all in-memory translation layers
+    translationMemory.clear();
+    clearTranslationCache();
   };
 
   const deleteItem = async (id: string) => {
     if (!user) return;
+
+    // Find the item before removing so we can clean memory/cache
+    const item = history.find((h) => h.id === id);
+    
     await historyService.delete(id, user.id);
     setHistory((prev) => prev.filter((item) => item.id !== id));
+
+    // Remove from in-memory translation layers
+    if (item) {
+      translationMemory.remove(item.source_text);
+    }
   };
 
   const toggleFavorite = async (id: string, current: boolean) => {

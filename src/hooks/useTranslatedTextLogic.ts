@@ -7,6 +7,8 @@ import { useAuth } from "contexts/AuthContext";
 import { useApiKey } from "../contexts/ApiKeyContext";
 import { historyService } from "utils/historyService";
 import { showAuthRequiredNotification, showApiKeyRequiredNotification, showErrorToast } from "components/AppNotifications";
+import { translationCache, getCacheKey } from "api/translation/cache";
+import { translationMemory } from "api/translation/translationMemory";
 import React from "react";
 
 
@@ -46,6 +48,47 @@ export const useTranslatedTextLogic = () => {
   apiKeyRef.current = apiKey;
   const authNotifiedRef = React.useRef(false);
   const apiKeyNotifiedRef = React.useRef(false);
+  const historyLoadedRef = React.useRef(false);
+
+
+
+  // POPULATE CACHE AND TRANSLATION MEMORY FROM HISTORY ON FIRST MOUNT
+  React.useEffect(() => {
+    if (!user || historyLoadedRef.current) return;
+    historyLoadedRef.current = true;
+
+    const loadHistoryIntoMemory = async () => {
+      try {
+        const items = await historyService.getAll(user.id);
+        // Load the last 50 items (already sorted desc by created_at)
+        const recent = items.slice(0, 50);
+
+        // Iterate in reverse so oldest are added first (memory is chronological)
+        for (let i = recent.length - 1; i >= 0; i--) {
+          const item = recent[i];
+          if (!item.source_text?.trim() || !item.translated_text?.trim()) continue;
+
+          // Populate LRU cache for all known models
+          const cacheKey = getCacheKey(item.source_text.trim(), item.target_lang, item.source_lang, modelId);
+          if (!translationCache.has(cacheKey)) {
+            translationCache.set(cacheKey, item.translated_text.trim());
+          }
+
+          // Populate translation memory for model context
+          translationMemory.add(
+            item.source_text.trim(),
+            item.translated_text.trim(),
+            item.source_lang,
+            item.target_lang
+          );
+        }
+      } catch (err) {
+        console.warn("Failed to load history into translation memory");
+      }
+    };
+
+    loadHistoryIntoMemory();
+  }, [user, modelId]);
 
 
 

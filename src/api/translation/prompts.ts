@@ -66,6 +66,7 @@ CRITICAL RULES:
 4. If the text is already in ${targetName}, return it AS-IS.
 5. Preserve original formatting and line breaks.
 6. OUTPUT ONLY THE TRANSLATION. NO conversational filler. NO thinking steps.
+7. CONSISTENCY: When previous translations are provided in the conversation, maintain consistent terminology and style with those translations.
 ${styleRules}`;
   }
 
@@ -89,6 +90,7 @@ CRITICAL RULES:
 5. REPEATED PHRASES: if the same phrase appears consecutively (e.g., "el dia de ayer el dia de ayer"), translate it ONCE only.
 6. Interpret in first person when source uses "I" or "we".
 7. Preserve original formatting, line breaks, and structure.
+8. CONSISTENCY: When previous translations are provided in the conversation, maintain consistent terminology and style with those translations.
 ${styleRules}
 
 <execution_instructions>
