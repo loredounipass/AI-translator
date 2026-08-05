@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
-import { message } from "antd";
 import { apiKeyService } from "../utils/apiKeyService";
 import { API_PROVIDERS, useApiKey } from "../contexts/ApiKeyContext";
+import { showSuccessToast, showErrorToast } from "../components/AppNotifications";
 
 interface UseApiSettingsModalLogicProps {
   isOpen: boolean;
@@ -40,12 +40,12 @@ export const useApiSettingsModalLogic = ({ isOpen, onClose, userId }: UseApiSett
     try {
       await apiKeyService.upsert(userId, provider, trimmed);
       setKey(provider, trimmed);
-      message.success(`API key de ${API_PROVIDERS.find((p) => p.id === provider)?.name || provider} guardada`);
+      showSuccessToast(`API key de ${API_PROVIDERS.find((p) => p.id === provider)?.name || provider} guardada`);
       setEditProvider(null);
       setInputValue("");
       setShowInput(false);
     } catch (err) {
-      message.error((err as Error).message);
+      showErrorToast((err as Error).message);
     } finally {
       setSaving(false);
     }
@@ -59,14 +59,14 @@ export const useApiSettingsModalLogic = ({ isOpen, onClose, userId }: UseApiSett
     try {
       await apiKeyService.remove(userId, provider);
       removeKey(provider);
-      message.success(`API key de ${API_PROVIDERS.find((p) => p.id === provider)?.name || provider} eliminada`);
+      showSuccessToast(`API key de ${API_PROVIDERS.find((p) => p.id === provider)?.name || provider} eliminada`);
       if (editProvider === provider) {
         setEditProvider(null);
         setInputValue("");
         setShowInput(false);
       }
     } catch (err) {
-      message.error((err as Error).message);
+      showErrorToast((err as Error).message);
     } finally {
       setSaving(false);
     }

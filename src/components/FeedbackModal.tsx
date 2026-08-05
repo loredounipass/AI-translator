@@ -1,7 +1,7 @@
 import { useState } from "react";
-import { message } from "antd";
 import { supabase } from "utils/supabaseClient";
 import { useAuth } from "contexts/AuthContext";
+import { showSuccessToast, showErrorToast } from "components/AppNotifications";
 
 interface FeedbackModalProps {
   isOpen: boolean;
@@ -43,7 +43,7 @@ const FeedbackModal = ({ isOpen, onClose }: FeedbackModalProps) => {
     e.preventDefault();
 
     if (!user) {
-      message.error("You must be signed in to send feedback");
+      showErrorToast("Error", "You must be signed in to send feedback");
       return;
     }
 
@@ -52,7 +52,7 @@ const FeedbackModal = ({ isOpen, onClose }: FeedbackModalProps) => {
     const trimmedMessage = messageText.trim();
 
     if (!trimmedFirstName || !trimmedSubject || !trimmedMessage) {
-      message.error("Please fill in all required fields");
+      showErrorToast("Error", "Please fill in all required fields");
       return;
     }
 
@@ -73,10 +73,10 @@ const FeedbackModal = ({ isOpen, onClose }: FeedbackModalProps) => {
 
       if (error) throw error;
 
-      message.success("Thank you for your feedback!");
+      showSuccessToast("Success", "Thank you for your feedback!");
       handleClose();
     } catch (err) {
-      message.error("Error sending feedback. Please try again.");
+      showErrorToast("Error", "Error sending feedback. Please try again.");
     } finally {
       setSending(false);
     }

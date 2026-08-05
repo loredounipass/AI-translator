@@ -1,7 +1,7 @@
 import { useState } from "react";
-import { message } from "antd";
 import { apiKeyService } from "../utils/apiKeyService";
 import { API_PROVIDERS, useApiKey } from "../contexts/ApiKeyContext";
+import { showSuccessToast, showErrorToast } from "../components/AppNotifications";
 
 interface UseApiKeyModalLogicProps {
   userId: string;
@@ -30,11 +30,11 @@ export const useApiKeyModalLogic = ({ userId, provider, onClose }: UseApiKeyModa
     try {
       await apiKeyService.upsert(userId, provider, trimmed);
       setKey(provider, trimmed);
-      message.success(`API key de ${API_PROVIDERS.find((p) => p.id === provider)?.name || provider} guardada`);
+      showSuccessToast(`API key de ${API_PROVIDERS.find((p) => p.id === provider)?.name || provider} guardada`);
       setApiKey("");
       onClose();
     } catch (err) {
-      message.error((err as Error).message);
+      showErrorToast((err as Error).message);
     } finally {
       setSaving(false);
     }

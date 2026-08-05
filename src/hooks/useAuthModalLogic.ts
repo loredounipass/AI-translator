@@ -1,7 +1,7 @@
 import { useState } from "react";
-import { message } from "antd";
 import { useAuth } from "contexts/AuthContext";
 import { AUTH_MESSAGES } from "utils/authConstants";
+import { showSuccessToast, showErrorToast } from "components/AppNotifications";
 import { COUNTRY_CODES, DEFAULT_COUNTRY_KEY } from "utils/phoneCodes";
 
 type AuthMode = "login" | "register";
@@ -67,7 +67,7 @@ export const useAuthModalLogic = ({ onClose }: UseAuthModalLogicProps) => {
     if (mode === "register") {
       const strongPasswordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d).{8,}$/;
       if (!strongPasswordRegex.test(password)) {
-        message.error("La contraseña debe tener al menos 8 caracteres, una mayúscula, una minúscula y un número.");
+        showErrorToast("Contraseña débil", "La contraseña debe tener al menos 8 caracteres, una mayúscula, una minúscula y un número.");
         return;
       }
     }
@@ -90,18 +90,18 @@ export const useAuthModalLogic = ({ onClose }: UseAuthModalLogicProps) => {
     setSubmitting(false);
 
     if (error) {
-      message.error(error);
+      showErrorToast("Error", error);
       return;
     }
 
     if (mode === "register" && needsVerification) {
       setRegisteredEmail(email);
-      message.success(AUTH_MESSAGES.REGISTER_SUCCESS);
+      showSuccessToast(AUTH_MESSAGES.REGISTER_SUCCESS);
       return;
     }
 
     // Login exitoso (o registro sin verificación requerida)
-    message.success(AUTH_MESSAGES.LOGIN_SUCCESS);
+    showSuccessToast(AUTH_MESSAGES.LOGIN_SUCCESS);
     handleClose();
     window.location.reload();
   };

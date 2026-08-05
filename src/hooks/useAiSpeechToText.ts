@@ -1,6 +1,6 @@
 import { useState, useRef, useCallback, useEffect } from "react";
-import { message } from "antd";
 import { useApiKey } from "../contexts/ApiKeyContext";
+import { showInfoToast, showWarningToast, showErrorToast } from "../components/AppNotifications";
 import { analyzeAudioFrame } from "../utils/vadMath";
 import { vadCheckInterval } from "../utils/vadConstants";
 
@@ -221,7 +221,7 @@ export const useAiSpeechToText = (
         cleanupDisplayStream();
         setCaptureSystemAudio(false);
         if (hasAudioTrack) {
-          message.info("Compartición de audio del sistema terminada");
+          showInfoToast("Información", "Compartición de audio del sistema terminada");
         }
       };
       displayStream.getTracks().forEach(track => {
@@ -231,7 +231,7 @@ export const useAiSpeechToText = (
       displayStreamRef.current = displayStream;
 
       if (!hasAudioTrack) {
-        message.warning("No compartiste el audio del sistema.");
+        showWarningToast("Aviso", "No compartiste el audio del sistema.");
         cleanupDisplayStream();
         setCaptureSystemAudio(false);
         return;
@@ -240,7 +240,7 @@ export const useAiSpeechToText = (
       setCaptureSystemAudio(true);
     } catch (err) {
       console.warn("Failed to get display media:", err);
-      message.info("Captura de sistema cancelada");
+      showInfoToast("Cancelado", "Captura de sistema cancelada");
       setCaptureSystemAudio(false);
     } finally {
       isRequestingSystemAudioRef.current = false;
@@ -372,7 +372,7 @@ export const useAiSpeechToText = (
     logDev("[AI-STT:send] blob size:", blob.size, "mime:", blob.type, "provider:", provider);
 
     if (!apiKey) {
-      message.error(`No API key configured for ${provider}`);
+      showErrorToast("Error de API Key", `No API key configured for ${provider}`);
       setError(`No API key for ${provider}`);
       return;
     }
@@ -409,7 +409,7 @@ export const useAiSpeechToText = (
         data = JSON.parse(responseText);
       } catch {
         errorDev("[AI-STT:send] Invalid JSON:", responseText.substring(0, 300));
-        message.warning("Error al procesar respuesta del servidor");
+        showWarningToast("Error", "Error al procesar respuesta del servidor");
         return;
       }
 
@@ -428,7 +428,7 @@ export const useAiSpeechToText = (
         }
 
         if (errorMsg && isFatalError(errorMsg)) {
-          message.error("Error: " + errorMsg);
+          showErrorToast("Error", errorMsg);
           setError(errorMsg);
         }
       }
@@ -441,10 +441,10 @@ export const useAiSpeechToText = (
       }
 
       if (isFatalError(errorMessage)) {
-        message.error("Error: " + errorMessage);
+        showErrorToast("Error", errorMessage);
         setError(errorMessage);
       } else {
-        message.warning("Fallo temporal de conexión con IA");
+        showWarningToast("Aviso", "Fallo temporal de conexión con IA");
       }
     } finally {
       setIsProcessing(false);
@@ -514,7 +514,7 @@ export const useAiSpeechToText = (
       };
 
       recorder.onerror = () => {
-        message.error("Error en la grabación");
+        showErrorToast("Error", "Error en la grabación");
       };
 
       recorder.start();
@@ -523,14 +523,14 @@ export const useAiSpeechToText = (
       startVAD(finalStream);
 
       maxDurationTimeoutRef.current = window.setTimeout(() => {
-        message.warning("Tiempo máximo de grabación (60s) alcanzado.");
+        showWarningToast("Límite de tiempo", "Tiempo máximo de grabación (60s) alcanzado.");
         stopRecording();
       }, 60000);
 
       logDev("[AI-STT:start] Recording started (continuous, send on stop), mime:", mimeType || "default");
     } catch {
       setError("Microphone access denied");
-      message.error("No se pudo acceder al micrófono");
+      showErrorToast("Error", "No se pudo acceder al micrófono");
     }
   }, [sendAudioChunk, startVAD, captureSystemAudio]);
 

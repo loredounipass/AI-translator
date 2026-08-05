@@ -6,7 +6,7 @@ import { debounce } from "lodash";
 import { useAuth } from "contexts/AuthContext";
 import { useApiKey } from "../contexts/ApiKeyContext";
 import { historyService } from "utils/historyService";
-import { showAuthRequiredNotification, showApiKeyRequiredNotification } from "components/AppNotifications";
+import { showAuthRequiredNotification, showApiKeyRequiredNotification, showErrorToast } from "components/AppNotifications";
 import React from "react";
 
 
@@ -125,11 +125,10 @@ export const useTranslatedTextLogic = () => {
         }
         copyTimeoutRef.current = window.setTimeout(() => setCopied(false), 2000);
       } else {
-        notification.error({
-          message: "No se pudo copiar",
-          description: "La API de portapapeles no está disponible o requiere conexión segura (HTTPS).",
-          placement: "topRight"
-        });
+        showErrorToast(
+          "No se pudo copiar",
+          "La API de portapapeles no está disponible o requiere conexión segura (HTTPS)."
+        );
       }
     } catch (error) {
       console.error("Copy error:", error);

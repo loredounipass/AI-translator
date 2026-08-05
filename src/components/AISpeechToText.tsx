@@ -1,7 +1,8 @@
 import React, { useEffect } from "react";
-import { Select, message } from "antd";
+import { Select } from "antd";
 import MicIcon from "../assets/MicIcon";
 import PauseIcon from "../assets/PauseIcon";
+import { showErrorToast } from "./AppNotifications";
 
 interface AISpeechToTextProps {
   aiEnabled: boolean;
@@ -73,7 +74,7 @@ const AISpeechToText = ({
 
   useEffect(() => {
     if (error && !isRecording) {
-      message.error(error);
+      showErrorToast("Error", error);
     }
   }, [error, isRecording]);
 
