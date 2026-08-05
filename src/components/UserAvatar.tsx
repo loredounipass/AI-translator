@@ -142,10 +142,13 @@ const UserAvatar = ({ user, onOpenApiSettings, onOpenFeedback }: UserAvatarProps
                         </button>
                         <button
                             onClick={async () => {
-                                await logout();
-                                setOpen(false);
-                                showSuccessToast(AUTH_MESSAGES.LOGOUT_SUCCESS);
-                                window.location.reload();
+                                try {
+                                    await logout();
+                                    sessionStorage.setItem("authAction", "logout_success");
+                                    window.location.reload();
+                                } catch (error) {
+                                    console.error("Logout failed", error);
+                                }
                             }}
                             className="w-full flex items-center gap-2 px-3 py-2 text-sm text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-colors"
                         >

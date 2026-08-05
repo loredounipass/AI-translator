@@ -101,7 +101,7 @@ export const useAuthModalLogic = ({ onClose }: UseAuthModalLogicProps) => {
     }
 
     // Login exitoso (o registro sin verificación requerida)
-    showSuccessToast(AUTH_MESSAGES.LOGIN_SUCCESS);
+    sessionStorage.setItem("authAction", "login_success");
     handleClose();
     window.location.reload();
   };

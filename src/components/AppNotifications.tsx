@@ -1,5 +1,6 @@
-import React from "react";
+import React, { useEffect } from "react";
 import { notification } from "antd";
+import { AUTH_MESSAGES } from "../utils/authConstants";
 
 // ─── Auth Required ──────────────────────────────────────────────────────────
 
@@ -164,4 +165,22 @@ export const showInfoToast = (title: string, description?: string) => {
     placement: "topRight",
     style: { borderRadius: 14, boxShadow: "0 8px 32px rgba(59,130,246,0.15), 0 2px 8px rgba(0,0,0,0.08)", border: "1px solid #dbeafe", padding: "14px 18px" },
   });
+};
+
+export const AppNotificationListener = () => {
+  useEffect(() => {
+    const action = sessionStorage.getItem("authAction");
+    if (action === "login_success") {
+      showSuccessToast(AUTH_MESSAGES.LOGIN_SUCCESS);
+      sessionStorage.removeItem("authAction");
+    } else if (action === "logout_success") {
+      showSuccessToast(AUTH_MESSAGES.LOGOUT_SUCCESS);
+      sessionStorage.removeItem("authAction");
+    } else if (action === "register_success") {
+      showSuccessToast(AUTH_MESSAGES.REGISTER_SUCCESS);
+      sessionStorage.removeItem("authAction");
+    }
+  }, []);
+
+  return null;
 };
