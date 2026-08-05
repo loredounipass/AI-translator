@@ -27,11 +27,11 @@ const TranslatedText = () => {
       ) : translatedText.length === 0 && isTranslating ? (
         <div className="flex flex-col items-center justify-center h-full min-h-[100px] text-[#9ca3af] dark:text-slate-400 text-sm font-normal p-4 px-6 text-center leading-relaxed gap-3">
           <div className="flex items-center gap-1.5">
-            <span className="inline-block w-1.5 h-1.5 rounded-full bg-blue-400 dark:bg-blue-500 animate-bounce" style={{ animationDelay: '0ms' }}></span>
-            <span className="inline-block w-1.5 h-1.5 rounded-full bg-blue-400 dark:bg-blue-500 animate-bounce" style={{ animationDelay: '150ms' }}></span>
-            <span className="inline-block w-1.5 h-1.5 rounded-full bg-blue-400 dark:bg-blue-500 animate-bounce" style={{ animationDelay: '300ms' }}></span>
+            <span className="inline-block w-1.5 h-1.5 rounded-full bg-[#9ca3af] dark:bg-slate-400 animate-bounce" style={{ animationDelay: '0ms' }}></span>
+            <span className="inline-block w-1.5 h-1.5 rounded-full bg-[#9ca3af] dark:bg-slate-400 animate-bounce" style={{ animationDelay: '150ms' }}></span>
+            <span className="inline-block w-1.5 h-1.5 rounded-full bg-[#9ca3af] dark:bg-slate-400 animate-bounce" style={{ animationDelay: '300ms' }}></span>
           </div>
-          <span className="text-xs tracking-wide text-slate-400 dark:text-slate-500">Translating...</span>
+          <span className="text-xs tracking-wide text-[#9ca3af] dark:text-slate-400">Translating...</span>
         </div>
       ) : (
         <div className="p-4 pb-14 overflow-auto max-h-[75vh] blue-scrollbar h-full whitespace-pre-wrap">
