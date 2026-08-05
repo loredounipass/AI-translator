@@ -100,7 +100,10 @@ export const useAuthModalLogic = ({ onClose }: UseAuthModalLogicProps) => {
       return;
     }
 
+    // Login exitoso (o registro sin verificación requerida)
+    message.success(AUTH_MESSAGES.LOGIN_SUCCESS);
     handleClose();
+    window.location.reload();
   };
 
 
