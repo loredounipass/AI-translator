@@ -46,12 +46,14 @@ const getLanguageName = (code: string): string => {
 
 // 2. Glosario Modularizado importado desde glossary.ts
 
+const THINKING_CHAR_THRESHOLD = 100;
+
 const isLightweightModel = (modelId: string): boolean => {
   const lowerId = modelId.toLowerCase();
   return lowerId.includes("riva") || lowerId.includes("nemotron");
 };
 
-const buildSystemPrompt = (targetLang: string, sourceLang: string, modelId: string): string => {
+const buildSystemPrompt = (targetLang: string, sourceLang: string, modelId: string, useThinking = true): string => {
   const targetName = getLanguageName(targetLang);
 
   const exactKey = `${sourceLang}-${targetLang}`;
@@ -95,8 +97,12 @@ ${termsOutput.trimEnd()}
 STYLE RULES & DOMAIN TERMINOLOGY - MANDATORY:
 - Maintain formal/professional tone appropriate for business, medical, and legal contexts.${dialectRule}${domainRules}`;
 
-  if (isLightweightModel(modelId)) {
-    return `You are a highly precise professional translator.
+  if (isLightweightModel(modelId) || !useThinking) {
+    // Short text or lightweight model: direct output, no thinking overhead
+    const shortContext = !isLightweightModel(modelId)
+      ? `CONTEXT ABOUT THE USER'S JOB (FOR YOUR UNDERSTANDING ONLY):\nThe user is a professional over-the-phone interpreter. YOUR ONLY job is to translate the text exactly as requested.\n\n`
+      : "";
+    return `${shortContext}You are a highly precise professional translator.
 Your ONLY job is to translate the source text into ${targetName}.
 
 CRITICAL RULES:
@@ -221,23 +227,26 @@ export const translate = async (
     return cached;
   }
 
-  const systemPrompt = buildSystemPrompt(targetLang, sourceLang, modelId);
   const isLightweight = isLightweightModel(modelId);
+  // Skip thinking overhead for short texts (< THINKING_CHAR_THRESHOLD characters)
+  const useThinking = !isLightweight && cleanedText.length >= THINKING_CHAR_THRESHOLD;
+
+  const systemPrompt = buildSystemPrompt(targetLang, sourceLang, modelId, useThinking);
 
   const sourceName = getLanguageName(sourceLang);
   const targetName = getLanguageName(targetLang);
 
-  const recencyInstruction = isLightweight
-    ? "" // Moved to user prompt for lightweight
-    : `\n\nFINAL INSTRUCTION:\nTranslate the source text into ${targetName}. ONLY output the <thinking> block followed by the <translation> block. Do not include any other text.`;
+  const recencyInstruction = useThinking
+    ? `\n\nFINAL INSTRUCTION:\nTranslate the source text into ${targetName}. ONLY output the <thinking> block followed by the <translation> block. Do not include any other text.`
+    : ""; // No thinking instruction needed for short/lightweight texts
 
-  const finalSystemPrompt = isLightweight
-    ? systemPrompt // Keep system rules, but instruction goes to user prompt
-    : systemPrompt + recencyInstruction;
+  const finalSystemPrompt = useThinking
+    ? systemPrompt + recencyInstruction
+    : systemPrompt; // Keep system rules; instruction goes to user prompt
 
-  const userPrompt = isLightweight
-    ? `Translate the following text from ${sourceName} to ${targetName}. Output ONLY the raw translated text. Do not wrap it in any tags or conversational filler.\n\nText to translate:\n${cleanedText}`
-    : `<source_text>\n${cleanedText}\n</source_text>`;
+  const userPrompt = useThinking
+    ? `<source_text>\n${cleanedText}\n</source_text>`
+    : `Translate the following text from ${sourceName} to ${targetName}. Output ONLY the raw translated text. Do not wrap it in any tags or conversational filler.\n\nText to translate:\n${cleanedText}`;
 
   const messages = [
     { role: "system", content: finalSystemPrompt },
@@ -325,12 +334,12 @@ export const translate = async (
                       options.onData(streamText);
                     }
                   } else if (
-                    isLightweight ||
+                    !useThinking ||
                     (accumulatedRawText.length > 100 &&
                     !accumulatedRawText.includes("<thinking>") &&
                     !accumulatedRawText.includes("<translation>"))
                   ) {
-                    // Fallback: model is not following XML format at all (or is lightweight)
+                    // Fallback: model is not following XML format at all, or thinking is disabled
                     // Strip any echoed XML tags and emit cleaned text progressively
                     const cleaned = stripXmlWrapper(accumulatedRawText);
                     if (cleaned) {
