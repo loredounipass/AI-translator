@@ -121,11 +121,7 @@ const ApiSettingsModal = ({ isOpen, onClose, userId }: ApiSettingsModalProps) =>
                       <span className="text-sm font-semibold text-slate-800 dark:text-slate-100">
                         {provider.name}
                       </span>
-                      {provider.id !== "nvidia" && provider.id !== "google" ? (
-                        <span className="text-xs text-amber-600 dark:text-amber-400 bg-amber-50 dark:bg-amber-900/20 px-2 py-0.5 rounded-full font-medium">
-                          Coming soon
-                        </span>
-                      ) : hasKey ? (
+                      {hasKey ? (
                         <span className="text-xs text-green-600 dark:text-green-400 bg-green-50 dark:bg-green-900/20 px-2 py-0.5 rounded-full font-medium flex items-center gap-1">
                           <CheckIcon />
                           Active
@@ -136,17 +132,15 @@ const ApiSettingsModal = ({ isOpen, onClose, userId }: ApiSettingsModalProps) =>
                         </span>
                       )}
                     </div>
-                    {(provider.id === "nvidia" || provider.id === "google") && (
-                      <a
-                        href={provider.docUrl}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="text-xs text-blue-500 hover:text-blue-600 dark:text-blue-400 dark:hover:text-blue-300 flex items-center gap-1 transition-colors"
-                      >
-                        Get key
-                        <ExternalLinkIcon />
-                      </a>
-                    )}
+                    <a
+                      href={provider.docUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-xs text-blue-500 hover:text-blue-600 dark:text-blue-400 dark:hover:text-blue-300 flex items-center gap-1 transition-colors"
+                    >
+                      Get key
+                      <ExternalLinkIcon />
+                    </a>
                   </div>
 
                   {hasKey && !isEditing && (
@@ -171,7 +165,7 @@ const ApiSettingsModal = ({ isOpen, onClose, userId }: ApiSettingsModalProps) =>
                         </button>
                         <button
                           onClick={() => startEdit(provider.id)}
-                          disabled={provider.id !== "nvidia" && provider.id !== "google"}
+
                           className="p-1.5 rounded-lg text-slate-400 hover:text-blue-500 hover:bg-blue-50 dark:hover:bg-blue-900/20 transition-colors disabled:opacity-50 disabled:hover:bg-transparent disabled:hover:text-slate-400"
                           aria-label="Editar key"
                         >
@@ -192,7 +186,7 @@ const ApiSettingsModal = ({ isOpen, onClose, userId }: ApiSettingsModalProps) =>
                     </div>
                   )}
 
-                  {isEditing && (provider.id === "nvidia" || provider.id === "google") && (
+                  {isEditing && (
                     <div className="space-y-2">
                       <div className="relative">
                         <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-slate-400">
@@ -240,14 +234,9 @@ const ApiSettingsModal = ({ isOpen, onClose, userId }: ApiSettingsModalProps) =>
                   {!hasKey && !isEditing && (
                     <button
                       onClick={() => startEdit(provider.id)}
-                      disabled={provider.id !== "nvidia" && provider.id !== "google"}
-                      className={`w-full py-2 rounded-lg border border-dashed text-sm font-medium transition-colors ${
-                        provider.id !== "nvidia" && provider.id !== "google"
-                          ? "border-slate-200 dark:border-slate-800 text-slate-400 dark:text-slate-500 bg-slate-50 dark:bg-slate-800/50 cursor-not-allowed"
-                          : "border-slate-300 dark:border-slate-600 text-slate-500 dark:text-slate-400 hover:border-blue-400 hover:text-blue-500 dark:hover:border-blue-500 dark:hover:text-blue-400"
-                      }`}
+                      className="w-full py-2 rounded-lg border border-dashed text-sm font-medium transition-colors border-slate-300 dark:border-slate-600 text-slate-500 dark:text-slate-400 hover:border-blue-400 hover:text-blue-500 dark:hover:border-blue-500 dark:hover:text-blue-400"
                     >
-                      {provider.id !== "nvidia" && provider.id !== "google" ? "Coming soon" : "+ Add API Key"}
+                      + Add API Key
                     </button>
                   )}
                 </div>
