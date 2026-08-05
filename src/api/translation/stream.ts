@@ -13,18 +13,28 @@ export interface StreamRequestOptions {
 }
 
 export const executeStreamRequest = async (options: StreamRequestOptions): Promise<string> => {
+  const requestBody: any = {
+    model: options.modelId,
+    messages: options.messages,
+    temperature: options.temperature,
+    max_tokens: options.useThinking ? 2048 : 1024,
+    stream: true,
+    apiKey: options.apiKey,
+    provider: options.provider,
+  };
+
+  if (options.provider === "anthropic") {
+    const sysMsg = requestBody.messages.find((m: any) => m.role === "system");
+    if (sysMsg) {
+      requestBody.system = sysMsg.content;
+      requestBody.messages = requestBody.messages.filter((m: any) => m.role !== "system");
+    }
+  }
+
   const fetchResponse = await fetch(NVIDIA_API_URL, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({
-      model: options.modelId,
-      messages: options.messages,
-      temperature: options.temperature,
-      max_tokens: options.useThinking ? 2048 : 1024,
-      stream: true,
-      apiKey: options.apiKey,
-      provider: options.provider,
-    }),
+    body: JSON.stringify(requestBody),
     signal: options.signal,
   });
 
@@ -59,7 +69,7 @@ export const executeStreamRequest = async (options: StreamRequestOptions): Promi
       if (trimmedLine.startsWith("data: ")) {
         try {
           const data = JSON.parse(trimmedLine.substring(6));
-          const content = data.choices?.[0]?.delta?.content || "";
+          const content = data.choices?.[0]?.delta?.content || data.delta?.text || "";
           if (content) {
             accumulatedRawText += content;
 

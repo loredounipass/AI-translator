@@ -13,24 +13,34 @@ export interface StandardRequestOptions {
 }
 
 export const executeStandardRequest = async (options: StandardRequestOptions): Promise<string> => {
+  const requestBody: any = {
+    model: options.modelId,
+    messages: options.messages,
+    temperature: options.temperature,
+    max_tokens: options.useThinking ? 2048 : 1024,
+    stream: false,
+    apiKey: options.apiKey,
+    provider: options.provider,
+  };
+
+  if (options.provider === "anthropic") {
+    const sysMsg = requestBody.messages.find((m: any) => m.role === "system");
+    if (sysMsg) {
+      requestBody.system = sysMsg.content;
+      requestBody.messages = requestBody.messages.filter((m: any) => m.role !== "system");
+    }
+  }
+
   const response = await axios.post(
     NVIDIA_API_URL,
-    {
-      model: options.modelId,
-      messages: options.messages,
-      temperature: options.temperature,
-      max_tokens: options.useThinking ? 2048 : 1024,
-      stream: false,
-      apiKey: options.apiKey,
-      provider: options.provider,
-    },
+    requestBody,
     {
       headers: { "Content-Type": "application/json" },
       signal: options.signal,
     }
   );
 
-  const rawContent = response.data?.choices?.[0]?.message?.content?.trim();
+  const rawContent = response.data?.choices?.[0]?.message?.content || response.data?.content?.[0]?.text;
   if (!rawContent) throw new Error("No se recibió traducción del modelo");
 
   let translated = rawContent;

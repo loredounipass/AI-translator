@@ -76,6 +76,34 @@ export const AI_MODELS: Record<string, AIModel> = {
     apiProvider: "google",
     free: true,
   },
+  "openai-gpt-4o-mini": {
+    id: "gpt-4o-mini",
+    name: "GPT-4o Mini",
+    provider: "OpenAI",
+    apiProvider: "openai",
+    free: false,
+  },
+  "openai-gpt-4.1-nano": {
+    id: "gpt-4.1-nano",
+    name: "GPT-4.1 Nano",
+    provider: "OpenAI",
+    apiProvider: "openai",
+    free: false,
+  },
+  "anthropic-claude-haiku-3-5": {
+    id: "claude-3-5-haiku-20241022",
+    name: "Claude 3.5 Haiku",
+    provider: "Anthropic",
+    apiProvider: "anthropic",
+    free: false,
+  },
+  "anthropic-claude-sonnet-3-5": {
+    id: "claude-3-5-sonnet-20241022",
+    name: "Claude 3.5 Sonnet",
+    provider: "Anthropic",
+    apiProvider: "anthropic",
+    free: false,
+  },
 };
 
 export const DEFAULT_MODEL = "nvidia-nemotron";

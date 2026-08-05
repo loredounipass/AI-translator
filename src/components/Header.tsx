@@ -5,32 +5,7 @@ import { AI_MODELS, DEFAULT_MODEL } from "utils/constants";
 import { useApiKey } from "contexts/ApiKeyContext";
 import UserAvatar from "./UserAvatar";
 
-const SunIcon = () => (
-  <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-    <circle cx="12" cy="12" r="5"></circle>
-    <line x1="12" y1="1" x2="12" y2="3"></line>
-    <line x1="12" y1="21" x2="12" y2="23"></line>
-    <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line>
-    <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line>
-    <line x1="1" y1="12" x2="3" y2="12"></line>
-    <line x1="21" y1="12" x2="23" y2="12"></line>
-    <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line>
-    <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line>
-  </svg>
-);
-
-const MoonIcon = () => (
-  <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-    <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path>
-  </svg>
-);
-
-const HistoryIcon = () => (
-  <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-    <circle cx="12" cy="12" r="10"></circle>
-    <polyline points="12 6 12 12 16 14"></polyline>
-  </svg>
-);
+import { SunIcon, MoonIcon, HistoryIcon, UserIcon } from "./icons";
 
 interface HeaderProps {
   isDark: boolean;
@@ -128,6 +103,10 @@ const Header = ({
                   newParams.set("model", DEFAULT_MODEL);
                 } else if (newProvider === "google") {
                   newParams.set("model", "google-gemini-3-5-flash");
+                } else if (newProvider === "openai") {
+                  newParams.set("model", "openai-gpt-4o-mini");
+                } else if (newProvider === "anthropic") {
+                  newParams.set("model", "anthropic-claude-haiku-3-5");
                 } else {
                   newParams.delete("model");
                 }
@@ -142,23 +121,16 @@ const Header = ({
             </select>
 
             <select
-              value={(currentProvider === "nvidia" || currentProvider === "google") ? (currentModel || "") : "coming_soon"}
+              value={currentModel || ""}
               onChange={handleModelChange}
-              disabled={currentProvider !== "nvidia" && currentProvider !== "google"}
-              className="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-200 text-xs rounded px-2 py-1 outline-none focus:border-blue-400 shadow-sm font-sans max-w-[120px] sm:max-w-none truncate transition-colors disabled:opacity-50 disabled:bg-slate-50 disabled:dark:bg-slate-800/50"
+              className="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-200 text-xs rounded px-2 py-1 outline-none focus:border-blue-400 shadow-sm font-sans max-w-[120px] sm:max-w-none truncate transition-colors"
             >
-              {currentProvider === "nvidia" || currentProvider === "google" ? (
-                <>
-                  {Object.entries(AI_MODELS).filter(([_, model]) => model.apiProvider === currentProvider).map(([key, model]) => (
-                    <option key={key} value={key}>
-                      {model.name}
-                    </option>
-                  ))}
-                  <option value="__settings__">── API Keys ──</option>
-                </>
-              ) : (
-                <option value="coming_soon" disabled>Coming soon...</option>
-              )}
+              {Object.entries(AI_MODELS).filter(([_, model]) => model.apiProvider === currentProvider).map(([key, model]) => (
+                <option key={key} value={key}>
+                  {model.name}
+                </option>
+              ))}
+              <option value="__settings__">── API Keys ──</option>
             </select>
           </div>
 
@@ -197,10 +169,7 @@ const Header = ({
                 className="p-2 rounded-full text-slate-500 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
                 aria-label="Iniciar sesión"
               >
-                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                  <path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2" />
-                  <circle cx="12" cy="7" r="4" />
-                </svg>
+                <UserIcon />
               </button>
               <div className="absolute top-full mt-2 left-1/2 -translate-x-1/2 px-2.5 py-1.5 bg-slate-800 dark:bg-slate-700 text-white text-[11px] font-medium rounded-md opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap pointer-events-none z-50 shadow-lg border border-slate-700 dark:border-slate-600">
                 Iniciar sesión
