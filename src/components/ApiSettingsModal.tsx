@@ -1,6 +1,7 @@
 import React from "react";
 import { API_PROVIDERS } from "../contexts/ApiKeyContext";
 import { useApiSettingsModalLogic } from "../hooks/useApiSettingsModalLogic";
+import { KeyIcon, EyeIcon, CheckIcon, TrashIcon, ExternalLinkIcon, CloseIcon } from "./icons";
 
 interface ApiSettingsModalProps {
   isOpen: boolean;
@@ -8,7 +9,7 @@ interface ApiSettingsModalProps {
   userId: string;
 }
 
-import { KeyIcon, EyeIcon, CheckIcon, TrashIcon, ExternalLinkIcon, CloseIcon } from "./icons";
+
 
 const maskKey = (key: string): string => {
   if (key.length <= 8) return "••••••••";
