@@ -5,6 +5,7 @@ import { historyService } from "utils/historyService";
 import type { HistoryItem } from "utils/historyService";
 import { translationMemory } from "api/translation/translationMemory";
 import { clearTranslationCache } from "api/translation/cache";
+import AddInterpretationModal from "./AddInterpretationModal";
 
 interface HistoryPanelProps {
   isOpen: boolean;
@@ -14,6 +15,7 @@ interface HistoryPanelProps {
 const HistoryPanel = ({ isOpen, onClose }: HistoryPanelProps) => {
   const [history, setHistory] = useState<HistoryItem[]>([]);
   const [showClearConfirm, setShowClearConfirm] = useState(false);
+  const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [searchParams, setSearchParams] = useSearchParams();
   const { user } = useAuth();
 
@@ -80,8 +82,21 @@ const HistoryPanel = ({ isOpen, onClose }: HistoryPanelProps) => {
     onClose();
   };
 
+  const handleInterpretationAdded = () => {
+    loadHistory();
+    // Dispatch event to notify other components
+    window.dispatchEvent(new Event("historyUpdated"));
+  };
+
   return (
     <>
+      {/* Add Interpretation Modal */}
+      <AddInterpretationModal
+        isOpen={isAddModalOpen}
+        onClose={() => setIsAddModalOpen(false)}
+        onInterpretationAdded={handleInterpretationAdded}
+      />
+
       <div
         className={`fixed inset-0 glass-overlay z-[55] transition-opacity duration-300 ${isOpen ? "opacity-100 visible" : "opacity-0 invisible"}`}
         onClick={onClose}
@@ -99,16 +114,32 @@ const HistoryPanel = ({ isOpen, onClose }: HistoryPanelProps) => {
             </svg>
             Historial
           </h2>
-          <button
-            onClick={onClose}
-            className="p-1.5 rounded-full text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
-            aria-label="Cerrar historial"
-          >
-            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-              <line x1="18" y1="6" x2="6" y2="18"></line>
-              <line x1="6" y1="6" x2="18" y2="18"></line>
-            </svg>
-          </button>
+          <div className="flex items-center gap-1">
+            {/* Add Interpretation Button */}
+            {user && (
+              <button
+                onClick={() => setIsAddModalOpen(true)}
+                className="p-1.5 rounded-full text-blue-500 hover:bg-blue-50 dark:hover:bg-blue-900/30 transition-colors"
+                aria-label="Agregar interpretación"
+                title="Agregar interpretación"
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M12 20h9"></path>
+                  <path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"></path>
+                </svg>
+              </button>
+            )}
+            <button
+              onClick={onClose}
+              className="p-1.5 rounded-full text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
+              aria-label="Cerrar historial"
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <line x1="18" y1="6" x2="6" y2="18"></line>
+                <line x1="6" y1="6" x2="18" y2="18"></line>
+              </svg>
+            </button>
+          </div>
         </div>
 
         <div className="flex-1 overflow-y-auto p-4 flex flex-col">
