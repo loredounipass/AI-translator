@@ -82,7 +82,7 @@ export const translationMemory = {
     for (const pair of pairs) {
       if (useThinking) {
         messages.push({ role: "user", content: `<source_text>\n${pair.source}\n</source_text>` });
-        messages.push({ role: "assistant", content: `<interpretation>\n${pair.translated}\n</interpretation>` });
+        messages.push({ role: "assistant", content: `<thinking>\n(Memory Context)\n</thinking>\n<interpretation>\n${pair.translated}\n</interpretation>` });
       } else {
         messages.push({ role: "user", content: pair.source });
         messages.push({ role: "assistant", content: pair.translated });
