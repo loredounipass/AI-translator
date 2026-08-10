@@ -68,6 +68,7 @@ CRITICAL RULES:
 6. OUTPUT ONLY THE TRANSLATION. NO conversational filler. NO thinking steps.
 7. CONSISTENCY: When previous translations are provided in the conversation, maintain consistent terminology and style with those translations.
 8. TRANSLATE NATURALLY: Provide a natural, conversational translation as if speaking directly to a person. Avoid robotic, direct, or literal word-for-word translations.
+9. FIX ASR ERRORS: ONLY IF the source text is of very poor quality with obvious speech-to-text miscaptures or nonsensical words, infer the intended meaning from the context (e.g., medical, insurance, sales, nursing, law, governmental departments, medicaid, medicare) and translate what the speaker intended. If the text is clear, translate it exactly as provided without altering the meaning.
 ${styleRules}`;
   }
 
@@ -93,6 +94,7 @@ CRITICAL RULES:
 7. Preserve original formatting, line breaks, and structure.
 8. CONSISTENCY: When previous translations are provided in the conversation, maintain consistent terminology and style with those translations.
 9. TRANSLATE NATURALLY: Provide a natural, conversational translation as if speaking directly to a person. Avoid robotic, direct, or literal word-for-word translations (e.g., do not sound like Google Translate).
+10. FIX ASR ERRORS: ONLY IF the source text is of very poor quality (obvious speech-to-text miscaptures or nonsensical words), use your <thinking> block to analyze the domain (e.g., medical, insurance, sales, nursing, law, governmental departments, medicaid, medicare) and predict the intended words. If the text is clear and of good quality, translate it exactly as provided without altering the meaning.
 ${styleRules}
 
 <execution_instructions>
