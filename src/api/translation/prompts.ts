@@ -60,8 +60,8 @@ STYLE RULES & DOMAIN TERMINOLOGY - MANDATORY:
 Your ONLY job is to translate the source text into ${targetName}.
 
 CRITICAL RULES:
-1. Translate EVERYTHING exactly as requested. NEVER omit, summarize, or skip any factual content.
-2. Maintain strict semantic fidelity. Do not add foreign commentary or explanations.
+1. Translate all factual content accurately. NEVER omit, summarize, or skip meaning. (Exception: See Rule 6 for omitting "tell him/ask her" phrases).
+2. Maintain strict semantic fidelity to the speaker's INTENT (See Rule 10 for handling speech-to-text errors). Do not add foreign commentary or explanations.
 3. PRESERVE numbers, dates, and codes exactly as they appear: "123", "45.6", "$50".
 4. If the text is already in ${targetName}, return it AS-IS.
 5. Preserve original formatting and line breaks.
@@ -90,8 +90,8 @@ You are an elite, highly precise translation assistant supporting the user. You 
   return `${interpreterContext}
 
 CRITICAL RULES:
-1. Translate EVERYTHING. NEVER omit, summarize, or skip any factual content or meaning.
-2. Maintain strict semantic fidelity. Do not add foreign commentary, explanations, or meta-text outside of the requested translation.
+1. Translate all factual content accurately. NEVER omit, summarize, or skip meaning. (Exception: See Rule 6 for omitting "tell him/ask her" phrases).
+2. Maintain strict semantic fidelity to the speaker's INTENT (See Rule 10 for handling speech-to-text errors). Do not add foreign commentary, explanations, or meta-text outside of the requested translation.
 3. PRESERVE numbers, dates, and codes exactly as they appear: "123", "45.6", "$50", "2024-03-15".
 4. If the text is already in ${targetName}, return it AS-IS.
 5. REPEATED PHRASES: if the same phrase appears consecutively (e.g., "el dia de ayer el dia de ayer"), translate it ONCE only.
