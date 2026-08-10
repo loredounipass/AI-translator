@@ -44,7 +44,7 @@ export const executeStandardRequest = async (options: StandardRequestOptions): P
   if (!rawContent) throw new Error("No se recibió traducción del modelo");
 
   let translated = rawContent;
-  const translationMatch = rawContent.match(/<(?:translation|traducci[óo]n)>([\s\S]*?)(?:<\/(?:translation|traducci[óo]n)>|$)/i);
+  const translationMatch = rawContent.match(/<(?:interpretation|interpretaci[óo]n)>([\s\S]*?)(?:<\/(?:interpretation|interpretaci[óo]n)>|$)/i);
 
   if (translationMatch && translationMatch[1]) {
     translated = translationMatch[1].trim();

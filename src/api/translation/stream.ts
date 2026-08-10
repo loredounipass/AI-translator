@@ -74,7 +74,7 @@ export const executeStreamRequest = async (options: StreamRequestOptions): Promi
             accumulatedRawText += content;
 
             if (!translationTagFound) {
-              const match = accumulatedRawText.match(/<(translation|traducci[óo]n)>/i);
+              const match = accumulatedRawText.match(/<(interpretation|interpretaci[óo]n)>/i);
               if (match && match.index !== undefined) {
                 translationTagFound = true;
                 translationStartIndex = match.index;
@@ -82,10 +82,10 @@ export const executeStreamRequest = async (options: StreamRequestOptions): Promi
             }
 
             if (translationTagFound) {
-              const startMatch = accumulatedRawText.match(/<(translation|traducci[óo]n)>/i);
+              const startMatch = accumulatedRawText.match(/<(interpretation|interpretaci[óo]n)>/i);
               const tagLength = startMatch ? startMatch[0].length : 13;
               let streamText = accumulatedRawText.substring(translationStartIndex + tagLength);
-              const endMatch = streamText.match(/<\/(translation|traducci[óo]n)>/i);
+              const endMatch = streamText.match(/<\/(interpretation|interpretaci[óo]n)>/i);
               if (endMatch && endMatch.index !== undefined) {
                 streamText = streamText.substring(0, endMatch.index);
               }
@@ -100,7 +100,7 @@ export const executeStreamRequest = async (options: StreamRequestOptions): Promi
               !options.useThinking ||
               (accumulatedRawText.length > 100 &&
               !/<(?:thinking|pensamiento)>/i.test(accumulatedRawText) &&
-              !/<(?:translation|traducci[óo]n)>/i.test(accumulatedRawText))
+              !/<(?:interpretation|interpretaci[óo]n)>/i.test(accumulatedRawText))
             ) {
               const cleaned = stripXmlWrapper(accumulatedRawText);
               if (cleaned) {
@@ -123,7 +123,7 @@ export const executeStreamRequest = async (options: StreamRequestOptions): Promi
   }
 
   let translated = accumulatedRawText;
-  const translationMatch = accumulatedRawText.match(/<(?:translation|traducci[óo]n)>([\s\S]*?)(?:<\/(?:translation|traducci[óo]n)>|$)/i);
+  const translationMatch = accumulatedRawText.match(/<(?:interpretation|interpretaci[óo]n)>([\s\S]*?)(?:<\/(?:interpretation|interpretaci[óo]n)>|$)/i);
   if (translationMatch && translationMatch[1]) {
     translated = translationMatch[1].trim();
   } else {

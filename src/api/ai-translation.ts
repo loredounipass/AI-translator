@@ -38,7 +38,7 @@ export const translate = async (
   const targetName = getLanguageName(targetLang);
 
   const recencyInstruction = useThinking
-    ? `\n\nFINAL INSTRUCTION:\nInterpret the source text into ${targetName}. ONLY output the <thinking> block followed by the <translation> block. Do not include any other text.`
+    ? `\n\nFINAL INSTRUCTION:\nInterpret the source text into ${targetName}. ONLY output the <thinking> block followed by the <interpretation> block. Do not include any other text.`
     : "";
 
   const finalSystemPrompt = useThinking
