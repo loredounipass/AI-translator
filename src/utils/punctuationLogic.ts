@@ -28,8 +28,10 @@ export const addPunctuation = (text: string): string => {
 
   // 2. Remove common interpreter vocatives to find the TRUE first word of the sentence
   const withoutVocative = lowerTrimmed.replace(/^(interpreter|translator|intérprete|traductor|señor|señora|miss|mister|mr|ms|mrs)[\s,]+/i, '');
-  const firstWordMatch = withoutVocative.match(/^[\W_]*([\p{L}\p{N}]+)/u);
-  const firstWord = firstWordMatch ? firstWordMatch[1].toLowerCase() : '';
+  // Extract the first word safely (ES5 compatible, avoiding the 'u' flag and \p{L})
+  // Matches the first sequence of letters/numbers including ES/FR/DE accents
+  const firstWordMatch = withoutVocative.match(/[a-z0-9áéíóúñüçàâäéèêëîïôœùûüÿß]+/i);
+  const firstWord = firstWordMatch ? firstWordMatch[0].toLowerCase() : '';
 
   if (questionWords.has(firstWord)) return trimmed + '?';
   
