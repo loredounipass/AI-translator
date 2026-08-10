@@ -65,10 +65,13 @@ CRITICAL RULES:
 3. PRESERVE numbers, dates, and codes exactly as they appear: "123", "45.6", "$50".
 4. If the text is already in ${targetName}, return it AS-IS.
 5. Preserve original formatting and line breaks.
-6. OUTPUT ONLY THE TRANSLATION. NO conversational filler. NO thinking steps.
-7. CONSISTENCY: When previous translations are provided in the conversation, maintain consistent terminology and style with those translations.
-8. TRANSLATE NATURALLY: Provide a natural, conversational translation as if speaking directly to a person. Avoid robotic, direct, or literal word-for-word translations.
-9. FIX ASR ERRORS: ONLY IF the source text is of very poor quality with obvious speech-to-text miscaptures or nonsensical words, infer the intended meaning from the context (e.g., medical, insurance, sales, nursing, law, governmental departments, medicaid, medicare) and translate what the speaker intended. If the text is clear, translate it exactly as provided without altering the meaning.
+6. FIRST PERSON INTERPRETING (DIRECT SPEECH): 
+   - Always interpret in the first person when the source uses "I" or "we".
+   - If the speaker addresses the other party in the third person (e.g., "Can you ask him...", "Tell her that...", "Ask the patient..."), you MUST convert it to direct address. OMIT the "ask him/tell her" phrase and translate the core question/statement as if speaking directly to them. Example: "Can you ask him what his name is?" -> "What is your name?" ("¿Cuál es su nombre?").
+7. OUTPUT ONLY THE TRANSLATION. NO conversational filler. NO thinking steps.
+8. CONSISTENCY: When previous translations are provided in the conversation, maintain consistent terminology and style with those translations.
+9. TRANSLATE NATURALLY: Provide a natural, conversational translation as if speaking directly to a person. Avoid robotic, direct, or literal word-for-word translations.
+10. FIX ASR ERRORS: ONLY IF the source text is of very poor quality with obvious speech-to-text miscaptures or nonsensical words, infer the intended meaning from the context (e.g., medical, insurance, sales, nursing, law, governmental departments, medicaid, medicare) and translate what the speaker intended. If the text is clear, translate it exactly as provided without altering the meaning.
 ${styleRules}`;
   }
 
@@ -90,7 +93,9 @@ CRITICAL RULES:
 3. PRESERVE numbers, dates, and codes exactly as they appear: "123", "45.6", "$50", "2024-03-15".
 4. If the text is already in ${targetName}, return it AS-IS.
 5. REPEATED PHRASES: if the same phrase appears consecutively (e.g., "el dia de ayer el dia de ayer"), translate it ONCE only.
-6. Interpret in first person when source uses "I" or "we".
+6. FIRST PERSON INTERPRETING (DIRECT SPEECH): 
+   - Always interpret in the first person when the source uses "I" or "we".
+   - If the speaker addresses the other party in the third person (e.g., "Can you ask him...", "Tell her that...", "Ask the patient..."), you MUST convert it to direct address. OMIT the "ask him/tell her" phrase and translate the core question/statement as if speaking directly to them. Example: "Can you ask him what his name is?" -> "What is your name?" ("¿Cuál es su nombre?").
 7. Preserve original formatting, line breaks, and structure.
 8. CONSISTENCY: When previous translations are provided in the conversation, maintain consistent terminology and style with those translations.
 9. TRANSLATE NATURALLY: Provide a natural, conversational translation as if speaking directly to a person. Avoid robotic, direct, or literal word-for-word translations (e.g., do not sound like Google Translate).
