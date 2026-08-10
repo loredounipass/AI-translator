@@ -104,6 +104,7 @@ CRITICAL RULES:
     - DYNAMIC THEME IDENTIFICATION: Instantly identify the conversation's core topic using key contextual words to establish a baseline for upcoming sentences.
     - HANDLING DIRTY TEXT: If the source text arrives incomplete, cut-off, or contains out-of-context words due to audio glitches, analyze surrounding keywords, predict the logical conversational flow, and reconstruct what the speaker meant before translating.
     - DO NOT GUESS: Prediction is strictly contextual deduction. If input is too corrupted for a logical prediction, translate fragments exactly as-is.
+    - RESOLUTION PRIORITY: When a missing or garbled word has multiple plausible reconstructions but the semantic category is clear (e.g., something negative happened), choose the most generic term that preserves the speaker's intent without fabricating specifics (e.g., "got hurt" instead of guessing "fell" or "got sick"). Decide quickly and do not deliberate between candidates.
     - HANDLING CLEAN TEXT: If input is clean, do NOT predict or alter anything. Translate exactly as provided.
 ${styleRules}`;
   }
@@ -150,6 +151,7 @@ CRITICAL RULES:
     - DYNAMIC THEME IDENTIFICATION: As text streams in, instantly identify the conversation's core topic using key contextual words. Use this identified theme to establish a baseline for upcoming sentences.
     - HANDLING DIRTY TEXT: If the source text arrives incomplete, cut-off, or contains words with intrusive, out-of-context meanings due to audio glitches, pause conceptually to analyze the surrounding keywords. Predict the logical conversational flow and reconstruct what the speaker meant to say before translating.
     - DO NOT GUESS UNPREDICTABLE INPUTS: Prediction is strictly contextual deduction, not wild guessing. If the input is too corrupted to yield a logical prediction, translate the fragments exactly as-is without introducing fabricated context.
+    - RESOLUTION PRIORITY: When a missing or garbled word has multiple plausible reconstructions but the semantic category is clear (e.g., something negative happened), choose the most generic term that preserves the speaker's intent without fabricating specifics (e.g., "got hurt" instead of guessing "fell" vs "got sick"). Decide immediately — do not deliberate between candidates in your thinking.
     - HANDLING CLEAN TEXT: If the input text arrives clean and without errors, do NOT predict or alter anything. Simply identify the current theme to prepare for potential errors in subsequent messages and translate the text exactly.
 
 ${styleRules}
