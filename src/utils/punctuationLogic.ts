@@ -1,11 +1,11 @@
 // Multi-language question word detection
 export const questionWords = new Set([
   'what', 'who', 'where', 'when', 'why', 'how', 'which', 'do', 'does', 'did', 'is', 'are', 'was', 'were', 'can', 'could', 'will', 'would', 'shall', 'should', 'may', 'might', 'am', 'has', 'have', 'had',
-  'que', 'qué', 'quien', 'quién', 'quienes', 'quiénes', 'donde', 'dónde', 'cuando', 'cuándo', 'como', 'cómo', 'por', 'cuál', 'cual', 'cuáles', 'cuales', 'cuánto', 'cuánta', 'cuántos', 'cuántas',
-  'qui', 'quoi', 'où', 'quand', 'comment', 'pourquoi', 'combien', 'quel', 'quelle', 'est-ce', 'lequel', 'laquelle', 'lesquels', 'lesquelles',
-  'quem', 'onde', 'quando', 'quanto', 'quanta', 'quantos', 'quantas', 'qual', 'quais',
-  'wer', 'was', 'wo', 'wann', 'warum', 'wie', 'welcher', 'welche', 'welches', 'welchem',
-  'chi', 'cosa', 'dove', 'perché', 'quale', 'quali', 'quanto', 'quanta',
+  'que', 'qué', 'quien', 'quién', 'quienes', 'quiénes', 'donde', 'dónde', 'cuando', 'cuándo', 'como', 'cómo', 'por', 'cuál', 'cual', 'cuáles', 'cuales', 'cuánto', 'cuánta', 'cuántos', 'cuántas', 'puede', 'puedes', 'podría', 'podrías', 'es', 'son', 'era', 'eran', 'tiene', 'tienes', 'hace', 'hacen',
+  'qui', 'quoi', 'où', 'quand', 'comment', 'pourquoi', 'combien', 'quel', 'quelle', 'est-ce', 'lequel', 'laquelle', 'lesquels', 'lesquelles', 'peux', 'peut', 'pourrait', 'est', 'sont', 'avez', 'a',
+  'quem', 'onde', 'quando', 'quanto', 'quanta', 'quantos', 'quantas', 'qual', 'quais', 'pode', 'poderia', 'é', 'são', 'tem',
+  'wer', 'was', 'wo', 'wann', 'warum', 'wie', 'welcher', 'welche', 'welches', 'welchem', 'kann', 'kannst', 'könnte', 'könnten', 'ist', 'sind', 'war', 'waren', 'haben', 'hast',
+  'chi', 'cosa', 'dove', 'perché', 'quale', 'quali', 'quanto', 'quanta', 'può', 'puoi', 'potrebbe', 'è', 'sono', 'ha', 'hai',
   'kim', 'ne', 'nerede', 'neden', 'niçin', 'nasıl', 'hangi', 'kaç',
   'هل', 'ما', 'من', 'أين', 'متى', 'لماذا', 'كيف', 'كم',
   'क्या', 'कौन', 'कहाँ', 'कब', 'क्यों', 'कैसे', 'कितना',
@@ -26,8 +26,9 @@ export const addPunctuation = (text: string): string => {
   if (trimmed.includes('¿')) return trimmed + '?';
   if (trimmed.includes('¡')) return trimmed + '!';
 
-  // 2. Safely extract the very first actual word (ignoring leading punctuation like ¡¿,.)
-  const firstWordMatch = trimmed.match(/^[\W_]*([\p{L}\p{N}]+)/u);
+  // 2. Remove common interpreter vocatives to find the TRUE first word of the sentence
+  const withoutVocative = lowerTrimmed.replace(/^(interpreter|translator|intérprete|traductor|señor|señora|miss|mister|mr|ms|mrs)[\s,]+/i, '');
+  const firstWordMatch = withoutVocative.match(/^[\W_]*([\p{L}\p{N}]+)/u);
   const firstWord = firstWordMatch ? firstWordMatch[1].toLowerCase() : '';
 
   if (questionWords.has(firstWord)) return trimmed + '?';
