@@ -64,6 +64,7 @@ export const useTranslationTextFieldLogic = () => {
   const textareaRef = React.useRef<HTMLTextAreaElement>(null);
   const manualEditRef = React.useRef<boolean>(false);
   const manualEditTimeoutRef = React.useRef<number | null>(null);
+  const textAtMicStartRef = React.useRef<string>("");
 
 
 
@@ -182,7 +183,7 @@ export const useTranslationTextFieldLogic = () => {
           params.set("text", truncatedValue);
         }
         return params;
-      });
+      }, { replace: true });
       
       return trimmedValue;
     });
@@ -249,7 +250,11 @@ export const useTranslationTextFieldLogic = () => {
 
     setTextParam(e.target.value);
 
-    if (e.target.value.trim() === "") {
+    // If the user types manually, reset the transcript to avoid overwrite conflicts
+    if (listening) {
+      resetTranscript();
+      textAtMicStartRef.current = e.target.value;
+    } else if (e.target.value.trim() === "") {
       resetTranscript();
     }
   };
@@ -277,6 +282,9 @@ export const useTranslationTextFieldLogic = () => {
         const effectiveSl = sr || sl;
         const slSanitizado = effectiveSl.toLowerCase().trim().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
         const idiomaOptimizado = normalizarLocale(MAPEO_LOCALES[slSanitizado] || sl);
+        
+        textAtMicStartRef.current = text;
+        
         await SpeechRecognition.startListening({
           continuous: true,
           interimResults: true,
@@ -471,9 +479,11 @@ export const useTranslationTextFieldLogic = () => {
       previousTranscriptRef.current = transcript;
 
       const punctuated = addPunctuation(transcript);
-      const truncated = punctuated.length > MAX_URL_TEXT_LENGTH
-        ? punctuated.slice(0, MAX_URL_TEXT_LENGTH)
-        : punctuated;
+      const prefix = textAtMicStartRef.current ? textAtMicStartRef.current + " " : "";
+      const fullText = prefix + punctuated;
+      const truncated = fullText.length > MAX_URL_TEXT_LENGTH
+        ? fullText.slice(0, MAX_URL_TEXT_LENGTH)
+        : fullText;
 
       requestAnimationFrame(() => {
         setTextParam(truncated);
