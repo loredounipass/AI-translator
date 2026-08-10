@@ -83,7 +83,7 @@ export const executeStreamRequest = async (options: StreamRequestOptions): Promi
 
             if (translationTagFound) {
               const startMatch = accumulatedRawText.match(/<(interpretation|interpretaci[óo]n)>/i);
-              const tagLength = startMatch ? startMatch[0].length : 13;
+              const tagLength = startMatch ? startMatch[0].length : 16;
               let streamText = accumulatedRawText.substring(translationStartIndex + tagLength);
               const endMatch = streamText.match(/<\/(interpretation|interpretaci[óo]n)>/i);
               if (endMatch && endMatch.index !== undefined) {

@@ -30,11 +30,13 @@ export const buildSystemPrompt = (targetLang: string, sourceLang: string, modelI
   if (pairGlossary) {
     let termsOutput = "";
     for (const [domain, terms] of Object.entries(pairGlossary)) {
-      // Filter terms: if sourceText is provided, only include terms found in it
+      // Normalize punctuation to spaces to allow whole-word matching (respecting Spanish accents)
+      const cleanSourceText = ` ${sourceTextLower.replace(/[^\w\sáéíóúñü]/g, ' ')} `;
+      
       const relevantTerms = sourceTextLower
         ? Object.entries(terms).filter(([src, tgt]) => {
           const searchTerm = (isReversed ? tgt : src).toLowerCase();
-          return sourceTextLower.includes(searchTerm);
+          return cleanSourceText.includes(` ${searchTerm} `);
         })
         : Object.entries(terms);
 
