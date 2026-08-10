@@ -33,9 +33,9 @@ export const buildSystemPrompt = (targetLang: string, sourceLang: string, modelI
       // Filter terms: if sourceText is provided, only include terms found in it
       const relevantTerms = sourceTextLower
         ? Object.entries(terms).filter(([src, tgt]) => {
-            const searchTerm = (isReversed ? tgt : src).toLowerCase();
-            return sourceTextLower.includes(searchTerm);
-          })
+          const searchTerm = (isReversed ? tgt : src).toLowerCase();
+          return sourceTextLower.includes(searchTerm);
+        })
         : Object.entries(terms);
 
       if (relevantTerms.length === 0) continue;
@@ -101,11 +101,11 @@ CRITICAL RULES:
 9. TRANSLATE NATURALLY: Provide a natural, conversational translation as if speaking directly to a person. Avoid robotic, direct, or literal word-for-word translations.
 
 10. FIX ASR ERRORS & CONTEXTUAL PREDICTION (DIRTY TEXT RULE):
+    - ACTIVATION GATE (EVALUATE FIRST): This rule ONLY activates when text has ACTUAL ASR corruption — missing words, nonsensical substitutions, or garbled fragments that make the meaning GENUINELY UNCLEAR. If you can understand the speaker's intent (even with minor grammar imperfections like "what's his name is"), the text is CLEAN: skip this rule entirely, apply Rules 1-9 normally.
     - DYNAMIC THEME IDENTIFICATION: Instantly identify the conversation's core topic using key contextual words to establish a baseline for upcoming sentences.
     - HANDLING DIRTY TEXT: If the source text arrives incomplete, cut-off, or contains out-of-context words due to audio glitches, analyze surrounding keywords, predict the logical conversational flow, and reconstruct what the speaker meant before translating.
     - DO NOT GUESS: Prediction is strictly contextual deduction. If input is too corrupted for a logical prediction, translate fragments exactly as-is.
-    - RESOLUTION PRIORITY: When a missing or garbled word has multiple plausible reconstructions but the semantic category is clear (e.g., something negative happened), choose the most generic term that preserves the speaker's intent without fabricating specifics (e.g., "got hurt" instead of guessing "fell" or "got sick"). Decide quickly and do not deliberate between candidates.
-    - HANDLING CLEAN TEXT: If input is clean, do NOT predict or alter anything. Translate exactly as provided.
+    - RESOLUTION PRIORITY: When a missing or garbled word has multiple plausible reconstructions but the semantic category is clear, choose the most generic term that preserves intent without fabricating specifics. Decide quickly.
 ${styleRules}`;
   }
 
@@ -127,6 +127,7 @@ CRITICAL RULES:
    - You are acting as an invisible interpreter. You MUST translate into the FIRST PERSON.
    - You MUST COMPLETELY DROP AND IGNORE third-person phrases like "Tell him...", "Ask her...", "Dígale que...", "Pregúntele si...".
    - Examples:
+   
      * "Dígale que es Roberto Lara" -> "I am Roberto Lara"
      * "Can you ask him what his name is?" -> "¿Cuál es su nombre?"
      * "Pregúntele si tiene fiebre" -> "Do you have a fever?"
@@ -147,12 +148,12 @@ CRITICAL RULES:
 
 9. TRANSLATE NATURALLY: Provide a natural, conversational translation as if speaking directly to a person. Avoid robotic, direct, or literal word-for-word translations (e.g., do not sound like Google Translate).
 
-10.  FIX ASR ERRORS & CONTEXTUAL PREDICITON (DIRTY TEXT RULE):
+10.  FIX ASR ERRORS & CONTEXTUAL PREDICTION (DIRTY TEXT RULE):
+    - ACTIVATION GATE (EVALUATE FIRST): This rule ONLY activates when the text has ACTUAL ASR corruption — missing words, nonsensical substitutions, or garbled fragments that make the meaning GENUINELY UNCLEAR. If you can understand the speaker's intent (even with minor grammar imperfections like "what's his name is"), the text is CLEAN: skip this rule, apply Rules 1-9 normally, and simply note the current conversation theme for future context.
     - DYNAMIC THEME IDENTIFICATION: As text streams in, instantly identify the conversation's core topic using key contextual words. Use this identified theme to establish a baseline for upcoming sentences.
     - HANDLING DIRTY TEXT: If the source text arrives incomplete, cut-off, or contains words with intrusive, out-of-context meanings due to audio glitches, pause conceptually to analyze the surrounding keywords. Predict the logical conversational flow and reconstruct what the speaker meant to say before translating.
     - DO NOT GUESS UNPREDICTABLE INPUTS: Prediction is strictly contextual deduction, not wild guessing. If the input is too corrupted to yield a logical prediction, translate the fragments exactly as-is without introducing fabricated context.
-    - RESOLUTION PRIORITY: When a missing or garbled word has multiple plausible reconstructions but the semantic category is clear (e.g., something negative happened), choose the most generic term that preserves the speaker's intent without fabricating specifics (e.g., "got hurt" instead of guessing "fell" vs "got sick"). Decide immediately — do not deliberate between candidates in your thinking.
-    - HANDLING CLEAN TEXT: If the input text arrives clean and without errors, do NOT predict or alter anything. Simply identify the current theme to prepare for potential errors in subsequent messages and translate the text exactly.
+    - RESOLUTION PRIORITY: When a missing or garbled word has multiple plausible reconstructions but the semantic category is clear, choose the most generic term that preserves the speaker's intent without fabricating specifics. Decide immediately — do not deliberate between candidates.
 
 ${styleRules}
 
