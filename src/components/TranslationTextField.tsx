@@ -114,7 +114,7 @@ const TranslationTextField = () => {
                   boxShadow: '0 1px 2px rgba(0,0,0,0.2)'
                 }} />
               </button>
-              <span className="text-[#333] dark:text-slate-300 text-xs whitespace-nowrap">{keepMicOn ? "Turn off" : "Turn on"}</span>
+              <span className="text-[#333] dark:text-slate-300 text-xs whitespace-nowrap">{keepMicOn ? "Sph off" : "sph on"}</span>
             </div>
             <button
               onMouseDown={() => { if (!mediaStreamRef.current && keepMicOn) ensureAudioStreamActive(); }}
