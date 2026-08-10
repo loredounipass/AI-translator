@@ -46,12 +46,12 @@ const ApiKeyModal = ({ isOpen, onClose, userId, provider = "nvidia" }: ApiKeyMod
   return (
     <>
       <div
-        className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-[65] transition-opacity duration-300"
+        className="fixed inset-0 glass-overlay z-[65] transition-opacity duration-300"
         onClick={onClose}
         aria-hidden="true"
       />
       <div className="fixed inset-0 z-[70] flex items-center justify-center p-4">
-        <div className="bg-white dark:bg-slate-900 rounded-2xl shadow-2xl border border-slate-200 dark:border-slate-700 w-full max-w-md overflow-hidden animate-fadeIn">
+        <div className="glass-modal rounded-2xl w-full max-w-md overflow-hidden animate-fadeIn">
           <div className="flex items-center justify-between p-5 pb-0">
             <h2 className="text-lg font-semibold text-slate-800 dark:text-slate-100">
               API Key — {API_PROVIDERS.find((p) => p.id === provider)?.name || provider}
@@ -81,7 +81,7 @@ const ApiKeyModal = ({ isOpen, onClose, userId, provider = "nvidia" }: ApiKeyMod
                 value={apiKey}
                 onChange={(e) => setApiKey(e.target.value)}
                 placeholder={`${API_PROVIDERS.find((p) => p.id === provider)?.keyPrefix || "key"}...`}
-                className="w-full pl-10 pr-10 py-2.5 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-200 placeholder-slate-400 dark:placeholder-slate-500 text-sm outline-none focus:border-blue-400 dark:focus:border-blue-500 transition-colors font-mono"
+                className="w-full pl-10 pr-10 py-2.5 rounded-lg glass-input text-slate-800 dark:text-slate-200 placeholder-slate-400 dark:placeholder-slate-500 text-sm outline-none focus:border-blue-400 dark:focus:border-blue-500 transition-colors font-mono"
                 autoComplete="off"
               />
               <button

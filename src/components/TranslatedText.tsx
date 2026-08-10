@@ -13,7 +13,7 @@ const TranslatedText = () => {
   } = useTranslatedTextLogic();
 
   return (
-    <div className={`relative bg-[#f3f4f6] dark:bg-slate-800 text-[#0f1720] dark:text-slate-100 font-sans font-normal leading-normal ${isRTL ? 'text-right' : 'text-left'} text-lg break-words min-h-[100px] border-t md:border-t-0 md:border-l border-[#e6e9ee] dark:border-slate-700/50 flex-1 flex flex-col transition-colors`}>
+    <div className={`relative bg-[#f3f4f6]/40 dark:bg-slate-800/40 text-[#0f1720] dark:text-slate-100 font-sans font-normal leading-normal ${isRTL ? 'text-right' : 'text-left'} text-lg break-words min-h-[100px] border-t md:border-t-0 md:border-l border-white/30 dark:border-slate-700/30 flex-1 flex flex-col transition-colors`}>
       {translatedText.length === 0 && !isTranslating ? (
         <div className="flex flex-col items-center justify-center h-full min-h-[100px] text-[#9ca3af] dark:text-slate-400 text-base font-normal p-4 px-6 text-center leading-relaxed">
           <div className="flex items-center justify-center">

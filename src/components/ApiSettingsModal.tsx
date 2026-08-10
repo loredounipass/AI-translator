@@ -36,12 +36,12 @@ const ApiSettingsModal = ({ isOpen, onClose, userId }: ApiSettingsModalProps) =>
   return (
     <>
       <div
-        className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-[65] transition-opacity duration-300"
+        className="fixed inset-0 glass-overlay z-[65] transition-opacity duration-300"
         onClick={onClose}
         aria-hidden="true"
       />
       <div className="fixed inset-0 z-[70] flex items-center justify-center p-4">
-        <div className="bg-white dark:bg-slate-900 rounded-2xl shadow-2xl border border-slate-200 dark:border-slate-700 w-full max-w-lg overflow-hidden animate-fadeIn">
+        <div className="glass-modal rounded-2xl w-full max-w-lg overflow-hidden animate-fadeIn">
           <div className="flex items-center justify-between p-5 pb-3">
             <h2 className="text-lg font-semibold text-slate-800 dark:text-slate-100 flex items-center gap-2">
               <KeyIcon />
@@ -153,7 +153,7 @@ const ApiSettingsModal = ({ isOpen, onClose, userId }: ApiSettingsModalProps) =>
                           value={inputValue}
                           onChange={(e) => setInputValue(e.target.value)}
                           placeholder={`${provider.keyPrefix}...`}
-                          className="w-full pl-10 pr-10 py-2 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-200 placeholder-slate-400 dark:placeholder-slate-500 text-sm outline-none focus:border-blue-400 dark:focus:border-blue-500 transition-colors font-mono"
+                          className="w-full pl-10 pr-10 py-2 rounded-lg glass-input text-slate-800 dark:text-slate-200 placeholder-slate-400 dark:placeholder-slate-500 text-sm outline-none focus:border-blue-400 dark:focus:border-blue-500 transition-colors font-mono"
                           autoComplete="off"
                         />
                         <button

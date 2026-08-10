@@ -67,7 +67,7 @@ function App() {
 
   return (
     <Router>
-      <div className="min-h-screen bg-slate-50 dark:bg-slate-900 transition-colors duration-200 overflow-x-hidden">
+      <div className="min-h-screen glass-bg transition-colors duration-200 overflow-x-hidden">
         <AppNotificationListener />
         <Header
           isDark={isDark}
@@ -106,7 +106,7 @@ function App() {
           <Route
             path="/"
             element={
-              <div className="text-center text-[#111111] dark:text-slate-100 h-[calc(100vh-7rem)] sm:h-[calc(100vh-6rem)] md:h-[calc(100vh-6rem)] w-[95%] md:w-[97%] bg-white dark:bg-slate-800 rounded-2xl mx-auto mt-24 sm:mt-20 md:mt-[5rem] overflow-hidden flex flex-col font-sans shadow-lg border border-slate-200/50 dark:border-slate-700/50 transition-colors duration-200">
+              <div className="text-center text-[#111111] dark:text-slate-100 h-[calc(100vh-7rem)] sm:h-[calc(100vh-6rem)] md:h-[calc(100vh-6rem)] w-[95%] md:w-[97%] glass-pane rounded-2xl mx-auto mt-24 sm:mt-20 md:mt-[5rem] overflow-hidden flex flex-col font-sans transition-colors duration-200">
                 <LanguagesBar />
                 <div className="flex-1 flex flex-col md:flex-row overflow-hidden">
                   <TranslationTextField />

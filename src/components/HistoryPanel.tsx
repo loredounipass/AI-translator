@@ -83,15 +83,15 @@ const HistoryPanel = ({ isOpen, onClose }: HistoryPanelProps) => {
   return (
     <>
       <div
-        className={`fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-[55] transition-opacity duration-300 ${isOpen ? "opacity-100 visible" : "opacity-0 invisible"}`}
+        className={`fixed inset-0 glass-overlay z-[55] transition-opacity duration-300 ${isOpen ? "opacity-100 visible" : "opacity-0 invisible"}`}
         onClick={onClose}
         aria-hidden="true"
       />
 
       <div
-        className={`fixed top-0 left-0 h-full w-80 md:w-96 bg-white dark:bg-slate-900 shadow-2xl z-[60] transform transition-transform duration-300 ease-in-out flex flex-col border-r border-slate-200 dark:border-slate-800 ${isOpen ? "translate-x-0" : "-translate-x-full"}`}
+        className={`fixed top-0 left-0 h-full w-80 md:w-96 glass-panel z-[60] transform transition-transform duration-300 ease-in-out flex flex-col rounded-r-2xl ${isOpen ? "translate-x-0" : "-translate-x-full"}`}
       >
-        <div className="flex items-center justify-between p-4 border-b border-slate-200 dark:border-slate-800 shrink-0">
+        <div className="flex items-center justify-between p-4 border-b border-white/30 dark:border-slate-700/30 shrink-0">
           <h2 className="text-lg font-semibold text-slate-800 dark:text-slate-100 flex items-center gap-2">
             <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
               <circle cx="12" cy="12" r="10"></circle>
@@ -111,7 +111,7 @@ const HistoryPanel = ({ isOpen, onClose }: HistoryPanelProps) => {
           </button>
         </div>
 
-        <div className="flex-1 overflow-y-auto p-4 flex flex-col bg-slate-50 dark:bg-slate-900/50">
+        <div className="flex-1 overflow-y-auto p-4 flex flex-col">
           {!user ? (
             <div className="flex-1 flex flex-col items-center justify-center text-center">
               <p className="text-slate-500 dark:text-slate-400 font-medium">Inicia sesión para ver tu historial</p>
@@ -151,7 +151,7 @@ const HistoryPanel = ({ isOpen, onClose }: HistoryPanelProps) => {
                 <div
                   key={item.id}
                   onClick={() => handleRestore(item.source_text)}
-                  className={`relative bg-white dark:bg-slate-800 p-3 rounded-lg shadow-sm border ${item.is_favorite ? "border-yellow-400/50 dark:border-yellow-500/50" : "border-slate-200 dark:border-slate-700"} text-left animate-fadeIn cursor-pointer hover:border-blue-400 dark:hover:border-blue-500 transition-colors group`}
+                  className={`relative bg-white/50 dark:bg-slate-800/50 backdrop-blur-md p-3 rounded-xl shadow-sm border ${item.is_favorite ? "border-yellow-400/40 dark:border-yellow-500/40" : "border-white/40 dark:border-slate-700/30"} text-left animate-fadeIn cursor-pointer hover:border-blue-400/60 dark:hover:border-blue-500/50 transition-colors group`}
                 >
                   <div className="absolute top-2 right-2 flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-all">
                     <button

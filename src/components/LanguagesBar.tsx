@@ -14,7 +14,7 @@ const LanguagesBar = () => {
   } = useLanguagesBarLogic();
 
   return (
-    <div className="bg-white/80 dark:bg-slate-800/80 backdrop-blur-sm flex items-center justify-between p-2 md:p-3 px-5 md:px-6 gap-2 md:gap-4 border-b border-slate-200 dark:border-slate-700 w-full overflow-hidden transition-colors">
+    <div className="bg-white/30 dark:bg-slate-800/30 backdrop-blur-xl flex items-center justify-between p-2 md:p-3 px-5 md:px-6 gap-2 md:gap-4 border-b border-white/30 dark:border-slate-700/30 w-full overflow-hidden transition-colors">
       <Select<string>
         value={sourceLang}
         onChange={handleChangeSourceLang}

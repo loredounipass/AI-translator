@@ -16,12 +16,12 @@ module.exports = {
       },
       fontFamily: {
         sans: [
-          "Roboto",
+          "Inter",
           "-apple-system",
           "BlinkMacSystemFont",
+          '"SF Pro Display"',
           '"Segoe UI"',
           '"Helvetica Neue"',
-          '"Noto Sans"',
           "Arial",
           "sans-serif",
         ],

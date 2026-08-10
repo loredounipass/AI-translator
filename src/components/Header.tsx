@@ -60,7 +60,7 @@ const Header = ({
 
   return (
     <>
-      <div className="fixed top-0 left-0 w-full p-2 sm:p-4 md:top-4 md:p-0 md:px-8 flex flex-col sm:flex-row items-center justify-between gap-1 sm:gap-3 z-50 select-none cursor-default bg-white/90 dark:bg-slate-900/90 md:bg-transparent md:dark:bg-transparent backdrop-blur-md md:backdrop-blur-none border-b border-slate-200 dark:border-slate-800 md:border-none md:dark:border-none shadow-sm md:shadow-none transition-all">
+      <div className="fixed top-0 left-0 w-full p-2 sm:p-4 md:top-4 md:p-0 md:px-8 flex flex-col sm:flex-row items-center justify-between gap-1 sm:gap-3 z-50 select-none cursor-default glass-header md:bg-transparent md:dark:bg-transparent md:backdrop-blur-none md:border-none md:dark:border-none md:shadow-none transition-all">
         <div className="flex items-center gap-2 sm:gap-3">
           <div className="font-semibold text-sm sm:text-base md:text-xl text-slate-800 dark:text-slate-100 tracking-tight">
             interpreter AI
@@ -112,7 +112,7 @@ const Header = ({
                 }
                 setSearchParams(newParams);
               }}
-              className="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-200 text-xs rounded px-2 py-1 outline-none focus:border-blue-400 shadow-sm font-sans max-w-[100px] sm:max-w-none truncate transition-colors"
+              className="glass-select text-slate-700 dark:text-slate-200 text-xs rounded-lg px-2 py-1 outline-none focus:border-blue-400 shadow-sm font-sans max-w-[100px] sm:max-w-none truncate transition-colors"
             >
               <option value="nvidia">NVIDIA</option>
               <option value="openai">OpenAI</option>
@@ -123,7 +123,7 @@ const Header = ({
             <select
               value={currentModel || ""}
               onChange={handleModelChange}
-              className="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-200 text-xs rounded px-2 py-1 outline-none focus:border-blue-400 shadow-sm font-sans max-w-[120px] sm:max-w-none truncate transition-colors"
+              className="glass-select text-slate-700 dark:text-slate-200 text-xs rounded-lg px-2 py-1 outline-none focus:border-blue-400 shadow-sm font-sans max-w-[120px] sm:max-w-none truncate transition-colors"
             >
               {Object.entries(AI_MODELS).filter(([_, model]) => model.apiProvider === currentProvider).map(([key, model]) => (
                 <option key={key} value={key}>
