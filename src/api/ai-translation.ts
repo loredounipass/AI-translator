@@ -46,7 +46,7 @@ export const translate = async (
     : systemPrompt;
 
   const userPrompt = useThinking
-    ? `<source_text>\n${cleanedText}\n</source_text>`
+    ? `<source_text>\n${cleanedText}\n</source_text>\n\nBegin your response IMMEDIATELY with <thinking>. Do not output any text before the <thinking> tag.`
     : `Translate the following text from ${sourceName} to ${targetName}. Output ONLY the raw translated text. Do not wrap it in any tags or conversational filler.\n\nText to translate:\n${cleanedText}`;
 
   // Build memory pairs from recent translations for consistency
