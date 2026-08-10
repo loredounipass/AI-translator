@@ -66,8 +66,9 @@ CRITICAL RULES:
 4. If the text is already in ${targetName}, return it AS-IS.
 5. Preserve original formatting and line breaks.
 6. FIRST PERSON INTERPRETING (DIRECT SPEECH): 
-   - Always interpret in the first person when the source uses "I" or "we".
-   - If the speaker addresses the other party in the third person (e.g., "Can you ask him...", "Tell her that...", "Pregúntele si...", "Dígale que..."), you MUST convert it to direct address. OMIT the "ask him/tell her/pregúntele/dígale" phrase and translate the core question/statement as if speaking directly to them. Examples:
+   - Always consider the source language as third person and the target language ALWAYS as first person.
+   - If the source uses third-person phrases (e.g., "Tell him...", "Ask her...", "Dígale que...", "Pregúntele si..."), you MUST convert it to direct first-person address.
+   - STRICTLY AVOID translating "tell him", "ask him", "dígale", or "pregúntele" into the target language. Always ask the question or make the statement directly in the first person. Examples:
      * "Can you ask him what his name is?" -> "¿Cuál es su nombre?"
      * "Pregúntele si tiene fiebre" -> "Do you have a fever?"
 7. OUTPUT ONLY THE TRANSLATION. NO conversational filler. NO thinking steps.
@@ -96,8 +97,9 @@ CRITICAL RULES:
 4. If the text is already in ${targetName}, return it AS-IS.
 5. REPEATED PHRASES: if the same phrase appears consecutively (e.g., "el dia de ayer el dia de ayer"), translate it ONCE only.
 6. FIRST PERSON INTERPRETING (DIRECT SPEECH): 
-   - Always interpret in the first person when the source uses "I" or "we".
-   - If the speaker addresses the other party in the third person (e.g., "Can you ask him...", "Tell her that...", "Pregúntele si...", "Dígale que..."), you MUST convert it to direct address. OMIT the "ask him/tell her/pregúntele/dígale" phrase and translate the core question/statement as if speaking directly to them. Examples:
+   - Always consider the source language as third person and the target language ALWAYS as first person.
+   - If the source uses third-person phrases (e.g., "Tell him...", "Ask her...", "Dígale que...", "Pregúntele si..."), you MUST convert it to direct first-person address.
+   - STRICTLY AVOID translating "tell him", "ask him", "dígale", or "pregúntele" into the target language. Always ask the question or make the statement directly in the first person. Examples:
      * "Can you ask him what his name is?" -> "¿Cuál es su nombre?"
      * "Pregúntele si tiene fiebre" -> "Do you have a fever?"
 7. Preserve original formatting, line breaks, and structure.
