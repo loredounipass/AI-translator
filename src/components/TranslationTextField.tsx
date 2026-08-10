@@ -29,7 +29,7 @@ const TranslationTextField = () => {
     ensureAudioStreamActive
   } = useTranslationTextFieldLogic();
   return (
-    <div className="relative flex flex-col flex-1 min-h-0 font-sans font-normal leading-normal">
+    <div className="relative flex flex-col flex-1 min-h-0 font-sans font-normal leading-normal bg-white/40 dark:bg-slate-800/40 transition-colors">
       <div className="flex-1 relative min-h-0">
         <div
           className={`absolute top-0 left-0 right-0 bottom-0 flex items-center justify-center text-lg text-[#9ca3af] dark:text-slate-500 font-sans pointer-events-none z-10 ${!text && (aiStt.isProcessing || aiStt.isRecording || placeholder) ? 'flex' : 'hidden'}`}
@@ -58,7 +58,7 @@ const TranslationTextField = () => {
           autoFocus
           spellCheck={false}
           maxLength={MAX_URL_TEXT_LENGTH}
-          className="absolute inset-0 w-full h-full bg-white/40 dark:bg-slate-800/40 border-none outline-none shadow-none text-[#111111] dark:text-slate-100 p-4 pr-10 pb-16 text-lg resize-none transition-colors duration-200 focus:outline-none focus:shadow-none custom-scrollbar"
+          className="absolute inset-0 w-full h-full bg-transparent border-none outline-none shadow-none text-[#111111] dark:text-slate-100 p-4 pr-10 pb-16 text-lg resize-none transition-colors duration-200 focus:outline-none focus:shadow-none custom-scrollbar"
         ></textarea>
         {text && (
           <button
