@@ -58,7 +58,7 @@ export const useLanguagesBarLogic = () => {
     setURLSearchParams(params => {
       params.set(key, value);
       return params;
-    });
+    }, { replace: true });
   }, [setURLSearchParams]);
 
 
@@ -82,7 +82,7 @@ export const useLanguagesBarLogic = () => {
         params.set("text", newText.length > MAX_URL_TEXT_LENGTH ? newText.slice(0, MAX_URL_TEXT_LENGTH) : newText);
       }
       return params;
-    });
+    }, { replace: true });
 
     if (user) {
       languagePrefsService.savePrefs(user.id, newSource, newTarget);
@@ -108,7 +108,7 @@ export const useLanguagesBarLogic = () => {
         if (nuevoSr) params.set("sr", nuevoSr);
         else params.delete("sr");
         return params;
-      });
+      }, { replace: true });
       if (nuevoSr && user) await saveRegion(value, nuevoSr, user.id);
       
       if (user) {
@@ -175,7 +175,7 @@ export const useLanguagesBarLogic = () => {
             }
             
             return params;
-          });
+          }, { replace: true });
         }
       });
     }
@@ -200,7 +200,7 @@ export const useLanguagesBarLogic = () => {
           params.set("tl", DEFAULT_TARGET_LANGUAGE);
         }
         return params;
-      });
+      }, { replace: true });
     }
   }, [searchParams, setURLSearchParams]);
 
