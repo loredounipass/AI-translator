@@ -20,17 +20,24 @@ export const addPunctuation = (text: string): string => {
   const trimmed = text.trim();
   if (!trimmed || /[.!?…¿¡。？！]$/.test(trimmed)) return trimmed;
 
-  const firstWord = trimmed.split(/\s+/)[0].toLowerCase();
   const lowerTrimmed = trimmed.toLowerCase();
 
-  const startsWithInvertedQ = trimmed.startsWith('¿');
-  const startsWithInvertedExcl = trimmed.startsWith('¡');
+  // 1. If it contains inverted marks anywhere, enforce matching ending punctuation
+  if (trimmed.includes('¿')) return trimmed + '?';
+  if (trimmed.includes('¡')) return trimmed + '!';
 
-  if (startsWithInvertedQ) return trimmed + '?';
-  if (startsWithInvertedExcl) return trimmed + '!';
+  // 2. Safely extract the very first actual word (ignoring leading punctuation like ¡¿,.)
+  const firstWordMatch = trimmed.match(/^[\W_]*([\p{L}\p{N}]+)/u);
+  const firstWord = firstWordMatch ? firstWordMatch[1].toLowerCase() : '';
+
   if (questionWords.has(firstWord)) return trimmed + '?';
-  if (firstWord === 'por' && lowerTrimmed.startsWith('por qué')) return trimmed + '?';
-  if (lowerTrimmed.startsWith('est-ce que') || lowerTrimmed.startsWith('est-ce qu\'')) return trimmed + '?';
+  
+  // 3. Special multi-word question phrases (like por qué, est-ce que)
+  const cleanStart = lowerTrimmed.replace(/^[\W_]+/, '');
+  if (cleanStart.startsWith('por qué')) return trimmed + '?';
+  if (cleanStart.startsWith('est-ce que') || cleanStart.startsWith('est-ce qu\'')) return trimmed + '?';
+
+  // 4. Exclamations
   if (exclamationPatterns.test(firstWord)) return trimmed + '!';
 
   return trimmed + '.';
