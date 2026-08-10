@@ -9,7 +9,7 @@ export const isLightweightModel = (modelId: string): boolean => {
   return lowerId.includes("riva") || lowerId.includes("nemotron") || lowerId.includes("llama");
 };
 
-export const buildSystemPrompt = (targetLang: string, sourceLang: string, modelId: string, useThinking = true): string => {
+export const buildSystemPrompt = (targetLang: string, sourceLang: string, modelId: string, useThinking = true, sourceText = ""): string => {
   const targetName = getLanguageName(targetLang);
 
   const exactKey = `${sourceLang}-${targetLang}`;
@@ -23,25 +23,40 @@ export const buildSystemPrompt = (targetLang: string, sourceLang: string, modelI
     isReversed = true;
   }
 
+  // RAG filter: only inject glossary terms that appear in the source text to avoid token bloat
+  const sourceTextLower = sourceText.toLowerCase();
+
   let domainRules = "";
   if (pairGlossary) {
     let termsOutput = "";
     for (const [domain, terms] of Object.entries(pairGlossary)) {
+      // Filter terms: if sourceText is provided, only include terms found in it
+      const relevantTerms = sourceTextLower
+        ? Object.entries(terms).filter(([src, tgt]) => {
+            const searchTerm = (isReversed ? tgt : src).toLowerCase();
+            return sourceTextLower.includes(searchTerm);
+          })
+        : Object.entries(terms);
+
+      if (relevantTerms.length === 0) continue;
+
       let domainName = domain.toUpperCase().replace(/_/g, " ");
       if (domain === "medical_vns") domainName = "MEDICAL / VNS HEALTH / MEDICARE";
       if (domain === "legal_us") domainName = "US LEGAL / COURT";
       if (domain === "veterinary_banfield") domainName = "VETERINARY / BANFIELD PET HOSPITAL";
 
-      const formattedTerms = Object.entries(terms)
+      const formattedTerms = relevantTerms
         .map(([src, tgt]) => isReversed ? `    - "${tgt}" → "${src}"` : `    - "${src}" → "${tgt}"`)
         .join("\n");
       termsOutput += `  [${domainName}]:\n${formattedTerms}\n`;
     }
 
-    domainRules = `
+    if (termsOutput) {
+      domainRules = `
 - The following glossary provides examples of REQUIRED domain-specific terminology. You MUST use these exact equivalents when they appear:
 ${termsOutput.trimEnd()}
 - IMPORTANT: This glossary is not exhaustive. You must analyze the context of the phrase to identify the specific domain (e.g., medical, legal, automotive, veterinary) and independently apply the most accurate, natural, and professional terminology for that domain, even for words not listed above.`;
+    }
   }
 
   let dialectRule = "";
@@ -85,7 +100,11 @@ CRITICAL RULES:
 
 9. TRANSLATE NATURALLY: Provide a natural, conversational translation as if speaking directly to a person. Avoid robotic, direct, or literal word-for-word translations.
 
-10. FIX ASR ERRORS: ONLY IF the source text is of very poor quality with obvious speech-to-text miscaptures or nonsensical words, infer the intended meaning from the context (e.g., medical, insurance, sales, nursing, law, governmental departments, medicaid, medicare) and translate what the speaker intended. If the text is clear, translate it exactly as provided without altering the meaning.
+10. FIX ASR ERRORS & CONTEXTUAL PREDICTION (DIRTY TEXT RULE):
+    - DYNAMIC THEME IDENTIFICATION: Instantly identify the conversation's core topic using key contextual words to establish a baseline for upcoming sentences.
+    - HANDLING DIRTY TEXT: If the source text arrives incomplete, cut-off, or contains out-of-context words due to audio glitches, analyze surrounding keywords, predict the logical conversational flow, and reconstruct what the speaker meant before translating.
+    - DO NOT GUESS: Prediction is strictly contextual deduction. If input is too corrupted for a logical prediction, translate fragments exactly as-is.
+    - HANDLING CLEAN TEXT: If input is clean, do NOT predict or alter anything. Translate exactly as provided.
 ${styleRules}`;
   }
 
@@ -132,6 +151,8 @@ CRITICAL RULES:
     - HANDLING DIRTY TEXT: If the source text arrives incomplete, cut-off, or contains words with intrusive, out-of-context meanings due to audio glitches, pause conceptually to analyze the surrounding keywords. Predict the logical conversational flow and reconstruct what the speaker meant to say before translating.
     - DO NOT GUESS UNPREDICTABLE INPUTS: Prediction is strictly contextual deduction, not wild guessing. If the input is too corrupted to yield a logical prediction, translate the fragments exactly as-is without introducing fabricated context.
     - HANDLING CLEAN TEXT: If the input text arrives clean and without errors, do NOT predict or alter anything. Simply identify the current theme to prepare for potential errors in subsequent messages and translate the text exactly.
+
+${styleRules}
 
 <execution_instructions>
 1. First, analyze the source text, context, and apply rules in a <thinking> block.
