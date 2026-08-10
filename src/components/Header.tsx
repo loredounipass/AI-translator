@@ -60,7 +60,7 @@ const Header = ({
 
   return (
     <>
-      <div className="fixed top-0 left-0 w-full p-2 sm:p-4 md:top-4 md:p-0 md:px-8 flex flex-col sm:flex-row items-center justify-between gap-1 sm:gap-3 z-50 select-none cursor-default glass-header md:bg-transparent md:dark:bg-transparent md:backdrop-blur-none md:border-none md:dark:border-none md:shadow-none transition-all">
+      <div className="fixed top-0 left-0 w-full px-4 py-3 md:py-4 md:px-8 flex flex-col sm:flex-row items-center justify-between gap-3 z-50 select-none cursor-default glass-header transition-all">
         <div className="flex items-center gap-2 sm:gap-3">
           <div className="font-semibold text-sm sm:text-base md:text-xl text-slate-800 dark:text-slate-100 tracking-tight">
             interpreter AI
