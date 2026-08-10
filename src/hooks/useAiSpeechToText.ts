@@ -8,8 +8,14 @@ const STORAGE_KEY = "aiSttEnabled";
 
 
 
-// INITIALIZE OFFLINE AUDIO CONTEXT FOR DECODING
+// INITIALIZE OFFLINE AUDIO CONTEXT FOR DECODING (Guarantees 16kHz & prevents hardware context leaks)
 const getOfflineAudioContext = () => {
+  const OfflineAudioCtx = (window as any).OfflineAudioContext || (window as any).webkitOfflineAudioContext;
+  if (OfflineAudioCtx) {
+    // 1 channel, 1 frame (length doesn't matter for decodeAudioData), 16000 Hz
+    return new OfflineAudioCtx(1, 1, 16000);
+  }
+  // Fallback for extremely old browsers
   const AudioCtx = (window.AudioContext || (window as any).webkitAudioContext) as any;
   return new AudioCtx({ sampleRate: 16000 });
 };
@@ -385,7 +391,8 @@ export const useAiSpeechToText = (
     setIsProcessing(true);
     try {
       const base64 = await blobToWavBase64(blob);
-      const lang = sourceLang || "multi";
+      // Ensure language is a 2-letter ISO code (e.g. 'en-US' -> 'en') as required by Whisper/Nvidia ASR
+      const cleanLang = (sourceLang || "auto").split("-")[0].toLowerCase();
 
       const res = await fetch("/api/completions", {
         method: "POST",
@@ -395,7 +402,7 @@ export const useAiSpeechToText = (
           apiKey,
           provider,
           audio: base64,
-          language: lang,
+          language: cleanLang,
           mime: "audio/wav",
           model: selectedModel,
         }),
