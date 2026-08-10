@@ -44,7 +44,7 @@ export const executeStandardRequest = async (options: StandardRequestOptions): P
   if (!rawContent) throw new Error("No se recibió traducción del modelo");
 
   let translated = rawContent;
-  const translationMatch = rawContent.match(/<(?:interpretation|interpretaci[óo]n)>([\s\S]*?)(?:<\/(?:interpretation|interpretaci[óo]n)>|$)/i);
+  const translationMatch = rawContent.match(/<(?:interpretation|interpretaci[óo]n|translation)>([\s\S]*?)(?:<\/(?:interpretation|interpretaci[óo]n|translation)>|$)/i);
 
   if (translationMatch && translationMatch[1]) {
     translated = translationMatch[1].trim();
@@ -52,6 +52,8 @@ export const executeStandardRequest = async (options: StandardRequestOptions): P
     const thinkingMatch = rawContent.match(/<\/(?:thinking|pensamiento)>([\s\S]*)/i);
     if (thinkingMatch && thinkingMatch[1]) {
       translated = thinkingMatch[1].trim();
+    } else if (options.useThinking) {
+      throw new Error("Fallo al extraer la traducción: El modelo no utilizó las etiquetas XML requeridas.");
     }
   }
   translated = stripXmlWrapper(translated);
