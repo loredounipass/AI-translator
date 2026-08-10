@@ -6,7 +6,7 @@ const SERIALIZED_TRAINING_MODULE = JSON.stringify(INTERPETERAI_TRAINING_MODULE, 
 
 export const isLightweightModel = (modelId: string): boolean => {
   const lowerId = modelId.toLowerCase();
-  return lowerId.includes("riva") || lowerId.includes("nemotron");
+  return lowerId.includes("riva") || lowerId.includes("nemotron") || lowerId.includes("llama");
 };
 
 export const buildSystemPrompt = (targetLang: string, sourceLang: string, modelId: string, useThinking = true): string => {
