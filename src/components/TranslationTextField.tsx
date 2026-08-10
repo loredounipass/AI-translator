@@ -128,7 +128,7 @@ const TranslationTextField = () => {
             </button>
             {regionesActuales && (
               <div className="flex items-center gap-1.5 ml-2 pl-2 border-l border-slate-200 dark:border-slate-700">
-                <span className="text-[10px] uppercase tracking-widest text-slate-400 dark:text-slate-500 font-semibold">Dialect</span>
+                <span className="text-[10px] uppercase tracking-widest text-slate-400 dark:text-slate-500 font-semibold">Jerga</span>
                 <Select<string>
                   value={regionActual}
                   onChange={handleChangeRegion}
