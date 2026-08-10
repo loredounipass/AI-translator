@@ -72,15 +72,21 @@ export const translationMemory = {
   buildMemoryMessages(
     sourceLang: string,
     targetLang: string,
-    currentText?: string
+    currentText?: string,
+    useThinking: boolean = false
   ): Array<{ role: string; content: string }> {
     const pairs = this.getRelevant(sourceLang, targetLang, currentText);
     if (pairs.length === 0) return [];
 
     const messages: Array<{ role: string; content: string }> = [];
     for (const pair of pairs) {
-      messages.push({ role: "user", content: pair.source });
-      messages.push({ role: "assistant", content: pair.translated });
+      if (useThinking) {
+        messages.push({ role: "user", content: `<source_text>\n${pair.source}\n</source_text>` });
+        messages.push({ role: "assistant", content: `<interpretation>\n${pair.translated}\n</interpretation>` });
+      } else {
+        messages.push({ role: "user", content: pair.source });
+        messages.push({ role: "assistant", content: pair.translated });
+      }
     }
     return messages;
   },

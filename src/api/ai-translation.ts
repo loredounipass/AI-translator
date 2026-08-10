@@ -50,7 +50,7 @@ export const translate = async (
     : `Interpret the following text from ${sourceName} to ${targetName}. Apply first-person interpreting rules. Output ONLY the raw interpreted text. Do not wrap it in any tags or conversational filler.\n\nText to interpret:\n${cleanedText}`;
 
   // Build memory pairs from recent translations for consistency
-  const memoryMessages = translationMemory.buildMemoryMessages(sourceLang, targetLang, cleanedText);
+  const memoryMessages = translationMemory.buildMemoryMessages(sourceLang, targetLang, cleanedText, useThinking);
 
   const messages = [
     { role: "system", content: finalSystemPrompt },
