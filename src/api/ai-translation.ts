@@ -38,7 +38,7 @@ export const translate = async (
   const targetName = getLanguageName(targetLang);
 
   const recencyInstruction = useThinking
-    ? `\n\nFINAL INSTRUCTION:\nTranslate the source text into ${targetName}. ONLY output the <thinking> block followed by the <translation> block. Do not include any other text.`
+    ? `\n\nFINAL INSTRUCTION:\nInterpret the source text into ${targetName}. ONLY output the <thinking> block followed by the <translation> block. Do not include any other text.`
     : "";
 
   const finalSystemPrompt = useThinking
@@ -47,7 +47,7 @@ export const translate = async (
 
   const userPrompt = useThinking
     ? `<source_text>\n${cleanedText}\n</source_text>\n\nBegin your response IMMEDIATELY with <thinking>. Do not output any text before the <thinking> tag.`
-    : `Translate the following text from ${sourceName} to ${targetName}. Output ONLY the raw translated text. Do not wrap it in any tags or conversational filler.\n\nText to translate:\n${cleanedText}`;
+    : `Interpret the following text from ${sourceName} to ${targetName}. Apply first-person interpreting rules. Output ONLY the raw interpreted text. Do not wrap it in any tags or conversational filler.\n\nText to interpret:\n${cleanedText}`;
 
   // Build memory pairs from recent translations for consistency
   const memoryMessages = translationMemory.buildMemoryMessages(sourceLang, targetLang, cleanedText);

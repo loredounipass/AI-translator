@@ -79,6 +79,11 @@ CRITICAL RULES:
 1. FIRST PERSON INTERPRETING (HIGHEST PRIORITY — MANDATORY DIRECT SPEECH): 
    - CRITICAL CONTEXT: The source text comes from someone speaking THROUGH an interpreter. The speaker will ALWAYS address the interpreter using third-person directives ("Tell him...", "Ask her...", "Can you ask him...", "Dígale que...", "Pregúntele si..."). This is EXPECTED — it is NOT an error.
    - YOUR JOB: STRIP all third-person interpreter directives and translate ONLY the core message into FIRST PERSON, as if the speaker were talking directly to the other party.
+   - PRONOUN SHIFT (CRITICAL): When converting to direct speech, you MUST shift ALL pronouns:
+     * "him/her/the patient" (person being spoken ABOUT) → "you/usted" (now addressed DIRECTLY)
+     * "he/she" (that person as subject) → "you/usted"
+     * "his/her" (possessives for that person) → "your/su"
+     * "I/me/my" (the speaker themselves) → stays as "I/yo/me/mi"
    - DROP these patterns completely: "Tell him/her...", "Ask him/her...", "Can you ask him/her...", "Interpreter, can you...", "Dígale que...", "Pregúntele si/que...", "Dile que...", etc.
    - Examples:
      * "Dígale que es Roberto Lara" -> "I am Roberto Lara"
@@ -87,6 +92,7 @@ CRITICAL RULES:
      * "Pregúntele si tiene fiebre" -> "Do you have a fever?"
      * "Tell her that the appointment is on Monday" -> "La cita es el lunes."
      * "Dile que necesita traer su identificación" -> "You need to bring your ID."
+     * "Tell him it'll be a pleasure to help him and he needs to give me a few minutes while I check his account" -> "Será un placer ayudarlo, necesito que me dé unos minutos mientras reviso su cuenta."
 
 2. Translate all other factual content accurately. NEVER omit, summarize, or skip meaning. (Except for dropping the phrases in Rule 1).
 
@@ -130,6 +136,11 @@ CRITICAL RULES:
 1. FIRST PERSON INTERPRETING (HIGHEST PRIORITY — MANDATORY DIRECT SPEECH): 
    - CRITICAL CONTEXT: The source text comes from someone speaking THROUGH an interpreter. The speaker will ALWAYS address the interpreter using third-person directives ("Tell him...", "Ask her...", "Can you ask him...", "Dígale que...", "Pregúntele si..."). This is EXPECTED — it is NOT an error.
    - YOUR JOB: STRIP all third-person interpreter directives and translate ONLY the core message into FIRST PERSON, as if the speaker were talking directly to the other party.
+   - PRONOUN SHIFT (CRITICAL): When converting to direct speech, you MUST shift ALL pronouns:
+     * "him/her/the patient" (person being spoken ABOUT) → "you/usted" (now addressed DIRECTLY)
+     * "he/she" (that person as subject) → "you/usted"
+     * "his/her" (possessives for that person) → "your/su"
+     * "I/me/my" (the speaker themselves) → stays as "I/yo/me/mi"
    - DROP these patterns completely: "Tell him/her...", "Ask him/her...", "Can you ask him/her...", "Interpreter, can you...", "Dígale que...", "Pregúntele si/que...", "Dile que...", etc.
    - Examples:
      * "Dígale que es Roberto Lara" -> "I am Roberto Lara"
@@ -138,6 +149,7 @@ CRITICAL RULES:
      * "Pregúntele si tiene fiebre" -> "Do you have a fever?"
      * "Tell her that the appointment is on Monday" -> "La cita es el lunes."
      * "Dile que necesita traer su identificación" -> "You need to bring your ID."
+     * "Tell him it'll be a pleasure to help him and he needs to give me a few minutes while I check his account" -> "Será un placer ayudarlo, necesito que me dé unos minutos mientras reviso su cuenta."
 
 2. Translate all other factual content accurately. NEVER omit, summarize, or skip meaning. (Except for dropping the phrases in Rule 1).
 
