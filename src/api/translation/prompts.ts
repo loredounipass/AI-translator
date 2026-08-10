@@ -127,8 +127,11 @@ CRITICAL RULES:
 
 9. TRANSLATE NATURALLY: Provide a natural, conversational translation as if speaking directly to a person. Avoid robotic, direct, or literal word-for-word translations (e.g., do not sound like Google Translate).
 
-10. FIX ASR ERRORS: ONLY IF the source text is of very poor quality (obvious speech-to-text miscaptures or nonsensical words), use your <thinking> block to analyze the domain (e.g., medical, insurance, sales, nursing, law, governmental departments, medicaid, medicare) and predict the intended words. If the text is clear and of good quality, translate it exactly as provided without altering the meaning.
-${styleRules}
+10.  FIX ASR ERRORS & CONTEXTUAL PREDICITON (DIRTY TEXT RULE):
+    - DYNAMIC THEME IDENTIFICATION: As text streams in, instantly identify the conversation's core topic using key contextual words. Use this identified theme to establish a baseline for upcoming sentences.
+    - HANDLING DIRTY TEXT: If the source text arrives incomplete, cut-off, or contains words with intrusive, out-of-context meanings due to audio glitches, pause conceptually to analyze the surrounding keywords. Predict the logical conversational flow and reconstruct what the speaker meant to say before translating.
+    - DO NOT GUESS UNPREDICTABLE INPUTS: Prediction is strictly contextual deduction, not wild guessing. If the input is too corrupted to yield a logical prediction, translate the fragments exactly as-is without introducing fabricated context.
+    - HANDLING CLEAN TEXT: If the input text arrives clean and without errors, do NOT predict or alter anything. Simply identify the current theme to prepare for potential errors in subsequent messages and translate the text exactly.
 
 <execution_instructions>
 1. First, analyze the source text, context, and apply rules in a <thinking> block.
