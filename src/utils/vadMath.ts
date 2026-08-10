@@ -93,8 +93,13 @@ export const analyzeAudioFrame = (
 
   const smooth = rmsSmoothingAlpha * rms + (1 - rmsSmoothingAlpha) * prevSmooth;
   
-  let newNoiseFloor = Math.min(prevNoiseFloor, smooth * 0.8);
-  newNoiseFloor = Math.max(newNoiseFloor, prevNoiseFloor * 1.001);
+  // Calculate adaptive noise floor (fast drop for silence, slow rise for continuous noise)
+  let newNoiseFloor = prevNoiseFloor;
+  if (smooth < prevNoiseFloor) {
+    newNoiseFloor = prevNoiseFloor * 0.9 + smooth * 0.1; // Drop quickly
+  } else {
+    newNoiseFloor = prevNoiseFloor * 1.0005 + 0.00001; // Rise slowly to avoid tuning out speech
+  }
 
   const adaptiveThreshold = Math.max(baseVolumeThreshold, newNoiseFloor * adaptiveMultiplier + 0.003);
 
