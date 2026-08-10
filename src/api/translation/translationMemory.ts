@@ -92,11 +92,17 @@ export const translationMemory = {
   },
 
 
-  // REMOVE A SPECIFIC SOURCE TEXT FROM THE MEMORY BUFFER
-  remove(sourceText: string): void {
+  // REMOVE A SPECIFIC SOURCE TEXT FROM THE MEMORY BUFFER.
+  // Optionally restrict by language pair so only that entry is removed.
+  remove(sourceText: string, sourceLang?: string, targetLang?: string): void {
     const trimmed = sourceText.trim();
     for (let i = memoryBuffer.length - 1; i >= 0; i--) {
-      if (memoryBuffer[i].source === trimmed) {
+      const pair = memoryBuffer[i];
+      const langsMatch =
+        sourceLang === undefined ||
+        targetLang === undefined ||
+        (pair.sourceLang === sourceLang && pair.targetLang === targetLang);
+      if (pair.source === trimmed && langsMatch) {
         memoryBuffer.splice(i, 1);
       }
     }

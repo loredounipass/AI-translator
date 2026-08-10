@@ -4,7 +4,7 @@ import { useAuth } from "contexts/AuthContext";
 import { historyService } from "utils/historyService";
 import type { HistoryItem } from "utils/historyService";
 import { translationMemory } from "api/translation/translationMemory";
-import { clearTranslationCache } from "api/translation/cache";
+import { clearTranslationCache, removeFromCacheByPair } from "api/translation/cache";
 import AddInterpretationModal from "./AddInterpretationModal";
 
 interface HistoryPanelProps {
@@ -59,9 +59,18 @@ const HistoryPanel = ({ isOpen, onClose }: HistoryPanelProps) => {
     await historyService.delete(id, user.id);
     setHistory((prev) => prev.filter((item) => item.id !== id));
 
-    // Remove from in-memory translation layers
+    // Remove from in-memory translation layers (exact language pair only)
     if (item) {
-      translationMemory.remove(item.source_text);
+      translationMemory.remove(
+        item.source_text,
+        item.source_lang,
+        item.target_lang
+      );
+      removeFromCacheByPair(
+        item.source_text,
+        item.target_lang,
+        item.source_lang
+      );
     }
   };
 

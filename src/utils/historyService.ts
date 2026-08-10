@@ -34,6 +34,33 @@ export const historyService = {
         sourceLang: string = "",
         targetLang: string = ""
     ): Promise<HistoryItem | null> {
+        // Avoid duplicates: update the existing pair if the same
+        // source text + language pair already exists
+        const existing = await supabase
+            .from("translation_history")
+            .select("id")
+            .eq("user_id", userId)
+            .eq("source_text", sourceText)
+            .eq("source_lang", sourceLang)
+            .eq("target_lang", targetLang)
+            .maybeSingle();
+
+        if (!existing.error && existing.data) {
+            const { data, error } = await supabase
+                .from("translation_history")
+                .update({ translated_text: translatedText })
+                .eq("id", existing.data.id)
+                .select()
+                .single();
+
+            if (error) {
+                console.error("Error updating history");
+                return null;
+            }
+
+            return data;
+        }
+
         const { data, error } = await supabase
             .from("translation_history")
             .insert({

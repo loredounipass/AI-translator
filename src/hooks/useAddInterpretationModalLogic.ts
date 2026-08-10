@@ -6,8 +6,13 @@ import { languagePrefsService } from "utils/languagePrefsService";
 import {
     DEFAULT_SOURCE_LANGUAGE,
     DEFAULT_TARGET_LANGUAGE,
+    DEFAULT_MODEL,
+    AI_MODELS,
 } from "utils/constants";
 import { AVAILABLE_LANGUAGES } from "utils/constants";
+import { translationMemory } from "api/translation/translationMemory";
+import { translationCache, getCacheKey } from "api/translation/cache";
+import { showErrorToast } from "components/AppNotifications";
 
 interface UseAddInterpretationModalLogicProps {
     isOpen: boolean;
@@ -126,22 +131,48 @@ export const useAddInterpretationModalLogic = ({
         setIsSubmitting(true);
 
         try {
+            const source = sourceText.trim();
+            const translated = targetText.trim();
+
             const result = await historyService.add(
                 user.id,
-                sourceText.trim(),
-                targetText.trim(),
+                source,
+                translated,
                 sourceLang,
                 targetLang
             );
 
             if (result) {
+                // Inject into in-memory translation layers so the model
+                // uses it as reference without needing a page reload
+                translationMemory.add(source, translated, sourceLang, targetLang);
+                const modelKey =
+                    searchParams.get("model") ||
+                    DEFAULT_MODEL;
+                const model =
+                    AI_MODELS[modelKey as keyof typeof AI_MODELS] ||
+                    AI_MODELS[DEFAULT_MODEL as keyof typeof AI_MODELS];
+                translationCache.set(
+                    getCacheKey(source, targetLang, sourceLang, model.id),
+                    translated
+                );
+
                 setSourceText("");
                 setTargetText("");
                 onInterpretationAdded();
                 onClose();
+            } else {
+                showErrorToast(
+                    "No se pudo guardar",
+                    "Hubo un error al guardar tu interpretación. Inténtalo de nuevo."
+                );
             }
         } catch (error) {
             console.error("Error adding interpretation:", error);
+            showErrorToast(
+                "No se pudo guardar",
+                "Hubo un error inesperado al guardar tu interpretación."
+            );
         } finally {
             setIsSubmitting(false);
         }
@@ -151,6 +182,7 @@ export const useAddInterpretationModalLogic = ({
         targetText,
         sourceLang,
         targetLang,
+        searchParams,
         onClose,
         onInterpretationAdded,
     ]);
