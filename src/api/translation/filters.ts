@@ -32,7 +32,7 @@ export const isTrivialText = (text: string, sourceLang?: string, targetLang?: st
 
 export const stripXmlWrapper = (text: string): string => {
   return text
-    .replace(/<\/?(source_text|thinking|pensamiento|translation|traducci[óo]n|execution_instructions|response|output|result|answer)[^>]*>/gi, "")
+    .replace(/<\/?(source_text|thinking|pensamiento|interpretation|interpretaci[óo]n|translation|traducci[óo]n|execution_instructions|response|output|result|answer)[^>]*>/gi, "")
     .replace(/^\s*\n/, "")
     .trim();
 };
