@@ -23,9 +23,13 @@ export const removeFromCache = (text: string, targetLang: string, sourceLang: st
 // REMOVE ALL CACHE ENTRIES FOR A SOURCE TEXT + LANGUAGE PAIR (ANY MODEL)
 export const removeFromCacheByPair = (text: string, targetLang: string, sourceLang: string): void => {
   const suffix = `:${sourceLang}:${targetLang}:${text.trim()}`;
-  for (const key of translationCache.keys()) {
+  const cache = translationCache as unknown as {
+    keys(): string[];
+    delete(key: string): unknown;
+  };
+  for (const key of cache.keys()) {
     if (key.endsWith(suffix)) {
-      translationCache.delete(key);
+      cache.delete(key);
     }
   }
 };
