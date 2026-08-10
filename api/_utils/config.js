@@ -1,5 +1,5 @@
 const allowedOrigins = [
-  "https://interpreter1-sooty.vercel.app",
+  "https://interpreter-sooty.vercel.app",
   "http://localhost:3000",
   "http://localhost:3001",
   "http://localhost:3002",

@@ -67,6 +67,7 @@ CRITICAL RULES:
 5. Preserve original formatting and line breaks.
 6. OUTPUT ONLY THE TRANSLATION. NO conversational filler. NO thinking steps.
 7. CONSISTENCY: When previous translations are provided in the conversation, maintain consistent terminology and style with those translations.
+8. TRANSLATE NATURALLY: Provide a natural, conversational translation as if speaking directly to a person. Avoid robotic, direct, or literal word-for-word translations.
 ${styleRules}`;
   }
 
@@ -91,6 +92,7 @@ CRITICAL RULES:
 6. Interpret in first person when source uses "I" or "we".
 7. Preserve original formatting, line breaks, and structure.
 8. CONSISTENCY: When previous translations are provided in the conversation, maintain consistent terminology and style with those translations.
+9. TRANSLATE NATURALLY: Provide a natural, conversational translation as if speaking directly to a person. Avoid robotic, direct, or literal word-for-word translations (e.g., do not sound like Google Translate).
 ${styleRules}
 
 <execution_instructions>

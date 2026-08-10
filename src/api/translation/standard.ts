@@ -44,12 +44,12 @@ export const executeStandardRequest = async (options: StandardRequestOptions): P
   if (!rawContent) throw new Error("No se recibió traducción del modelo");
 
   let translated = rawContent;
-  const translationMatch = rawContent.match(/<translation>([\s\S]*?)(?:<\/translation>|$)/);
+  const translationMatch = rawContent.match(/<(?:translation|traducci[óo]n)>([\s\S]*?)(?:<\/(?:translation|traducci[óo]n)>|$)/i);
 
   if (translationMatch && translationMatch[1]) {
     translated = translationMatch[1].trim();
   } else {
-    const thinkingMatch = rawContent.match(/<\/thinking>([\s\S]*)/);
+    const thinkingMatch = rawContent.match(/<\/(?:thinking|pensamiento)>([\s\S]*)/i);
     if (thinkingMatch && thinkingMatch[1]) {
       translated = thinkingMatch[1].trim();
     }

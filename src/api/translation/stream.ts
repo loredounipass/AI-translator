@@ -74,18 +74,20 @@ export const executeStreamRequest = async (options: StreamRequestOptions): Promi
             accumulatedRawText += content;
 
             if (!translationTagFound) {
-              const idx = accumulatedRawText.indexOf("<translation>");
-              if (idx !== -1) {
+              const match = accumulatedRawText.match(/<(translation|traducci[óo]n)>/i);
+              if (match && match.index !== undefined) {
                 translationTagFound = true;
-                translationStartIndex = idx;
+                translationStartIndex = match.index;
               }
             }
 
             if (translationTagFound) {
-              let streamText = accumulatedRawText.substring(translationStartIndex + 13);
-              const endIndex = streamText.indexOf("</translation>");
-              if (endIndex !== -1) {
-                streamText = streamText.substring(0, endIndex);
+              const startMatch = accumulatedRawText.match(/<(translation|traducci[óo]n)>/i);
+              const tagLength = startMatch ? startMatch[0].length : 13;
+              let streamText = accumulatedRawText.substring(translationStartIndex + tagLength);
+              const endMatch = streamText.match(/<\/(translation|traducci[óo]n)>/i);
+              if (endMatch && endMatch.index !== undefined) {
+                streamText = streamText.substring(0, endMatch.index);
               }
               streamText = streamText.trimStart();
 
@@ -97,8 +99,8 @@ export const executeStreamRequest = async (options: StreamRequestOptions): Promi
             } else if (
               !options.useThinking ||
               (accumulatedRawText.length > 100 &&
-              !accumulatedRawText.includes("<thinking>") &&
-              !accumulatedRawText.includes("<translation>"))
+              !/<(?:thinking|pensamiento)>/i.test(accumulatedRawText) &&
+              !/<(?:translation|traducci[óo]n)>/i.test(accumulatedRawText))
             ) {
               const cleaned = stripXmlWrapper(accumulatedRawText);
               if (cleaned) {
@@ -121,11 +123,11 @@ export const executeStreamRequest = async (options: StreamRequestOptions): Promi
   }
 
   let translated = accumulatedRawText;
-  const translationMatch = accumulatedRawText.match(/<translation>([\s\S]*?)(?:<\/translation>|$)/);
+  const translationMatch = accumulatedRawText.match(/<(?:translation|traducci[óo]n)>([\s\S]*?)(?:<\/(?:translation|traducci[óo]n)>|$)/i);
   if (translationMatch && translationMatch[1]) {
     translated = translationMatch[1].trim();
   } else {
-    const thinkingMatch = accumulatedRawText.match(/<\/thinking>([\s\S]*)/);
+    const thinkingMatch = accumulatedRawText.match(/<\/(?:thinking|pensamiento)>([\s\S]*)/i);
     if (thinkingMatch && thinkingMatch[1]) {
       translated = thinkingMatch[1].trim();
     }
