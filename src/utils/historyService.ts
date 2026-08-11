@@ -81,6 +81,32 @@ export const historyService = {
         return data;
     },
 
+    async update(
+        id: string,
+        userId: string,
+        updates: {
+            source_text?: string;
+            translated_text?: string;
+            source_lang?: string;
+            target_lang?: string;
+        }
+    ): Promise<HistoryItem | null> {
+        const { data, error } = await supabase
+            .from("translation_history")
+            .update(updates)
+            .eq("id", id)
+            .eq("user_id", userId)
+            .select()
+            .single();
+
+        if (error) {
+            console.error("Error updating history");
+            return null;
+        }
+
+        return data;
+    },
+
     async toggleFavorite(id: string, isFavorite: boolean, userId: string): Promise<boolean> {
         const { error } = await supabase
             .from("translation_history")

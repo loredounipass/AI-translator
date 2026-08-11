@@ -16,6 +16,7 @@ const HistoryPanel = ({ isOpen, onClose }: HistoryPanelProps) => {
   const [history, setHistory] = useState<HistoryItem[]>([]);
   const [showClearConfirm, setShowClearConfirm] = useState(false);
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
+  const [editingItem, setEditingItem] = useState<HistoryItem | null>(null);
   const [searchParams, setSearchParams] = useSearchParams();
   const { user } = useAuth();
 
@@ -91,6 +92,15 @@ const HistoryPanel = ({ isOpen, onClose }: HistoryPanelProps) => {
     onClose();
   };
 
+  const closeModal = () => {
+    setIsAddModalOpen(false);
+    setEditingItem(null);
+  };
+
+  const handleEditItem = (item: HistoryItem) => {
+    setEditingItem(item);
+  };
+
   const handleInterpretationAdded = () => {
     loadHistory();
     // Dispatch event to notify other components
@@ -99,10 +109,11 @@ const HistoryPanel = ({ isOpen, onClose }: HistoryPanelProps) => {
 
   return (
     <>
-      {/* Add Interpretation Modal */}
+      {/* Add/Edit Interpretation Modal */}
       <AddInterpretationModal
-        isOpen={isAddModalOpen}
-        onClose={() => setIsAddModalOpen(false)}
+        isOpen={isAddModalOpen || !!editingItem}
+        onClose={closeModal}
+        editingItem={editingItem}
         onInterpretationAdded={handleInterpretationAdded}
       />
 
@@ -127,7 +138,7 @@ const HistoryPanel = ({ isOpen, onClose }: HistoryPanelProps) => {
             {/* Add Interpretation Button */}
             {user && (
               <button
-                onClick={() => setIsAddModalOpen(true)}
+                onClick={closeModal}
                 className="p-1.5 rounded-full text-blue-500 hover:bg-blue-50 dark:hover:bg-blue-900/30 transition-colors"
                 aria-label="Agregar interpretación"
                 title="Agregar interpretación"
@@ -194,6 +205,19 @@ const HistoryPanel = ({ isOpen, onClose }: HistoryPanelProps) => {
                   className={`relative bg-white/50 dark:bg-slate-800/50 backdrop-blur-md p-3 rounded-xl shadow-sm border ${item.is_favorite ? "border-yellow-400/40 dark:border-yellow-500/40" : "border-white/40 dark:border-slate-700/30"} text-left animate-fadeIn cursor-pointer hover:border-blue-400/60 dark:hover:border-blue-500/50 transition-colors group`}
                 >
                   <div className="absolute top-2 right-2 flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-all">
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleEditItem(item);
+                      }}
+                      className="p-1 text-slate-400 dark:text-slate-500 hover:text-blue-500 dark:hover:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded transition-all"
+                      aria-label="Editar traducción"
+                      title="Editar traducción"
+                    >
+                      <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                        <path d="M17 3a2.828 2.828 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z"></path>
+                      </svg>
+                    </button>
                     <button
                       onClick={(e) => {
                         e.stopPropagation();

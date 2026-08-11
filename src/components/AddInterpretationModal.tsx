@@ -2,17 +2,20 @@ import React from "react";
 import { Select } from "antd";
 import { useAddInterpretationModalLogic } from "../hooks/useAddInterpretationModalLogic";
 import { SwitchIcon } from "../assets/SwitchIcon";
+import type { HistoryItem } from "utils/historyService";
 
 interface AddInterpretationModalProps {
   isOpen: boolean;
   onClose: () => void;
   onInterpretationAdded: () => void;
+  editingItem?: HistoryItem | null;
 }
 
 const AddInterpretationModal: React.FC<AddInterpretationModalProps> = ({
   isOpen,
   onClose,
   onInterpretationAdded,
+  editingItem = null,
 }) => {
   const {
     sourceText,
@@ -32,6 +35,7 @@ const AddInterpretationModal: React.FC<AddInterpretationModalProps> = ({
     isOpen,
     onClose,
     onInterpretationAdded,
+    editingItem,
   });
 
   if (!isOpen) return null;
@@ -77,10 +81,14 @@ const AddInterpretationModal: React.FC<AddInterpretationModalProps> = ({
                   id="modal-title"
                   className="text-lg font-semibold text-slate-800 dark:text-slate-100"
                 >
-                  Agregar Interpretación
+                  {editingItem
+                    ? "Editar Interpretación"
+                    : "Agregar Interpretación"}
                 </h2>
                 <p className="text-sm text-slate-500 dark:text-slate-400">
-                  Añade tu propia traducción al historial
+                  {editingItem
+                    ? "Actualiza tu traducción en el historial"
+                    : "Añade tu propia traducción al historial"}
                 </p>
               </div>
             </div>
@@ -333,7 +341,7 @@ const AddInterpretationModal: React.FC<AddInterpretationModalProps> = ({
                       <polyline points="17 21 17 13 7 13 7 21"></polyline>
                       <polyline points="7 3 7 8 15 8"></polyline>
                     </svg>
-                    Guardar Interpretación
+                    Guardar {editingItem ? "Cambios" : "Interpretación"}
                   </>
                 )}
               </button>

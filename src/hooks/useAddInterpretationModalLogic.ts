@@ -2,6 +2,7 @@ import { useState, useCallback, useEffect } from "react";
 import { useSearchParams } from "react-router-dom";
 import { useAuth } from "contexts/AuthContext";
 import { historyService } from "utils/historyService";
+import type { HistoryItem } from "utils/historyService";
 import { languagePrefsService } from "utils/languagePrefsService";
 import {
     DEFAULT_SOURCE_LANGUAGE,
@@ -11,19 +12,25 @@ import {
 } from "utils/constants";
 import { AVAILABLE_LANGUAGES } from "utils/constants";
 import { translationMemory } from "api/translation/translationMemory";
-import { translationCache, getCacheKey } from "api/translation/cache";
+import {
+    translationCache,
+    getCacheKey,
+    removeFromCacheByPair,
+} from "api/translation/cache";
 import { showErrorToast } from "components/AppNotifications";
 
 interface UseAddInterpretationModalLogicProps {
     isOpen: boolean;
     onClose: () => void;
     onInterpretationAdded: () => void;
+    editingItem?: HistoryItem | null;
 }
 
 export const useAddInterpretationModalLogic = ({
     isOpen,
     onClose,
     onInterpretationAdded,
+    editingItem,
 }: UseAddInterpretationModalLogicProps) => {
     const { user } = useAuth();
     const [searchParams] = useSearchParams();
@@ -34,9 +41,21 @@ export const useAddInterpretationModalLogic = ({
     const [targetLang, setTargetLang] = useState(DEFAULT_TARGET_LANGUAGE);
     const [isSubmitting, setIsSubmitting] = useState(false);
 
-    // LOAD LANGUAGE PREFERENCES FROM URL PARAMS OR USER PREFS WHEN MODAL OPENS
+    // LOAD EDITING ITEM OR LANGUAGE PREFERENCES WHEN MODAL OPENS
     useEffect(() => {
         if (isOpen && user) {
+            if (editingItem) {
+                setSourceText(editingItem.source_text);
+                setTargetText(editingItem.translated_text);
+                setSourceLang(
+                    editingItem.source_lang || DEFAULT_SOURCE_LANGUAGE
+                );
+                setTargetLang(
+                    editingItem.target_lang || DEFAULT_TARGET_LANGUAGE
+                );
+                return;
+            }
+
             const urlSourceLang = searchParams.get("sl");
             const urlTargetLang = searchParams.get("tl");
 
@@ -66,7 +85,7 @@ export const useAddInterpretationModalLogic = ({
                 });
             }
         }
-    }, [isOpen, user, searchParams]);
+    }, [isOpen, user, searchParams, editingItem]);
 
     // RESET FORM WHEN MODAL CLOSES
     useEffect(() => {
@@ -116,7 +135,7 @@ export const useAddInterpretationModalLogic = ({
         [sourceLang, handleSwitchLanguages]
     );
 
-    // SUBMIT INTERPRETATION TO HISTORY
+    // SUBMIT INTERPRETATION TO HISTORY (ADD OR EDIT)
     const handleSubmit = useCallback(async () => {
         if (!user) {
             console.error("User not authenticated");
@@ -134,18 +153,50 @@ export const useAddInterpretationModalLogic = ({
             const source = sourceText.trim();
             const translated = targetText.trim();
 
-            const result = await historyService.add(
-                user.id,
-                source,
-                translated,
-                sourceLang,
-                targetLang
-            );
+            // Align pair direction to the stored convention (source -> target)
+            let src = source;
+            let trg = translated;
+            let srcLang = sourceLang;
+            let trgLang = targetLang;
+            if (editingItem && editingItem.source_lang === targetLang &&
+                editingItem.target_lang === sourceLang) {
+                src = translated;
+                trg = source;
+                srcLang = targetLang;
+                trgLang = sourceLang;
+            }
+
+            const result = editingItem
+                ? await historyService.update(editingItem.id, user.id, {
+                      source_text: src,
+                      translated_text: trg,
+                      source_lang: srcLang,
+                      target_lang: trgLang,
+                  })
+                : await historyService.add(
+                      user.id,
+                      src,
+                      trg,
+                      srcLang,
+                      trgLang
+                  );
 
             if (result) {
-                // Inject into in-memory translation layers so the model
-                // uses it as reference without needing a page reload
-                translationMemory.add(source, translated, sourceLang, targetLang);
+                // Drop the old pair from in-memory layers, then inject the new one
+                if (editingItem) {
+                    translationMemory.remove(
+                        editingItem.source_text,
+                        editingItem.source_lang,
+                        editingItem.target_lang
+                    );
+                    removeFromCacheByPair(
+                        editingItem.source_text,
+                        editingItem.target_lang,
+                        editingItem.source_lang
+                    );
+                }
+
+                translationMemory.add(src, trg, srcLang, trgLang);
                 const modelKey =
                     searchParams.get("model") ||
                     DEFAULT_MODEL;
@@ -153,8 +204,8 @@ export const useAddInterpretationModalLogic = ({
                     AI_MODELS[modelKey as keyof typeof AI_MODELS] ||
                     AI_MODELS[DEFAULT_MODEL as keyof typeof AI_MODELS];
                 translationCache.set(
-                    getCacheKey(source, targetLang, sourceLang, model.id),
-                    translated
+                    getCacheKey(src, trgLang, srcLang, model.id),
+                    trg
                 );
 
                 setSourceText("");
@@ -182,6 +233,7 @@ export const useAddInterpretationModalLogic = ({
         targetText,
         sourceLang,
         targetLang,
+        editingItem,
         searchParams,
         onClose,
         onInterpretationAdded,
