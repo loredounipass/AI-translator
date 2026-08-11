@@ -97,6 +97,11 @@ const HistoryPanel = ({ isOpen, onClose }: HistoryPanelProps) => {
     setEditingItem(null);
   };
 
+  const openAddModal = () => {
+    setEditingItem(null);
+    setIsAddModalOpen(true);
+  };
+
   const handleEditItem = (item: HistoryItem) => {
     setEditingItem(item);
   };
@@ -138,7 +143,7 @@ const HistoryPanel = ({ isOpen, onClose }: HistoryPanelProps) => {
             {/* Add Interpretation Button */}
             {user && (
               <button
-                onClick={closeModal}
+                onClick={openAddModal}
                 className="p-1.5 rounded-full text-blue-500 hover:bg-blue-50 dark:hover:bg-blue-900/30 transition-colors"
                 aria-label="Agregar interpretación"
                 title="Agregar interpretación"

@@ -49,20 +49,11 @@ body {
   animation: meshGradient 20s ease infinite;
 }
 
-/* ── Dark Mode Mesh Background ── */
+/* ── Dark Mode GitHub-like Background ── */
 .dark .glass-bg {
-  background:
-    linear-gradient(
-      135deg,
-      #0f172a 0%,
-      #1e1b4b 20%,
-      #172554 40%,
-      #1e1b4b 60%,
-      #0f172a 80%,
-      #172554 100%
-    );
-  background-size: 400% 400%;
-  animation: meshGradient 25s ease infinite;
+  background: #0d1117;
+  background-size: initial;
+  animation: none;
 }
 
 /* ── Glass Pane Utility ── */
@@ -78,9 +69,9 @@ body {
   }
 
   .dark .glass-pane {
-    background: rgba(15, 23, 42, 0.65);
-    border: 1px solid rgba(148, 163, 184, 0.12);
-    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.05);
+    background: #161b22;
+    border: 1px solid #30363d;
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.04);
   }
 
   .glass-panel {
@@ -94,9 +85,9 @@ body {
   }
 
   .dark .glass-panel {
-    background: rgba(15, 23, 42, 0.75);
-    border: 1px solid rgba(148, 163, 184, 0.15);
-    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.05);
+    background: #161b22;
+    border: 1px solid #30363d;
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.04);
   }
 
   .glass-modal {
@@ -111,11 +102,11 @@ body {
   }
 
   .dark .glass-modal {
-    background: rgba(15, 23, 42, 0.82);
-    border: 1px solid rgba(148, 163, 184, 0.18);
+    background: #161b22;
+    border: 1px solid #30363d;
     box-shadow:
-      0 24px 80px rgba(0, 0, 0, 0.3),
-      inset 0 1px 0 rgba(255, 255, 255, 0.06);
+      0 24px 80px rgba(0, 0, 0, 0.45),
+      inset 0 1px 0 rgba(255, 255, 255, 0.04);
   }
 
   .glass-header {
@@ -127,8 +118,8 @@ body {
   }
 
   .dark .glass-header {
-    background: rgba(15, 23, 42, 0.7);
-    border-bottom: 1px solid rgba(148, 163, 184, 0.1);
+    background: #161b22;
+    border-bottom: 1px solid #30363d;
     box-shadow: none;
   }
 
@@ -140,8 +131,8 @@ body {
   }
 
   .dark .glass-input {
-    background: rgba(30, 41, 59, 0.5) !important;
-    border: 1px solid rgba(71, 85, 105, 0.4) !important;
+    background: rgba(22, 27, 34, 0.7) !important;
+    border: 1px solid #30363d !important;
   }
 
   .glass-select {
@@ -152,8 +143,8 @@ body {
   }
 
   .dark .glass-select {
-    background: rgba(30, 41, 59, 0.4) !important;
-    border: 1px solid rgba(71, 85, 105, 0.35) !important;
+    background: rgba(22, 27, 34, 0.7) !important;
+    border: 1px solid #30363d !important;
   }
 
   .glass-select option {
@@ -162,7 +153,7 @@ body {
   }
 
   .dark .glass-select option {
-    background: #1e293b;
+    background: #161b22;
     color: #f1f5f9;
   }
 }
@@ -208,15 +199,15 @@ body {
 }
 
 .dark .lang-select .ant-select-selector {
-  background: rgba(30, 41, 59, 0.4) !important;
-  border-color: rgba(71, 85, 105, 0.35) !important;
+  background: rgba(22, 27, 34, 0.7) !important;
+  border-color: #30363d !important;
   color: #e2e8f0 !important; /* slate-200 */
   box-shadow: 0 1px 2px rgba(0,0,0,0.1) !important;
 }
 
 .dark .lang-select:hover .ant-select-selector {
-  border-color: rgba(100, 116, 139, 0.6) !important;
-  background: rgba(30, 41, 59, 0.55) !important;
+  border-color: rgba(110, 119, 129, 0.6) !important;
+  background: rgba(255, 255, 255, 0.06) !important;
 }
 
 .dark .lang-select.ant-select-focused .ant-select-selector {
@@ -270,15 +261,15 @@ body {
 }
 
 .dark .region-select .ant-select-selector {
-  background: rgba(30, 41, 59, 0.4) !important;
-  border-color: rgba(71, 85, 105, 0.4) !important;
+  background: rgba(22, 27, 34, 0.7) !important;
+  border-color: #30363d !important;
   color: #cbd5e1 !important;
   box-shadow: 0 1px 2px rgba(0,0,0,0.1) !important;
 }
 
 .dark .region-select:hover .ant-select-selector {
-  border-color: rgba(100, 116, 139, 0.6) !important;
-  background: rgba(30, 41, 59, 0.6) !important;
+  border-color: rgba(110, 119, 129, 0.6) !important;
+  background: rgba(255, 255, 255, 0.06) !important;
 }
 
 .dark .region-select.ant-select-focused .ant-select-selector {
@@ -312,15 +303,15 @@ body {
 }
 
 .dark .stt-select .ant-select-selector {
-  background: rgba(30, 41, 59, 0.4) !important;
-  border-color: rgba(71, 85, 105, 0.4) !important;
+  background: rgba(22, 27, 34, 0.7) !important;
+  border-color: #30363d !important;
   color: #cbd5e1 !important;
   box-shadow: 0 1px 2px rgba(0,0,0,0.1) !important;
 }
 
 .dark .stt-select:hover .ant-select-selector {
-  border-color: rgba(100, 116, 139, 0.6) !important;
-  background: rgba(30, 41, 59, 0.6) !important;
+  border-color: rgba(110, 119, 129, 0.6) !important;
+  background: rgba(255, 255, 255, 0.06) !important;
 }
 
 .dark .stt-select.ant-select-focused .ant-select-selector {
@@ -416,7 +407,7 @@ body {
 }
 
 .dark .custom-scrollbar::-webkit-scrollbar-thumb {
-  background-color: rgba(51, 65, 85, 0.6); /* slate-700 */
+  background-color: #484f58;
 }
 
 .blue-scrollbar::-webkit-scrollbar {
@@ -429,7 +420,7 @@ body {
 }
 
 .dark .blue-scrollbar::-webkit-scrollbar-thumb {
-  background: rgba(71, 85, 105, 0.5); /* slate-600 */
+  background: #484f58;
 }
 
 
@@ -447,9 +438,9 @@ body {
 }
 
 .dark .ant-select-dropdown {
-  background-color: rgba(30, 41, 59, 0.9) !important;
-  border: 1px solid rgba(51, 65, 85, 0.5) !important;
-  box-shadow: 0 8px 32px rgba(0,0,0,0.35) !important;
+  background-color: #161b22 !important;
+  border: 1px solid #30363d !important;
+  box-shadow: 0 8px 32px rgba(0,0,0,0.45) !important;
 }
 
 .ant-select-item {
@@ -484,7 +475,7 @@ input:-webkit-autofill:focus {
 .dark input:-webkit-autofill,
 .dark input:-webkit-autofill:hover,
 .dark input:-webkit-autofill:focus {
-  -webkit-box-shadow: 0 0 0 30px rgba(30, 41, 59, 0.9) inset !important;
+  -webkit-box-shadow: 0 0 0 30px #0d1117 inset !important;
   -webkit-text-fill-color: #e2e8f0 !important;
 }
 
@@ -506,8 +497,8 @@ input:-webkit-autofill:focus {
 }
 
 .dark .phone-code-select .ant-select-selector {
-  background: rgba(30, 41, 59, 0.4) !important;
-  border-color: rgba(51, 65, 85, 0.4) !important;
+  background: rgba(22, 27, 34, 0.7) !important;
+  border-color: #30363d !important;
 }
 
 .phone-code-select .ant-select-selection-item {
