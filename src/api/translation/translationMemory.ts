@@ -54,6 +54,8 @@ export const translationMemory = {
   // GET RELEVANT TRANSLATION PAIRS FOR A LANGUAGE PAIR.
   // Pairs are bidirectional: a pair stored as en -> es is also
   // usable when translating es -> en (aligned to the requested direction).
+  // For short inputs (<= 4 words) only pairs of similar length are injected,
+  // so a long example never imposes an expanded style on a single word.
   getRelevant(
     sourceLang: string,
     targetLang: string,
@@ -61,18 +63,34 @@ export const translationMemory = {
     limit: number = MAX_PAIRS_PER_REQUEST
   ): TranslationPair[] {
     const current = currentText?.trim();
+    const currentWordCount = current ? current.split(/\s+/).length : 0;
+    const isShortInput = currentWordCount > 0 && currentWordCount <= 4;
+
     const relevant: TranslationPair[] = [];
 
     for (const p of memoryBuffer) {
-      if (p.source === current) continue;
+      let alignedSource: string;
 
       if (p.sourceLang === sourceLang && p.targetLang === targetLang) {
-        // Same direction: use as-is
-        relevant.push(p);
+        alignedSource = p.source;
       } else if (p.sourceLang === targetLang && p.targetLang === sourceLang) {
+        alignedSource = p.translated;
+      } else {
+        continue;
+      }
+
+      if (alignedSource === current) continue;
+
+      if (isShortInput) {
+        const pairWordCount = alignedSource.split(/\s+/).length;
+        if (Math.abs(pairWordCount - currentWordCount) > 2) continue;
+      }
+
+      if (p.sourceLang === sourceLang && p.targetLang === targetLang) {
+        relevant.push(p);
+      } else {
         // Reverse direction: align so source is in sourceLang and
         // translation is in targetLang
-        if (p.translated === current) continue;
         relevant.push({
           source: p.translated,
           translated: p.source,
