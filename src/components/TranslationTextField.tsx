@@ -4,6 +4,7 @@ import CloseIcon from "../assets/CloseIcon";
 import MicIcon from "assets/MicIcon";
 import PauseIcon from "assets/PauseIcon";
 import AISpeechToText from "./AISpeechToText";
+import GlassTooltip from "./GlassTooltip";
 import { showMicNotDetectedNotification } from "./AppNotifications";
 import { useTranslationTextFieldLogic, MAX_URL_TEXT_LENGTH } from "../hooks/useTranslationTextFieldLogic";
 
@@ -104,7 +105,7 @@ const TranslationTextField = () => {
         />
         {!aiStt.isAiStt && browserSupportsSpeechRecognition && (
           <div className="flex items-center gap-2">
-            <div className="flex items-center gap-2">
+            <GlassTooltip label="Speech to Text">
               <button
                 type="button"
                 role="switch"
@@ -126,8 +127,7 @@ const TranslationTextField = () => {
                   boxShadow: '0 1px 2px rgba(0,0,0,0.2)'
                 }} />
               </button>
-              <span className="text-[#333] dark:text-slate-300 text-xs whitespace-nowrap">{keepMicOn ? "SP off" : "SP on"}</span>
-            </div>
+            </GlassTooltip>
             <button
               onMouseDown={() => { if (!mediaStreamRef.current && keepMicOn) ensureAudioStreamActive(); }}
               onTouchStart={() => { if (!mediaStreamRef.current && keepMicOn) ensureAudioStreamActive(); }}

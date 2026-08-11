@@ -3,6 +3,7 @@ import { Select } from "antd";
 import MicIcon from "../assets/MicIcon";
 import PauseIcon from "../assets/PauseIcon";
 import { showErrorToast } from "./AppNotifications";
+import GlassTooltip from "./GlassTooltip";
 
 interface AISpeechToTextProps {
   aiEnabled: boolean;
@@ -25,12 +26,13 @@ const AI_MODELS = [
   { value: "google/gemini-3.5-flash-lite", label: "Gemini 3.5 Flash-Lite", shortLabel: "Gemini Lite" },
 ];
 
-const ToggleSwitch = ({ checked, onChange, label, disabled }: { checked: boolean; onChange: () => void; label: string; disabled?: boolean }) => (
-  <div className="flex items-center gap-1.5 shrink-0">
+const ToggleSwitch = ({ checked, onChange, tooltip, disabled }: { checked: boolean; onChange: () => void; tooltip: string; disabled?: boolean }) => (
+  <GlassTooltip label={tooltip}>
     <button
       type="button"
       role="switch"
       aria-checked={checked}
+      aria-label={tooltip}
       onClick={onChange}
       disabled={disabled}
       className={`w-11 h-6 rounded-full border-none relative cursor-pointer p-0 transition-colors disabled:opacity-50 disabled:cursor-not-allowed ${
@@ -51,10 +53,7 @@ const ToggleSwitch = ({ checked, onChange, label, disabled }: { checked: boolean
         }}
       />
     </button>
-    <span className="text-[#333] dark:text-slate-300 text-xs whitespace-nowrap cursor-pointer select-none" onClick={!disabled ? onChange : undefined}>
-      {label}
-    </span>
-  </div>
+  </GlassTooltip>
 );
 
 const AISpeechToText = ({
@@ -80,7 +79,7 @@ const AISpeechToText = ({
 
   return (
     <div className="flex flex-wrap items-center gap-2 sm:gap-3 mt-2 sm:mt-0 w-full sm:w-auto">
-      <ToggleSwitch checked={aiEnabled} onChange={onToggle} label="AI STT" />
+      <ToggleSwitch checked={aiEnabled} onChange={onToggle} tooltip="AI Transcription" />
       
       {aiEnabled && (
         <Select
@@ -99,7 +98,7 @@ const AISpeechToText = ({
         <ToggleSwitch 
           checked={captureSystemAudio} 
           onChange={onToggleSystemAudio} 
-          label="System Audio" 
+          tooltip="System Audio" 
         />
       )}
 
