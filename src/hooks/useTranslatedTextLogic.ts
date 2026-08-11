@@ -199,9 +199,9 @@ export const useTranslatedTextLogic = () => {
 
     // CLEAR PREVIOUS TRANSLATION WHEN THE MODEL OR PROVIDER CHANGES
     const modelChanged = prevModelKeyRef.current !== modelId || prevProviderRef.current !== apiProvider;
+    prevModelKeyRef.current = modelId;
+    prevProviderRef.current = apiProvider;
     if (modelChanged) {
-      prevModelKeyRef.current = modelId;
-      prevProviderRef.current = apiProvider;
       requestIdRef.current += 1;
       debouncedTranslateHandler.cancel();
       if (abortControllerRef.current) {
@@ -211,8 +211,6 @@ export const useTranslatedTextLogic = () => {
       setTranslatedText([]);
       setIsTranslating(false);
     }
-    prevProviderRef.current = apiProvider;
-    prevModelKeyRef.current = modelId;
 
     if (!text) {
       debouncedTranslateHandler.cancel();
