@@ -125,6 +125,8 @@ export const executeStreamRequest = async (options: StreamRequestOptions): Promi
     const thinkingMatch = accumulatedRawText.match(/<\/(?:thinking|pensamiento)>([\s\S]*)/i);
     if (thinkingMatch && thinkingMatch[1]) {
       translated = thinkingMatch[1].trim();
+    } else if (options.useThinking) {
+      throw new Error("Fallo al extraer la traducción: El modelo no utilizó las etiquetas XML requeridas.");
     }
   }
   translated = stripXmlWrapper(translated);

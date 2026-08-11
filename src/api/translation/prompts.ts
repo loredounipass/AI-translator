@@ -4,9 +4,17 @@ import { getLanguageName } from "./constants";
 
 const SERIALIZED_TRAINING_MODULE = JSON.stringify(INTERPETERAI_TRAINING_MODULE, null, 2);
 
+export const isReasoningModel = (modelId: string): boolean => {
+  const lowerId = modelId.toLowerCase();
+  return lowerId.includes("nemotron-3.5-lightning");
+};
+
 export const isLightweightModel = (modelId: string): boolean => {
   const lowerId = modelId.toLowerCase();
-  return lowerId.includes("riva") || lowerId.includes("nemotron") || lowerId.includes("llama");
+  return (
+    !isReasoningModel(modelId) &&
+    (lowerId.includes("riva") || lowerId.includes("nemotron") || lowerId.includes("llama"))
+  );
 };
 
 export const buildSystemPrompt = (targetLang: string, sourceLang: string, modelId: string, useThinking = true, sourceText = ""): string => {
