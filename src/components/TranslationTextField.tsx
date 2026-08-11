@@ -1,9 +1,10 @@
-import React from "react";
+import React, { useEffect, useRef } from "react";
 import { Select } from "antd";
 import CloseIcon from "../assets/CloseIcon";
 import MicIcon from "assets/MicIcon";
 import PauseIcon from "assets/PauseIcon";
 import AISpeechToText from "./AISpeechToText";
+import { showErrorToast } from "./AppNotifications";
 import { useTranslationTextFieldLogic, MAX_URL_TEXT_LENGTH } from "../hooks/useTranslationTextFieldLogic";
 
 const TranslationTextField = () => {
@@ -28,6 +29,20 @@ const TranslationTextField = () => {
     mediaStreamRef,
     ensureAudioStreamActive
   } = useTranslationTextFieldLogic();
+
+  // SHOW NOTIFICATION WHEN NO MICROPHONE IS DETECTED
+  const micNotifiedRef = useRef(false);
+  useEffect(() => {
+    if (isMicrophoneAvailable === false && !micNotifiedRef.current) {
+      micNotifiedRef.current = true;
+      showErrorToast(
+        "Micrófono no detectado",
+        "No se encontró ningún micrófono. Conéctalo y recarga para usar el reconocimiento de voz."
+      );
+    }
+    if (isMicrophoneAvailable) micNotifiedRef.current = false;
+  }, [isMicrophoneAvailable]);
+
   return (
     <div className="relative flex flex-col flex-1 min-h-0 font-sans font-normal leading-normal bg-white/40 dark:bg-slate-800/40 transition-colors">
       <div className="flex-1 relative min-h-0">
@@ -138,11 +153,6 @@ const TranslationTextField = () => {
                   className="region-select w-24 text-xs"
                 />
               </div>
-            )}
-            {!isMicrophoneAvailable && (
-              <span className="text-[#ff4444] text-xs animate-fadeIn whitespace-nowrap">
-                Micrófono no detectado
-              </span>
             )}
           </div>
         )}
