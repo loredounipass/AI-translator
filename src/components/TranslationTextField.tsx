@@ -4,7 +4,7 @@ import CloseIcon from "../assets/CloseIcon";
 import MicIcon from "assets/MicIcon";
 import PauseIcon from "assets/PauseIcon";
 import AISpeechToText from "./AISpeechToText";
-import { showErrorToast } from "./AppNotifications";
+import { showMicNotDetectedNotification } from "./AppNotifications";
 import { useTranslationTextFieldLogic, MAX_URL_TEXT_LENGTH } from "../hooks/useTranslationTextFieldLogic";
 
 const TranslationTextField = () => {
@@ -35,10 +35,7 @@ const TranslationTextField = () => {
   useEffect(() => {
     if (isMicrophoneAvailable === false && !micNotifiedRef.current) {
       micNotifiedRef.current = true;
-      showErrorToast(
-        "Micrófono no detectado",
-        "No se encontró ningún micrófono. Conéctalo y recarga para usar el reconocimiento de voz."
-      );
+      showMicNotDetectedNotification();
     }
     if (isMicrophoneAvailable) micNotifiedRef.current = false;
   }, [isMicrophoneAvailable]);
