@@ -49,6 +49,8 @@ export const useTranslatedTextLogic = () => {
   const authNotifiedRef = React.useRef(false);
   const apiKeyNotifiedRef = React.useRef(false);
   const historyLoadedRef = React.useRef(false);
+  const prevModelKeyRef = React.useRef(modelId);
+  const prevProviderRef = React.useRef(apiProvider);
 
 
 
@@ -194,6 +196,23 @@ export const useTranslatedTextLogic = () => {
   // TRIGGER TRANSLATION WHEN URL PARAMS OR AUTH STATE CHANGES
   React.useEffect(() => {
     currentTextRef.current = text;
+
+    // CLEAR PREVIOUS TRANSLATION WHEN THE MODEL OR PROVIDER CHANGES
+    const modelChanged = prevModelKeyRef.current !== modelId || prevProviderRef.current !== apiProvider;
+    if (modelChanged) {
+      prevModelKeyRef.current = modelId;
+      prevProviderRef.current = apiProvider;
+      requestIdRef.current += 1;
+      debouncedTranslateHandler.cancel();
+      if (abortControllerRef.current) {
+        abortControllerRef.current.abort();
+        abortControllerRef.current = null;
+      }
+      setTranslatedText([]);
+      setIsTranslating(false);
+    }
+    prevProviderRef.current = apiProvider;
+    prevModelKeyRef.current = modelId;
 
     if (!text) {
       debouncedTranslateHandler.cancel();
