@@ -2,13 +2,20 @@ import { GLOSSARY } from "../glossary";
 import { INTERPETERAI_TRAINING_MODULE } from "../interpreter.guide";
 import { getLanguageName } from "./constants";
 
+
+// ESTE METODO ES SOLO PARA TENER LOS DATOS DEL MODULO DE ENTRENAMIENTO
+// CONVERTIR MODULO DE ENTRENAMIENTO A JSON
 const SERIALIZED_TRAINING_MODULE = JSON.stringify(INTERPETERAI_TRAINING_MODULE, null, 2);
 
+
+// IDENTIFICA SI EL MODELO ES LIVIANO
 export const isLightweightModel = (modelId: string): boolean => {
   const lowerId = modelId.toLowerCase();
   return lowerId.includes("riva") || lowerId.includes("nemotron") || lowerId.includes("llama");
 };
 
+
+// ESTO CREA EL PROMPT DEL SYSTEM CON EL GLOSARIO
 export const buildSystemPrompt = (targetLang: string, sourceLang: string, modelId: string, useThinking = true, sourceText = ""): string => {
   const targetName = getLanguageName(targetLang);
 
@@ -23,16 +30,16 @@ export const buildSystemPrompt = (targetLang: string, sourceLang: string, modelI
     isReversed = true;
   }
 
-  // RAG filter: only inject glossary terms that appear in the source text to avoid token bloat
+  // RAG CON TEXTO LIMPIO PARA QUE COINCIDA CON LOS TERMINOS DEL GLOSARIO
   const sourceTextLower = sourceText.toLowerCase();
-
   let domainRules = "";
   if (pairGlossary) {
     let termsOutput = "";
     for (const [domain, terms] of Object.entries(pairGlossary)) {
-      // Normalize punctuation to spaces to allow whole-word matching (respecting Spanish accents)
+
+      // NORMALIZA LA PUNTUACION PARA QUE COINCIDA CON LOS TERMINOS DEL GLOSARIO
       const cleanSourceText = ` ${sourceTextLower.replace(/[^\w\sáéíóúñü]/g, ' ')} `;
-      
+
       const relevantTerms = sourceTextLower
         ? Object.entries(terms).filter(([src, tgt]) => {
           const searchTerm = (isReversed ? tgt : src).toLowerCase();
