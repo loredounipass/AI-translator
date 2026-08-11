@@ -41,6 +41,13 @@ export const AI_MODELS: Record<string, AIModel> = {
     apiProvider: "nvidia",
     free: true,
   },
+  "nvidia-nemotron-3-5-lightning": {
+    id: "nvidia/nemotron-3.5-lightning-30b-a3b",
+    name: "Nemotron 3.5 Lightning 30B",
+    provider: "NVIDIA",
+    apiProvider: "nvidia",
+    free: true,
+  },
   "nvidia-gpt-oss": {
     id: "openai/gpt-oss-20b",
     name: "GPT-OSS 20B",
