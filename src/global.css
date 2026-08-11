@@ -237,12 +237,12 @@ body {
 }
 
 .region-select .ant-select-selector {
-  background: rgba(255, 255, 255, 0.4) !important;
-  backdrop-filter: blur(12px) saturate(160%) !important;
-  -webkit-backdrop-filter: blur(12px) saturate(160%) !important;
-  border: 1px solid rgba(226, 232, 240, 0.5) !important;
-  border-radius: 8px !important;
-  box-shadow: 0 1px 2px rgba(0,0,0,0.03) !important;
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.55), rgba(255, 255, 255, 0.3)) !important;
+  backdrop-filter: blur(16px) saturate(180%) !important;
+  -webkit-backdrop-filter: blur(16px) saturate(180%) !important;
+  border: 1px solid rgba(255, 255, 255, 0.7) !important;
+  border-radius: 10px !important;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.06), inset 0 1px 0 rgba(255, 255, 255, 0.8) !important;
   color: #334155 !important;
   font-size: 12px !important;
   padding: 3px 6px !important;
@@ -251,40 +251,41 @@ body {
 }
 
 .region-select:hover .ant-select-selector {
-  border-color: rgba(203, 213, 225, 0.7) !important;
-  background: rgba(241, 245, 249, 0.5) !important;
+  border-color: rgba(96, 165, 250, 0.6) !important;
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.7), rgba(255, 255, 255, 0.4)) !important;
+  box-shadow: 0 1px 4px rgba(59, 130, 246, 0.15), inset 0 1px 0 rgba(255, 255, 255, 0.9) !important;
 }
 
 .region-select.ant-select-focused .ant-select-selector {
   border-color: #2196F3 !important;
-  box-shadow: 0 0 0 2px rgba(33,150,243,0.1) !important;
+  box-shadow: 0 0 0 3px rgba(33, 150, 243, 0.15), inset 0 1px 0 rgba(255, 255, 255, 0.9) !important;
 }
 
 .dark .region-select .ant-select-selector {
-  background: rgba(22, 27, 34, 0.7) !important;
-  border-color: #30363d !important;
+  background: linear-gradient(135deg, rgba(22, 27, 34, 0.85), rgba(22, 27, 34, 0.6)) !important;
+  border-color: rgba(48, 54, 61, 0.9) !important;
   color: #cbd5e1 !important;
-  box-shadow: 0 1px 2px rgba(0,0,0,0.1) !important;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.2), inset 0 1px 0 rgba(255, 255, 255, 0.06) !important;
 }
 
 .dark .region-select:hover .ant-select-selector {
-  border-color: rgba(110, 119, 129, 0.6) !important;
-  background: rgba(255, 255, 255, 0.06) !important;
+  border-color: rgba(96, 165, 250, 0.5) !important;
+  background: linear-gradient(135deg, rgba(22, 27, 34, 0.95), rgba(22, 27, 34, 0.7)) !important;
 }
 
 .dark .region-select.ant-select-focused .ant-select-selector {
   border-color: #60a5fa !important;
-  box-shadow: 0 0 0 2px rgba(96,165,250,0.15) !important;
+  box-shadow: 0 0 0 3px rgba(96, 165, 250, 0.2), inset 0 1px 0 rgba(255, 255, 255, 0.06) !important;
 }
 
 /* ── AI STT Model Select (Glass-enhanced) ── */
 .stt-select .ant-select-selector {
-  background: rgba(255, 255, 255, 0.4) !important;
-  backdrop-filter: blur(12px) saturate(160%) !important;
-  -webkit-backdrop-filter: blur(12px) saturate(160%) !important;
-  border: 1px solid rgba(226, 232, 240, 0.5) !important;
-  border-radius: 8px !important;
-  box-shadow: 0 1px 2px rgba(0,0,0,0.03) !important;
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.55), rgba(255, 255, 255, 0.3)) !important;
+  backdrop-filter: blur(16px) saturate(180%) !important;
+  -webkit-backdrop-filter: blur(16px) saturate(180%) !important;
+  border: 1px solid rgba(255, 255, 255, 0.7) !important;
+  border-radius: 10px !important;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.06), inset 0 1px 0 rgba(255, 255, 255, 0.8) !important;
   color: #334155 !important;
   font-size: 12px !important;
   padding: 2px 6px !important;
@@ -293,30 +294,31 @@ body {
 }
 
 .stt-select:hover .ant-select-selector {
-  border-color: rgba(203, 213, 225, 0.7) !important;
-  background: rgba(241, 245, 249, 0.5) !important;
+  border-color: rgba(96, 165, 250, 0.6) !important;
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.7), rgba(255, 255, 255, 0.4)) !important;
+  box-shadow: 0 1px 4px rgba(59, 130, 246, 0.15), inset 0 1px 0 rgba(255, 255, 255, 0.9) !important;
 }
 
 .stt-select.ant-select-focused .ant-select-selector {
   border-color: #2196F3 !important;
-  box-shadow: 0 0 0 2px rgba(33,150,243,0.1) !important;
+  box-shadow: 0 0 0 3px rgba(33, 150, 243, 0.15), inset 0 1px 0 rgba(255, 255, 255, 0.9) !important;
 }
 
 .dark .stt-select .ant-select-selector {
-  background: rgba(22, 27, 34, 0.7) !important;
-  border-color: #30363d !important;
+  background: linear-gradient(135deg, rgba(22, 27, 34, 0.85), rgba(22, 27, 34, 0.6)) !important;
+  border-color: rgba(48, 54, 61, 0.9) !important;
   color: #cbd5e1 !important;
-  box-shadow: 0 1px 2px rgba(0,0,0,0.1) !important;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.2), inset 0 1px 0 rgba(255, 255, 255, 0.06) !important;
 }
 
 .dark .stt-select:hover .ant-select-selector {
-  border-color: rgba(110, 119, 129, 0.6) !important;
-  background: rgba(255, 255, 255, 0.06) !important;
+  border-color: rgba(96, 165, 250, 0.5) !important;
+  background: linear-gradient(135deg, rgba(22, 27, 34, 0.95), rgba(22, 27, 34, 0.7)) !important;
 }
 
 .dark .stt-select.ant-select-focused .ant-select-selector {
   border-color: #60a5fa !important;
-  box-shadow: 0 0 0 2px rgba(96,165,250,0.15) !important;
+  box-shadow: 0 0 0 3px rgba(96, 165, 250, 0.2), inset 0 1px 0 rgba(255, 255, 255, 0.06) !important;
 }
 
 .stt-select .ant-select-selection-item {
