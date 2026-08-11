@@ -51,17 +51,37 @@ export const translationMemory = {
   },
 
 
-  // GET RELEVANT TRANSLATION PAIRS FOR A LANGUAGE PAIR
+  // GET RELEVANT TRANSLATION PAIRS FOR A LANGUAGE PAIR.
+  // Pairs are bidirectional: a pair stored as en -> es is also
+  // usable when translating es -> en (aligned to the requested direction).
   getRelevant(
     sourceLang: string,
     targetLang: string,
     currentText?: string,
     limit: number = MAX_PAIRS_PER_REQUEST
   ): TranslationPair[] {
-    const relevant = memoryBuffer.filter(
-      (p) => p.sourceLang === sourceLang && p.targetLang === targetLang &&
-             p.source !== currentText?.trim()
-    );
+    const current = currentText?.trim();
+    const relevant: TranslationPair[] = [];
+
+    for (const p of memoryBuffer) {
+      if (p.source === current) continue;
+
+      if (p.sourceLang === sourceLang && p.targetLang === targetLang) {
+        // Same direction: use as-is
+        relevant.push(p);
+      } else if (p.sourceLang === targetLang && p.targetLang === sourceLang) {
+        // Reverse direction: align so source is in sourceLang and
+        // translation is in targetLang
+        if (p.translated === current) continue;
+        relevant.push({
+          source: p.translated,
+          translated: p.source,
+          sourceLang,
+          targetLang,
+          timestamp: p.timestamp,
+        });
+      }
+    }
 
     // Return the most recent N pairs
     return relevant.slice(-limit);

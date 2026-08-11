@@ -219,9 +219,9 @@ body {
 }
 
 .region-select .ant-select-selector {
-  background: rgba(248, 250, 252, 0.6) !important;
-  backdrop-filter: blur(8px) !important;
-  -webkit-backdrop-filter: blur(8px) !important;
+  background: rgba(255, 255, 255, 0.4) !important;
+  backdrop-filter: blur(12px) saturate(160%) !important;
+  -webkit-backdrop-filter: blur(12px) saturate(160%) !important;
   border: 1px solid rgba(226, 232, 240, 0.5) !important;
   border-radius: 8px !important;
   box-shadow: 0 1px 2px rgba(0,0,0,0.03) !important;
@@ -234,7 +234,7 @@ body {
 
 .region-select:hover .ant-select-selector {
   border-color: rgba(203, 213, 225, 0.7) !important;
-  background: rgba(241, 245, 249, 0.7) !important;
+  background: rgba(241, 245, 249, 0.5) !important;
 }
 
 .region-select.ant-select-focused .ant-select-selector {
@@ -243,7 +243,7 @@ body {
 }
 
 .dark .region-select .ant-select-selector {
-  background: rgba(30, 41, 59, 0.5) !important;
+  background: rgba(30, 41, 59, 0.4) !important;
   border-color: rgba(71, 85, 105, 0.4) !important;
   color: #cbd5e1 !important;
   box-shadow: 0 1px 2px rgba(0,0,0,0.1) !important;
@@ -257,6 +257,66 @@ body {
 .dark .region-select.ant-select-focused .ant-select-selector {
   border-color: #60a5fa !important;
   box-shadow: 0 0 0 2px rgba(96,165,250,0.15) !important;
+}
+
+/* ── AI STT Model Select (Glass-enhanced) ── */
+.stt-select .ant-select-selector {
+  background: rgba(255, 255, 255, 0.4) !important;
+  backdrop-filter: blur(12px) saturate(160%) !important;
+  -webkit-backdrop-filter: blur(12px) saturate(160%) !important;
+  border: 1px solid rgba(226, 232, 240, 0.5) !important;
+  border-radius: 8px !important;
+  box-shadow: 0 1px 2px rgba(0,0,0,0.03) !important;
+  color: #334155 !important;
+  font-size: 12px !important;
+  padding: 2px 6px !important;
+  height: auto !important;
+  transition: all 0.15s ease !important;
+}
+
+.stt-select:hover .ant-select-selector {
+  border-color: rgba(203, 213, 225, 0.7) !important;
+  background: rgba(241, 245, 249, 0.5) !important;
+}
+
+.stt-select.ant-select-focused .ant-select-selector {
+  border-color: #2196F3 !important;
+  box-shadow: 0 0 0 2px rgba(33,150,243,0.1) !important;
+}
+
+.dark .stt-select .ant-select-selector {
+  background: rgba(30, 41, 59, 0.4) !important;
+  border-color: rgba(71, 85, 105, 0.4) !important;
+  color: #cbd5e1 !important;
+  box-shadow: 0 1px 2px rgba(0,0,0,0.1) !important;
+}
+
+.dark .stt-select:hover .ant-select-selector {
+  border-color: rgba(100, 116, 139, 0.6) !important;
+  background: rgba(30, 41, 59, 0.6) !important;
+}
+
+.dark .stt-select.ant-select-focused .ant-select-selector {
+  border-color: #60a5fa !important;
+  box-shadow: 0 0 0 2px rgba(96,165,250,0.15) !important;
+}
+
+.stt-select .ant-select-selection-item {
+  font-size: 12px !important;
+  font-weight: 500 !important;
+}
+
+.stt-select .ant-select-arrow {
+  color: #94a3b8 !important;
+  font-size: 10px !important;
+}
+
+.dark .stt-select .ant-select-arrow {
+  color: #64748b !important;
+}
+
+.stt-select.ant-select-disabled .ant-select-selector {
+  opacity: 0.6 !important;
 }
 
 .region-select .ant-select-selection-item {
