@@ -13,6 +13,7 @@ import { addPunctuation } from "../utils/punctuationLogic";
 import { analyzeAudioFrame } from "../utils/vadMath";
 import { useTypewriterPlaceholder } from "./useTypewriterPlaceholder";
 import { useAiSpeechToText } from "./useAiSpeechToText";
+import { showAudioErrorNotification } from "../components/AppNotifications";
 
 export const MAX_URL_TEXT_LENGTH = 8000;
 
@@ -158,6 +159,10 @@ export const useTranslationTextFieldLogic = () => {
         if (inputs.length > 0 && !selectedDeviceId) setSelectedDeviceId(inputs[0].deviceId);
       } catch (err) {
       console.warn('No se pudo acceder a dispositivos de audio');
+      showAudioErrorNotification(
+        "Micrófono no disponible",
+        "No se pudo acceder a los dispositivos de audio. Verifica los permisos del navegador."
+      );
     }
     };
 
@@ -293,6 +298,10 @@ export const useTranslationTextFieldLogic = () => {
       }
     } catch (error) {
       console.error("Error in speech handler");
+      showAudioErrorNotification(
+        "Error de dictado",
+        "Ocurrió un error al iniciar o detener el reconocimiento de voz."
+      );
     } finally {
       setIsProcessing(false);
     }
@@ -374,6 +383,10 @@ export const useTranslationTextFieldLogic = () => {
       startVADRef.current?.();
     } catch (err) {
       console.error('No se pudo inicializar audio');
+      showAudioErrorNotification(
+        "Error de audio",
+        "No se pudo inicializar el audio del micrófono. Conecta un micrófono y vuelve a intentarlo."
+      );
     }
   }, [resetVADState, teardownAudioResources]);
 
@@ -389,6 +402,10 @@ export const useTranslationTextFieldLogic = () => {
       }
     } catch (e) {
       console.warn('No se pudo activar captura de audio');
+      showAudioErrorNotification(
+        "Error de audio",
+        "No se pudo activar la captura de audio."
+      );
     } finally {
       isSettingUpRef.current = false;
     }

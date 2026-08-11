@@ -168,6 +168,118 @@ export const showMicNotDetectedNotification = () => {
 };
 
 
+// SHOW LOGOUT FAILED NOTIFICATION
+export const showLogoutFailedNotification = () => {
+  notification.open({
+    message: (
+      <span style={{ fontWeight: 700, fontSize: 14, color: "#1e293b" }}>
+        Error al cerrar sesión
+      </span>
+    ),
+    description: (
+      <span style={{ fontSize: 13, color: "#64748b", lineHeight: 1.5 }}>
+        No se pudo cerrar la sesión. Inténtalo de nuevo.
+      </span>
+    ),
+    icon: (
+      <div
+        style={{
+          width: 36,
+          height: 36,
+          borderRadius: 10,
+          background: "linear-gradient(135deg, #f43f5e, #e11d48)",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          flexShrink: 0,
+        }}
+      >
+        <svg
+          width="18"
+          height="18"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="#fff"
+          strokeWidth="2.2"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+        >
+          <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
+          <polyline points="16 17 21 12 16 7" />
+          <line x1="21" y1="12" x2="9" y2="12" />
+        </svg>
+      </div>
+    ),
+    placement: "topRight",
+    duration: 5,
+    style: {
+      borderRadius: 14,
+      boxShadow:
+        "0 8px 32px rgba(244,63,94,0.15), 0 2px 8px rgba(0,0,0,0.08)",
+      border: "1px solid #ffe4e6",
+      padding: "14px 18px",
+    },
+  });
+};
+
+
+// SHOW AUDIO/MICROPHONE ERROR NOTIFICATION
+export const showAudioErrorNotification = (title: string, description: string) => {
+  notification.open({
+    message: (
+      <span style={{ fontWeight: 700, fontSize: 14, color: "#1e293b" }}>
+        {title}
+      </span>
+    ),
+    description: (
+      <span style={{ fontSize: 13, color: "#64748b", lineHeight: 1.5 }}>
+        {description}
+      </span>
+    ),
+    icon: (
+      <div
+        style={{
+          width: 36,
+          height: 36,
+          borderRadius: 10,
+          background: "linear-gradient(135deg, #f43f5e, #e11d48)",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          flexShrink: 0,
+        }}
+      >
+        <svg
+          width="18"
+          height="18"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="#fff"
+          strokeWidth="2.2"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+        >
+          <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z" />
+          <path d="M19 10v2a7 7 0 0 1-14 0v-2" />
+          <line x1="12" y1="19" x2="12" y2="23" />
+          <line x1="8" y1="23" x2="16" y2="23" />
+          <line x1="3" y1="3" x2="21" y2="21" />
+        </svg>
+      </div>
+    ),
+    placement: "topRight",
+    duration: 5,
+    style: {
+      borderRadius: 14,
+      boxShadow:
+        "0 8px 32px rgba(244,63,94,0.15), 0 2px 8px rgba(0,0,0,0.08)",
+      border: "1px solid #ffe4e6",
+      padding: "14px 18px",
+    },
+  });
+};
+
+
 // SHOW SUCCESS TOAST
 export const showSuccessToast = (title: string, description?: string) => {
   notification.open({

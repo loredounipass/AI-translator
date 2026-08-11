@@ -2,7 +2,7 @@ import { useState, useRef, useEffect } from "react";
 import type { User } from "@supabase/supabase-js";
 import { useAuth } from "contexts/AuthContext";
 import { AUTH_MESSAGES } from "utils/authConstants";
-import { showSuccessToast } from "components/AppNotifications";
+import { showSuccessToast, showLogoutFailedNotification } from "components/AppNotifications";
 
 interface UserAvatarProps {
     user: User;
@@ -148,6 +148,7 @@ const UserAvatar = ({ user, onOpenApiSettings, onOpenFeedback }: UserAvatarProps
                                     window.location.reload();
                                 } catch (error) {
                                     console.error("Logout failed", error);
+                                    showLogoutFailedNotification();
                                 }
                             }}
                             className="w-full flex items-center gap-2 px-3 py-2 text-sm text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-colors"
