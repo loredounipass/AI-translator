@@ -1,6 +1,6 @@
 import { THINKING_CHAR_THRESHOLD, getLanguageName } from "./translation/constants";
 import { translationCache, getCacheKey } from "./translation/cache";
-import { buildSystemPrompt, isLightweightModel, isReasoningModel } from "./translation/prompts";
+import { buildSystemPrompt, isLightweightModel } from "./translation/prompts";
 import { isTrivialText } from "./translation/filters";
 import { executeTranslationRequest } from "./translation/executor";
 import { translationMemory } from "./translation/translationMemory";
@@ -31,7 +31,7 @@ export const translate = async (
   }
 
   const isLightweight = isLightweightModel(modelId);
-  const useThinking = isReasoningModel(modelId) || (!isLightweight && cleanedText.length >= THINKING_CHAR_THRESHOLD);
+  const useThinking = !isLightweight && cleanedText.length >= THINKING_CHAR_THRESHOLD;
 
   const systemPrompt = buildSystemPrompt(targetLang, sourceLang, modelId, useThinking, cleanedText);
   const sourceName = getLanguageName(sourceLang);
