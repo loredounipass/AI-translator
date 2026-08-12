@@ -204,11 +204,11 @@ CRITICAL RULES:
 ${styleRules}
 
 <execution_instructions>
-1. First, analyze the source text, context, and apply rules in a <thinking> block.
+1. First, analyze the source text, context, and apply rules in a <thinking> block. YOU MUST KEEP THIS ANALYSIS EXTREMELY BRIEF (1-3 sentences maximum). Do not write long essays.
 2. Then, provide the final interpreted text inside <interpretation> tags.
 3. Your final response MUST be formatted exactly as:
 <thinking>
-...your analysis here...
+...brief analysis...
 </thinking>
 <interpretation>
 ...your final interpretation here...
