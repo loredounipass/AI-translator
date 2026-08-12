@@ -96,7 +96,7 @@ export const useTranslatedTextLogic = () => {
 
   // HANDLE TRANSLATION REQUEST AND MANAGE STREAMING RESPONSE
   const translateHandler = React.useCallback(async (value: string, targetLang: string, sourceLang: string, mId: string) => {
-    if (!value || value !== currentTextRef.current) {
+    if (!value) {
       setTranslatedText([]);
       setIsTranslating(false);
       return;
