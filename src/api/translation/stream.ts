@@ -5,7 +5,6 @@ export interface StreamRequestOptions {
   modelId: string;
   messages: any[];
   temperature: number;
-  useThinking: boolean;
   apiKey?: string;
   provider?: string;
   signal?: AbortSignal;
@@ -17,7 +16,7 @@ export const executeStreamRequest = async (options: StreamRequestOptions): Promi
     model: options.modelId,
     messages: options.messages,
     temperature: options.temperature,
-    max_tokens: options.useThinking ? 2048 : 1024,
+    max_tokens: 1024,
     stream: true,
     apiKey: options.apiKey,
     provider: options.provider,
@@ -50,8 +49,6 @@ export const executeStreamRequest = async (options: StreamRequestOptions): Promi
   const decoder = new TextDecoder("utf-8");
   let accumulatedRawText = "";
   let buffer = "";
-  let translationTagFound = false;
-  let translationStartIndex = -1;
 
   while (true) {
     if (options.signal?.aborted) {
@@ -72,35 +69,10 @@ export const executeStreamRequest = async (options: StreamRequestOptions): Promi
           const content = data.choices?.[0]?.delta?.content || data.delta?.text || "";
           if (content) {
             accumulatedRawText += content;
-
-            if (!translationTagFound) {
-              const match = accumulatedRawText.match(/<(interpretation|interpretaci[óo]n|translation)>/i);
-              if (match && match.index !== undefined) {
-                translationTagFound = true;
-                translationStartIndex = match.index;
-              }
-            }
-
-            if (translationTagFound) {
-              const startMatch = accumulatedRawText.match(/<(interpretation|interpretaci[óo]n|translation)>/i);
-              const tagLength = startMatch ? startMatch[0].length : 16;
-              let streamText = accumulatedRawText.substring(translationStartIndex + tagLength);
-              const endMatch = streamText.match(/<\/(interpretation|interpretaci[óo]n|translation)>/i);
-              if (endMatch && endMatch.index !== undefined) {
-                streamText = streamText.substring(0, endMatch.index);
-              }
-              streamText = streamText.trimStart();
-
-              const isLeaking = streamText.includes("CONTEXT ABOUT THE USER") || streamText.includes("CRITICAL RULES") || streamText.includes("MANDATORY");
-
-              if (streamText && !isLeaking) {
-                options.onData(streamText);
-              }
-            } else if (!options.useThinking) {
-              const cleaned = stripXmlWrapper(accumulatedRawText);
-              if (cleaned) {
-                options.onData(cleaned);
-              }
+            
+            const cleaned = stripXmlWrapper(accumulatedRawText);
+            if (cleaned) {
+              options.onData(cleaned);
             }
           }
         } catch {
@@ -117,19 +89,7 @@ export const executeStreamRequest = async (options: StreamRequestOptions): Promi
     throw new Error("No se recibió contenido del modelo durante el streaming");
   }
 
-  let translated = accumulatedRawText;
-  const translationMatch = accumulatedRawText.match(/<(?:interpretation|interpretaci[óo]n|translation)>([\s\S]*?)(?:<\/(?:interpretation|interpretaci[óo]n|translation)>|$)/i);
-  if (translationMatch && translationMatch[1]) {
-    translated = translationMatch[1].trim();
-  } else {
-    const thinkingMatch = accumulatedRawText.match(/<\/(?:thinking|pensamiento)>([\s\S]*)/i);
-    if (thinkingMatch && thinkingMatch[1]) {
-      translated = thinkingMatch[1].trim();
-    } else if (options.useThinking) {
-      throw new Error("Fallo al extraer la traducción: El modelo no utilizó las etiquetas XML requeridas o la respuesta fue truncada.");
-    }
-  }
-  translated = stripXmlWrapper(translated);
+  let translated = stripXmlWrapper(accumulatedRawText);
 
   const isLeaking = translated.includes("CONTEXT ABOUT THE USER") || translated.includes("CRITICAL RULES") || translated.includes("MANDATORY");
   if (isLeaking) {

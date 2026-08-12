@@ -1,12 +1,5 @@
 import { GLOSSARY } from "../glossary";
-import { INTERPETERAI_TRAINING_MODULE } from "../interpreter.guide";
 import { getLanguageName } from "./constants";
-
-
-// ESTE METODO ES SOLO PARA TENER LOS DATOS DEL MODULO DE ENTRENAMIENTO
-// CONVERTIR MODULO DE ENTRENAMIENTO A JSON
-const SERIALIZED_TRAINING_MODULE = JSON.stringify(INTERPETERAI_TRAINING_MODULE, null, 2);
-
 
 // IDENTIFICA SI EL MODELO ES LIVIANO
 export const isLightweightModel = (modelId: string): boolean => {
@@ -16,7 +9,7 @@ export const isLightweightModel = (modelId: string): boolean => {
 
 
 // ESTO CREA EL PROMPT DEL SYSTEM CON EL GLOSARIO
-export const buildSystemPrompt = (targetLang: string, sourceLang: string, modelId: string, useThinking = true, sourceText = ""): string => {
+export const buildSystemPrompt = (targetLang: string, sourceLang: string, modelId: string, sourceText = ""): string => {
   const targetName = getLanguageName(targetLang);
 
   const exactKey = `${sourceLang}-${targetLang}`;
@@ -76,10 +69,9 @@ ${termsOutput.trimEnd()}
 STYLE RULES & DOMAIN TERMINOLOGY - MANDATORY:
 - Maintain formal/professional tone appropriate for business, medical, and legal contexts.${dialectRule}${domainRules}`;
 
-  if (isLightweightModel(modelId) || !useThinking) {
-    const shortContext = !isLightweightModel(modelId)
-      ? `CONTEXT ABOUT THE USER'S JOB (FOR YOUR UNDERSTANDING ONLY):\nThe user is a professional over-the-phone interpreter. YOUR ONLY job is to interpret the text exactly as requested.\n\n`
-      : "";
+  const shortContext = !isLightweightModel(modelId)
+    ? `CONTEXT ABOUT THE USER'S JOB (FOR YOUR UNDERSTANDING ONLY):\nThe user is a professional over-the-phone interpreter. YOUR ONLY job is to interpret the text exactly as requested.\n\n`
+    : "";
     return `${shortContext}You are a professional over-the-phone INTERPRETER, not a simple translator.
 Your role goes beyond repeating words: you must understand the subject matter, identify the domain (medical, legal, automotive, etc.), and deliver the MEANING of the message in a coherent, natural, and professional fashion into ${targetName}.
 
@@ -126,26 +118,8 @@ CRITICAL RULES:
 
 9. CONSISTENCY: When previous interpretations are provided in the conversation, maintain consistent terminology and style with those interpretations.
 
-10. INTERPRET NATURALLY: Provide a natural, conversational interpretation as if speaking directly to a person. Avoid robotic, direct, or literal word-for-word interpretations. SHORT CLEAN TEXTS (Rule 2) are always interpreted literally.
-
-11. FIX ASR ERRORS & CONTEXTUAL PREDICTION (DIRTY TEXT RULE):
-    - ACTIVATION GATE (EVALUATE FIRST): This rule ONLY activates when text has ACTUAL ASR corruption — missing words, nonsensical substitutions, or garbled fragments that make the meaning GENUINELY UNCLEAR. A clean single word or short phrase (1-4 words) is NEVER corruption — never expand, predict, or reconstruct it here. If you can understand the speaker's intent (even with minor grammar imperfections like "what's his name is"), the text is CLEAN: skip this rule entirely, apply Rules 1-10 normally.
-    - DYNAMIC THEME IDENTIFICATION: Instantly identify the conversation's core topic using key contextual words to establish a baseline for upcoming sentences.
-    - HANDLING DIRTY TEXT: If the source text arrives incomplete, cut-off, or contains out-of-context words due to audio glitches, analyze surrounding keywords, predict the logical conversational flow, and reconstruct what the speaker meant before interpreting.
-    - DO NOT GUESS: Prediction is strictly contextual deduction. If input is too corrupted for a logical prediction, interpret fragments exactly as-is.
-    - RESOLUTION PRIORITY: When a missing or garbled word has multiple plausible reconstructions but the semantic category is clear, choose the most generic term that preserves intent without fabricating specifics. Decide quickly.
-${styleRules}`;
-  }
-
-  const interpreterContext = `CONTEXT ABOUT THE USER'S JOB (FOR YOUR UNDERSTANDING ONLY):
-The user you are assisting is a professional over-the-phone interpreter. Their job involves strict training based on the following module:
-
-${SERIALIZED_TRAINING_MODULE}
-
-That is the USER'S job and they will handle all behavioral and cultural nuances described in the module (such as speaking in 1st person, maintaining neutrality, using specific 3rd person phrases).
-
-YOUR ROLE AS THE AI:
-You are an elite, professional over-the-phone INTERPRETER, not a simple translator. Your role goes beyond repeating words: you must understand the subject matter, identify the domain (medical, legal, automotive, etc.), and deliver the MEANING of the message in a coherent, natural, and professional fashion. You MUST NOT try to do the user's job or intervene in the scenarios. You MUST obey the following rules WITHOUT EXCEPTION.`;
+  const interpreterContext = `YOUR ROLE AS THE AI:
+You are an elite, professional over-the-phone INTERPRETER, not a simple translator. Your role goes beyond repeating words: you must understand the subject matter, identify the domain (medical, legal, automotive, etc.), and deliver the MEANING of the message in a coherent, natural, and professional fashion. You MUST obey the following rules WITHOUT EXCEPTION.`;
 
   return `${interpreterContext}
 
@@ -201,17 +175,5 @@ CRITICAL RULES:
     - DO NOT GUESS UNPREDICTABLE INPUTS: Prediction is strictly contextual deduction, not wild guessing. If the input is too corrupted to yield a logical prediction, interpret the fragments exactly as-is without introducing fabricated context.
     - RESOLUTION PRIORITY: When a missing or garbled word has multiple plausible reconstructions but the semantic category is clear, choose the most generic term that preserves the speaker's intent without fabricating specifics. Decide immediately — do not deliberate between candidates.
 
-${styleRules}
-
-<execution_instructions>
-1. First, analyze the source text, context, and apply rules in a <thinking> block. YOU MUST KEEP THIS ANALYSIS EXTREMELY BRIEF (1-3 sentences maximum). Do not write long essays.
-2. Then, provide the final interpreted text inside <interpretation> tags.
-3. Your final response MUST be formatted exactly as:
-<thinking>
-...brief analysis...
-</thinking>
-<interpretation>
-...your final interpretation here...
-</interpretation>
-</execution_instructions>`;
+${styleRules}`;
 };

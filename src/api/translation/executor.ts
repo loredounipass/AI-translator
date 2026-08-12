@@ -7,7 +7,6 @@ export interface TranslationExecutorOptions {
   modelId: string;
   messages: any[];
   temperature: number;
-  useThinking: boolean;
   apiKey?: string;
   provider?: string;
   signal?: AbortSignal;

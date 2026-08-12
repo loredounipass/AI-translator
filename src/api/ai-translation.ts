@@ -1,6 +1,6 @@
-import { THINKING_CHAR_THRESHOLD, getLanguageName } from "./translation/constants";
+import { getLanguageName } from "./translation/constants";
 import { translationCache, getCacheKey } from "./translation/cache";
-import { buildSystemPrompt, isLightweightModel } from "./translation/prompts";
+import { buildSystemPrompt } from "./translation/prompts";
 import { isTrivialText } from "./translation/filters";
 import { executeTranslationRequest } from "./translation/executor";
 import { translationMemory } from "./translation/translationMemory";
@@ -30,30 +30,17 @@ export const translate = async (
     return cached;
   }
 
-  const isLightweight = isLightweightModel(modelId);
-  const useThinking = false; // Desactivado permanentemente a petición del usuario para máxima velocidad
-
-  const systemPrompt = buildSystemPrompt(targetLang, sourceLang, modelId, useThinking, cleanedText);
+  const systemPrompt = buildSystemPrompt(targetLang, sourceLang, modelId, cleanedText);
   const sourceName = getLanguageName(sourceLang);
   const targetName = getLanguageName(targetLang);
 
-  const recencyInstruction = useThinking
-    ? `\n\nFINAL INSTRUCTION:\nInterpret the source text into ${targetName}. ONLY output the <thinking> block followed by the <interpretation> block. Do not include any other text.`
-    : "";
-
-  const finalSystemPrompt = useThinking
-    ? systemPrompt + recencyInstruction
-    : systemPrompt;
-
-  const userPrompt = useThinking
-    ? `<source_text>\n${cleanedText}\n</source_text>\n\nBegin your response IMMEDIATELY with <thinking>. Do not output any text before the <thinking> tag.`
-    : `Interpret the following text from ${sourceName} to ${targetName}. Apply first-person interpreting rules. Output ONLY the raw interpreted text. Do not wrap it in any tags or conversational filler.\n\nText to interpret:\n${cleanedText}`;
+  const userPrompt = `Interpret the following text from ${sourceName} to ${targetName}. Apply first-person interpreting rules. Output ONLY the raw interpreted text. Do not wrap it in any tags or conversational filler.\n\nText to interpret:\n${cleanedText}`;
 
   // Build memory pairs from recent translations for consistency
-  const memoryMessages = translationMemory.buildMemoryMessages(sourceLang, targetLang, cleanedText, useThinking);
+  const memoryMessages = translationMemory.buildMemoryMessages(sourceLang, targetLang, cleanedText);
 
   const messages = [
-    { role: "system", content: finalSystemPrompt },
+    { role: "system", content: systemPrompt },
     ...memoryMessages,
     { role: "user", content: userPrompt },
   ];
@@ -64,7 +51,6 @@ export const translate = async (
     modelId,
     messages,
     temperature: dynamicTemperature,
-    useThinking,
     apiKey: options?.apiKey,
     provider: options?.provider,
     signal: options?.signal,

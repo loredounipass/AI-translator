@@ -6,7 +6,6 @@ export interface StandardRequestOptions {
   modelId: string;
   messages: any[];
   temperature: number;
-  useThinking: boolean;
   apiKey?: string;
   provider?: string;
   signal?: AbortSignal;
@@ -17,7 +16,7 @@ export const executeStandardRequest = async (options: StandardRequestOptions): P
     model: options.modelId,
     messages: options.messages,
     temperature: options.temperature,
-    max_tokens: options.useThinking ? 2048 : 1024,
+    max_tokens: 1024,
     stream: false,
     apiKey: options.apiKey,
     provider: options.provider,
@@ -43,20 +42,7 @@ export const executeStandardRequest = async (options: StandardRequestOptions): P
   const rawContent = response.data?.choices?.[0]?.message?.content || response.data?.content?.[0]?.text;
   if (!rawContent) throw new Error("No se recibió traducción del modelo");
 
-  let translated = rawContent;
-  const translationMatch = rawContent.match(/<(?:interpretation|interpretaci[óo]n|translation)>([\s\S]*?)(?:<\/(?:interpretation|interpretaci[óo]n|translation)>|$)/i);
-
-  if (translationMatch && translationMatch[1]) {
-    translated = translationMatch[1].trim();
-  } else {
-    const thinkingMatch = rawContent.match(/<\/(?:thinking|pensamiento)>([\s\S]*)/i);
-    if (thinkingMatch && thinkingMatch[1]) {
-      translated = thinkingMatch[1].trim();
-    } else if (options.useThinking) {
-      throw new Error("Fallo al extraer la traducción: El modelo no utilizó las etiquetas XML requeridas.");
-    }
-  }
-  translated = stripXmlWrapper(translated);
+  let translated = stripXmlWrapper(rawContent);
 
   const isLeaking = translated.includes("CONTEXT ABOUT THE USER") || translated.includes("CRITICAL RULES") || translated.includes("MANDATORY");
   if (isLeaking) {
