@@ -31,7 +31,7 @@ export const translate = async (
   }
 
   const isLightweight = isLightweightModel(modelId);
-  const useThinking = !isLightweight && cleanedText.length >= THINKING_CHAR_THRESHOLD;
+  const useThinking = false; // Desactivado permanentemente a petición del usuario para máxima velocidad
 
   const systemPrompt = buildSystemPrompt(targetLang, sourceLang, modelId, useThinking, cleanedText);
   const sourceName = getLanguageName(sourceLang);
