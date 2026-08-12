@@ -38,7 +38,7 @@ export const translate = async (
   const sourceName = getLanguageName(sourceLang);
   const targetName = getLanguageName(targetLang);
 
-  const userPrompt = `Interpret the following text from ${sourceName} to ${targetName}. Apply first-person interpreting rules. Output ONLY the final raw interpreted text. DO NOT output any reasoning, chain of thought, or thinking process. Do not wrap it in any tags or conversational filler.\n\nText to interpret:\n${cleanedText}`;
+  const userPrompt = `Interpret the following text from ${sourceName} to ${targetName}. Apply first-person interpreting rules. If you need to reason or think step-by-step, you MUST wrap your reasoning entirely inside <thinking>...</thinking> tags. Your final raw interpreted text MUST be wrapped strictly inside <translation>...</translation> tags.\n\nText to interpret:\n${cleanedText}`;
 
   // Build memory pairs from recent translations for consistency
   const memoryMessages = translationMemory.buildMemoryMessages(sourceLang, targetLang, cleanedText);

@@ -31,7 +31,20 @@ export const isTrivialText = (text: string, sourceLang?: string, targetLang?: st
 };
 
 export const stripXmlWrapper = (text: string): string => {
-  return text
-    .replace(/<\/?(source_text|thinking|pensamiento|interpretation|interpretaci[óo]n|translation|traducci[óo]n|execution_instructions|response|output|result|answer)[^>]*>/gi, "")
+  // 1. Try to extract content specifically from inside translation/output tags
+  const extractRegex = /<(?:translation|traduccion|interpretacion|output|result|final_translation)>([\s\S]*?)(?:<\/(?:translation|traduccion|interpretacion|output|result|final_translation)>|$)/i;
+  const match = text.match(extractRegex);
+  
+  if (match) {
+    // If we found the target tag, return only its content (hiding any reasoning outside it)
+    return match[1].replace(/^\s*\n/, "");
+  }
+
+  // 2. Fallback: if no translation tag is found, strip out thinking tags and return what's left
+  // (In case the model outputs <thinking>...</thinking> but glitched and didn't use <translation>)
+  const withoutThinking = text.replace(/<thinking>[\s\S]*?(?:<\/thinking>|$)/gi, "");
+  
+  return withoutThinking
+    .replace(/<\/?(source_text|pensamiento|interpretation|interpretaci[óo]n|translation|traducci[óo]n|execution_instructions|response|output|result|answer)[^>]*>/gi, "")
     .replace(/^\s*\n/, "");
 };
