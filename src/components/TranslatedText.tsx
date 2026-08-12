@@ -9,7 +9,8 @@ const TranslatedText = () => {
     isTranslating,
     copyHandler,
     copied,
-    displayedText
+    displayedText,
+    isStale
   } = useTranslatedTextLogic();
 
   return (
@@ -34,7 +35,7 @@ const TranslatedText = () => {
           <span className="text-xs tracking-wide text-[#9ca3af] dark:text-slate-400">Translating...</span>
         </div>
       ) : (
-        <div className="p-4 pb-14 overflow-auto max-h-[75vh] blue-scrollbar h-full whitespace-pre-wrap">
+        <div className={`p-4 pb-14 overflow-auto max-h-[75vh] blue-scrollbar h-full whitespace-pre-wrap transition-opacity duration-300 ${isStale ? "opacity-50" : "opacity-100"}`}>
           {translatedText.join("\n")}
         </div>
       )}

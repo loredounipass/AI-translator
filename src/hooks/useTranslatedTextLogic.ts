@@ -17,7 +17,7 @@ import React from "react";
 const cleanText = (rawText: string) => {
   if (!rawText) return "";
   
-  return rawText.replace(/<\/?[a-z]*\s*$/i, "").trimStart();
+  return rawText.replace(/<\/?[a-z]*\s*$/i, "");
 };
 
 
@@ -51,8 +51,11 @@ export const useTranslatedTextLogic = () => {
   const historyLoadedRef = React.useRef(false);
   const prevModelKeyRef = React.useRef(modelId);
   const prevProviderRef = React.useRef(apiProvider);
+  const apiProviderRef = React.useRef(apiProvider);
+  apiProviderRef.current = apiProvider;
   const prevSlRef = React.useRef(sl);
   const prevTlRef = React.useRef(tl);
+  const [isStale, setIsStale] = React.useState(false);
 
 
 
@@ -111,12 +114,17 @@ export const useTranslatedTextLogic = () => {
       const translated = await translate(targetLang, sourceLang, value, mId, {
         signal: abortControllerRef.current.signal,
         apiKey: apiKeyRef.current || undefined,
-        provider: apiProvider,
+        provider: apiProviderRef.current,
         bypassCache,
         onData: (text) => {
           const cleaned = cleanText(text);
           if (cleaned) {
-            setTranslatedText([cleaned]);
+            window.requestAnimationFrame(() => {
+              if (currentRequestId === requestIdRef.current) {
+                setTranslatedText([cleaned]);
+                setIsStale(false);
+              }
+            });
           }
         },
       });
@@ -129,8 +137,8 @@ export const useTranslatedTextLogic = () => {
           const key = `${value.trim()}|${sourceLang}|${targetLang}`;
           if (lastSavedKeyRef.current === key) return;
           lastSavedKeyRef.current = key;
-          window.setTimeout(() => {
-            historyService.add(userRef.current!.id, value.trim(), cleaned, sourceLang, targetLang);
+          window.setTimeout(async () => {
+            await historyService.add(userRef.current!.id, value.trim(), cleaned, sourceLang, targetLang);
             window.dispatchEvent(new Event("historyUpdated"));
           }, 0);
         }
@@ -145,9 +153,10 @@ export const useTranslatedTextLogic = () => {
     } finally {
       if (currentRequestId === requestIdRef.current) {
         setIsTranslating(false);
+        setIsStale(false);
       }
     }
-  }, [setTranslatedText, apiKey, apiProvider]);
+  }, [setTranslatedText]);
 
   const [copied, setCopied] = React.useState(false);
   const copyTimeoutRef = React.useRef<number | null>(null);
@@ -217,7 +226,11 @@ export const useTranslatedTextLogic = () => {
         abortControllerRef.current.abort();
         abortControllerRef.current = null;
       }
-      setTranslatedText([]);
+      if (translatedText.length > 0) {
+        setIsStale(true);
+      } else {
+        setTranslatedText([]);
+      }
       setIsTranslating(false);
     }
 
@@ -227,6 +240,7 @@ export const useTranslatedTextLogic = () => {
         abortControllerRef.current.abort();
       }
       setTranslatedText([]);
+      setIsStale(false);
       setIsTranslating(false);
       return;
     }
@@ -239,6 +253,7 @@ export const useTranslatedTextLogic = () => {
         showAuthRequiredNotification();
       }
       setTranslatedText([]);
+      setIsStale(false);
       return;
     }
 
@@ -254,6 +269,7 @@ export const useTranslatedTextLogic = () => {
         showApiKeyRequiredNotification();
       }
       setTranslatedText([]);
+      setIsStale(false);
       return;
     }
 
@@ -341,6 +357,7 @@ export const useTranslatedTextLogic = () => {
     isTranslating,
     copyHandler,
     copied,
-    displayedText
+    displayedText,
+    isStale
   };
 };

@@ -175,11 +175,12 @@ export const useTranslationTextFieldLogic = () => {
   const setTextParam = React.useCallback((value: string | ((prev: string) => string)) => {
     setText((prevText) => {
       const nextValue = typeof value === "function" ? value(prevText) : value;
-      const trimmedValue = nextValue.trim() === "" ? "" : nextValue;
+      const isOnlyWhitespace = nextValue.length > 0 && nextValue.trim() === "";
+      const finalValue = isOnlyWhitespace ? "" : nextValue;
       
-      const truncatedValue = trimmedValue.length > MAX_URL_TEXT_LENGTH
-        ? trimmedValue.slice(0, MAX_URL_TEXT_LENGTH)
-        : trimmedValue;
+      const truncatedValue = finalValue.length > MAX_URL_TEXT_LENGTH
+        ? finalValue.slice(0, MAX_URL_TEXT_LENGTH)
+        : finalValue;
 
       setURLSearchParams((params) => {
         if (truncatedValue === "") {
@@ -190,15 +191,17 @@ export const useTranslationTextFieldLogic = () => {
         return params;
       }, { replace: true });
       
-      return trimmedValue;
+      return truncatedValue;
     });
   }, [setURLSearchParams, MAX_URL_TEXT_LENGTH]);
   setTextParamRef.current = setTextParam;
 
   React.useEffect(() => {
     if (manualEditRef.current) return;
-    if (urlTextParam !== text) {
+    if (urlTextParam !== text && urlTextParam.trim() !== text.trim()) {
       setText(urlTextParam);
+    } else if (urlTextParam === "" && text !== "") {
+      setText(""); // handle clear properly
     }
   }, [urlTextParam, text]);
 
