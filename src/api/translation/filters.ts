@@ -41,10 +41,10 @@ export const stripXmlWrapper = (text: string): string => {
   }
 
   // 2. Fallback: if no translation tag is found, strip out thinking tags and return what's left
-  // (In case the model outputs <thinking>...</thinking> but glitched and didn't use <translation>)
-  const withoutThinking = text.replace(/<thinking>[\s\S]*?(?:<\/thinking>|$)/gi, "");
+  // (In case the model outputs <thinking>...</thinking> or <think>...</think> but glitched and didn't use <translation>)
+  const withoutThinking = text.replace(/<(?:thinking|think)>[\s\S]*?(?:<\/(?:thinking|think)>|$)/gi, "");
   
   return withoutThinking
-    .replace(/<\/?(source_text|pensamiento|interpretation|interpretaci[óo]n|translation|traducci[óo]n|execution_instructions|response|output|result|answer)[^>]*>/gi, "")
+    .replace(/<\/?(source_text|pensamiento|think|thinking|interpretation|interpretaci[óo]n|translation|traducci[óo]n|execution_instructions|response|output|result|answer)[^>]*>/gi, "")
     .replace(/^\s*\n/, "");
 };
