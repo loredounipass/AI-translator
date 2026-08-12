@@ -27,6 +27,16 @@ export const AI_MODELS: Record<string, AIModel> = {
     apiProvider: "nvidia",
     free: true,
   },
+
+  "nvidia-muse-glimmer-30b": {
+    id: "nvidia/muse-glimmer-30b",
+    name: "Muse Glimmer 30B",
+    provider: "NVIDIA",
+    apiProvider: "nvidia",
+    free: true,
+  },
+
+
   "nvidia-nemotron": {
     id: "nvidia/nemotron-3-nano-30b-a3b",
     name: "Nemotron 3 Nano 30B (3B active)",
