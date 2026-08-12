@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { useSearchParams } from "react-router-dom";
 import { useAuth } from "contexts/AuthContext";
 import { historyService } from "utils/historyService";
@@ -21,7 +21,7 @@ const HistoryPanel = ({ isOpen, onClose }: HistoryPanelProps) => {
   const [searchParams, setSearchParams] = useSearchParams();
   const { user } = useAuth();
 
-  const historyLoadedRef = React.useRef(false);
+  const historyLoadedRef = useRef(false);
 
   const loadHistory = useCallback(async (force = false) => {
     if (!user) {
