@@ -178,45 +178,67 @@ body {
    ANT DESIGN SELECT OVERRIDES (Glass-enhanced)
    ═══════════════════════════════════════════════════════════════ */
 
+/* ── Language Bar Selects (Glass) ── */
 .lang-select .ant-select-selector {
-  background: rgba(255, 255, 255, 0.35) !important;
-  backdrop-filter: blur(12px) saturate(160%) !important;
-  -webkit-backdrop-filter: blur(12px) saturate(160%) !important;
-  border: 1px solid rgba(226, 232, 240, 0.5) !important;
-  border-radius: 10px !important;
-  box-shadow: 0 1px 2px rgba(0,0,0,0.03) !important;
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.65), rgba(255, 255, 255, 0.35)) !important;
+  backdrop-filter: blur(24px) saturate(180%) !important;
+  -webkit-backdrop-filter: blur(24px) saturate(180%) !important;
+  border: 1px solid rgba(255, 255, 255, 0.7) !important;
+  border-radius: 12px !important;
+  box-shadow:
+    0 2px 8px rgba(0, 0, 0, 0.04),
+    0 1px 2px rgba(0, 0, 0, 0.03),
+    inset 0 1px 0 rgba(255, 255, 255, 0.9),
+    inset 1px 0 0 rgba(255, 255, 255, 0.4) !important;
   color: #000000 !important;
   font-size: 16px !important;
   padding: 10px 14px !important;
   height: auto !important;
-  transition: all 0.15s ease !important;
+  transition: all 0.2s ease !important;
 }
 
 .lang-select:hover .ant-select-selector {
-  border-color: rgba(203, 213, 225, 0.7) !important;
-  background: rgba(241, 245, 249, 0.45) !important;
+  border-color: rgba(96, 165, 250, 0.5) !important;
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.75), rgba(255, 255, 255, 0.45)) !important;
+  box-shadow:
+    0 4px 12px rgba(59, 130, 246, 0.08),
+    0 1px 3px rgba(0, 0, 0, 0.04),
+    inset 0 1px 0 rgba(255, 255, 255, 0.95),
+    inset 1px 0 0 rgba(255, 255, 255, 0.5) !important;
 }
 
 .lang-select.ant-select-focused .ant-select-selector {
   border-color: #2196F3 !important;
-  box-shadow: 0 0 0 2px rgba(33,150,243,0.1) !important;
+  box-shadow:
+    0 0 0 3px rgba(33, 150, 243, 0.12),
+    0 2px 8px rgba(33, 150, 243, 0.1),
+    inset 0 1px 0 rgba(255, 255, 255, 0.9) !important;
 }
 
 .dark .lang-select .ant-select-selector {
-  background: rgba(22, 27, 34, 0.7) !important;
-  border-color: #30363d !important;
-  color: #e2e8f0 !important; /* slate-200 */
-  box-shadow: 0 1px 2px rgba(0,0,0,0.1) !important;
+  background: linear-gradient(135deg, rgba(22, 27, 34, 0.8), rgba(13, 17, 23, 0.6)) !important;
+  border-color: rgba(48, 54, 61, 0.9) !important;
+  color: #e2e8f0 !important;
+  box-shadow:
+    0 2px 8px rgba(0, 0, 0, 0.2),
+    inset 0 1px 0 rgba(255, 255, 255, 0.08),
+    inset 1px 0 0 rgba(255, 255, 255, 0.03) !important;
 }
 
 .dark .lang-select:hover .ant-select-selector {
-  border-color: rgba(110, 119, 129, 0.6) !important;
-  background: rgba(255, 255, 255, 0.06) !important;
+  border-color: rgba(96, 165, 250, 0.45) !important;
+  background: linear-gradient(135deg, rgba(22, 27, 34, 0.9), rgba(13, 17, 23, 0.7)) !important;
+  box-shadow:
+    0 4px 12px rgba(0, 0, 0, 0.25),
+    inset 0 1px 0 rgba(255, 255, 255, 0.1),
+    inset 1px 0 0 rgba(255, 255, 255, 0.04) !important;
 }
 
 .dark .lang-select.ant-select-focused .ant-select-selector {
   border-color: #60a5fa !important;
-  box-shadow: 0 0 0 2px rgba(96,165,250,0.15) !important;
+  box-shadow:
+    0 0 0 3px rgba(96, 165, 250, 0.15),
+    inset 0 1px 0 rgba(255, 255, 255, 0.08) !important;
 }
 
 .lang-select .ant-select-selection-item {
@@ -230,7 +252,7 @@ body {
 }
 
 .dark .lang-select .ant-select-arrow {
-  color: #94a3b8 !important; /* slate-400 */
+  color: #94a3b8 !important;
 }
 
 @media (max-width: 480px) {
@@ -240,89 +262,116 @@ body {
   }
 }
 
+/* ── Region / Jerga Select (Glass) ── */
 .region-select .ant-select-selector {
-  background: linear-gradient(135deg, rgba(255, 255, 255, 0.55), rgba(255, 255, 255, 0.3)) !important;
-  backdrop-filter: blur(16px) saturate(180%) !important;
-  -webkit-backdrop-filter: blur(16px) saturate(180%) !important;
-  border: 1px solid rgba(255, 255, 255, 0.7) !important;
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.6), rgba(255, 255, 255, 0.32)) !important;
+  backdrop-filter: blur(20px) saturate(180%) !important;
+  -webkit-backdrop-filter: blur(20px) saturate(180%) !important;
+  border: 1px solid rgba(255, 255, 255, 0.72) !important;
   border-radius: 10px !important;
-  box-shadow: 0 1px 3px rgba(0,0,0,0.06), inset 0 1px 0 rgba(255, 255, 255, 0.8) !important;
+  box-shadow:
+    0 2px 6px rgba(0, 0, 0, 0.05),
+    inset 0 1px 0 rgba(255, 255, 255, 0.85),
+    inset 1px 0 0 rgba(255, 255, 255, 0.35) !important;
   color: #334155 !important;
   font-size: 12px !important;
   padding: 3px 6px !important;
   height: auto !important;
-  transition: all 0.15s ease !important;
+  transition: all 0.2s ease !important;
 }
 
 .region-select:hover .ant-select-selector {
-  border-color: rgba(96, 165, 250, 0.6) !important;
-  background: linear-gradient(135deg, rgba(255, 255, 255, 0.7), rgba(255, 255, 255, 0.4)) !important;
-  box-shadow: 0 1px 4px rgba(59, 130, 246, 0.15), inset 0 1px 0 rgba(255, 255, 255, 0.9) !important;
+  border-color: rgba(96, 165, 250, 0.55) !important;
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.72), rgba(255, 255, 255, 0.42)) !important;
+  box-shadow:
+    0 3px 10px rgba(59, 130, 246, 0.1),
+    inset 0 1px 0 rgba(255, 255, 255, 0.92),
+    inset 1px 0 0 rgba(255, 255, 255, 0.4) !important;
 }
 
 .region-select.ant-select-focused .ant-select-selector {
   border-color: #2196F3 !important;
-  box-shadow: 0 0 0 3px rgba(33, 150, 243, 0.15), inset 0 1px 0 rgba(255, 255, 255, 0.9) !important;
+  box-shadow:
+    0 0 0 3px rgba(33, 150, 243, 0.12),
+    inset 0 1px 0 rgba(255, 255, 255, 0.9) !important;
 }
 
 .dark .region-select .ant-select-selector {
-  background: linear-gradient(135deg, rgba(22, 27, 34, 0.85), rgba(22, 27, 34, 0.6)) !important;
+  background: linear-gradient(135deg, rgba(22, 27, 34, 0.82), rgba(13, 17, 23, 0.6)) !important;
   border-color: rgba(48, 54, 61, 0.9) !important;
   color: #cbd5e1 !important;
-  box-shadow: 0 1px 3px rgba(0,0,0,0.2), inset 0 1px 0 rgba(255, 255, 255, 0.06) !important;
+  box-shadow:
+    0 2px 6px rgba(0, 0, 0, 0.2),
+    inset 0 1px 0 rgba(255, 255, 255, 0.07),
+    inset 1px 0 0 rgba(255, 255, 255, 0.03) !important;
 }
 
 .dark .region-select:hover .ant-select-selector {
-  border-color: rgba(96, 165, 250, 0.5) !important;
-  background: linear-gradient(135deg, rgba(22, 27, 34, 0.95), rgba(22, 27, 34, 0.7)) !important;
+  border-color: rgba(96, 165, 250, 0.45) !important;
+  background: linear-gradient(135deg, rgba(22, 27, 34, 0.92), rgba(13, 17, 23, 0.7)) !important;
 }
 
 .dark .region-select.ant-select-focused .ant-select-selector {
   border-color: #60a5fa !important;
-  box-shadow: 0 0 0 3px rgba(96, 165, 250, 0.2), inset 0 1px 0 rgba(255, 255, 255, 0.06) !important;
+  box-shadow:
+    0 0 0 3px rgba(96, 165, 250, 0.18),
+    inset 0 1px 0 rgba(255, 255, 255, 0.08) !important;
 }
 
-/* ── AI STT Model Select (Glass-enhanced) ── */
+/* ── AI STT / Transcription Model Select (Glass) ── */
 .stt-select .ant-select-selector {
-  background: linear-gradient(135deg, rgba(255, 255, 255, 0.55), rgba(255, 255, 255, 0.3)) !important;
-  backdrop-filter: blur(16px) saturate(180%) !important;
-  -webkit-backdrop-filter: blur(16px) saturate(180%) !important;
-  border: 1px solid rgba(255, 255, 255, 0.7) !important;
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.6), rgba(255, 255, 255, 0.32)) !important;
+  backdrop-filter: blur(20px) saturate(180%) !important;
+  -webkit-backdrop-filter: blur(20px) saturate(180%) !important;
+  border: 1px solid rgba(255, 255, 255, 0.72) !important;
   border-radius: 10px !important;
-  box-shadow: 0 1px 3px rgba(0,0,0,0.06), inset 0 1px 0 rgba(255, 255, 255, 0.8) !important;
+  box-shadow:
+    0 2px 6px rgba(0, 0, 0, 0.05),
+    inset 0 1px 0 rgba(255, 255, 255, 0.85),
+    inset 1px 0 0 rgba(255, 255, 255, 0.35) !important;
   color: #334155 !important;
   font-size: 12px !important;
   padding: 2px 6px !important;
   height: auto !important;
-  transition: all 0.15s ease !important;
+  transition: all 0.2s ease !important;
 }
 
 .stt-select:hover .ant-select-selector {
-  border-color: rgba(96, 165, 250, 0.6) !important;
-  background: linear-gradient(135deg, rgba(255, 255, 255, 0.7), rgba(255, 255, 255, 0.4)) !important;
-  box-shadow: 0 1px 4px rgba(59, 130, 246, 0.15), inset 0 1px 0 rgba(255, 255, 255, 0.9) !important;
+  border-color: rgba(96, 165, 250, 0.55) !important;
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.72), rgba(255, 255, 255, 0.42)) !important;
+  box-shadow:
+    0 3px 10px rgba(59, 130, 246, 0.1),
+    inset 0 1px 0 rgba(255, 255, 255, 0.92),
+    inset 1px 0 0 rgba(255, 255, 255, 0.4) !important;
 }
 
 .stt-select.ant-select-focused .ant-select-selector {
   border-color: #2196F3 !important;
-  box-shadow: 0 0 0 3px rgba(33, 150, 243, 0.15), inset 0 1px 0 rgba(255, 255, 255, 0.9) !important;
+  box-shadow:
+    0 0 0 3px rgba(33, 150, 243, 0.12),
+    inset 0 1px 0 rgba(255, 255, 255, 0.9) !important;
 }
 
 .dark .stt-select .ant-select-selector {
-  background: linear-gradient(135deg, rgba(22, 27, 34, 0.85), rgba(22, 27, 34, 0.6)) !important;
+  background: linear-gradient(135deg, rgba(22, 27, 34, 0.82), rgba(13, 17, 23, 0.6)) !important;
   border-color: rgba(48, 54, 61, 0.9) !important;
   color: #cbd5e1 !important;
-  box-shadow: 0 1px 3px rgba(0,0,0,0.2), inset 0 1px 0 rgba(255, 255, 255, 0.06) !important;
+  box-shadow:
+    0 2px 6px rgba(0, 0, 0, 0.2),
+    inset 0 1px 0 rgba(255, 255, 255, 0.07),
+    inset 1px 0 0 rgba(255, 255, 255, 0.03) !important;
 }
 
 .dark .stt-select:hover .ant-select-selector {
-  border-color: rgba(96, 165, 250, 0.5) !important;
-  background: linear-gradient(135deg, rgba(22, 27, 34, 0.95), rgba(22, 27, 34, 0.7)) !important;
+  border-color: rgba(96, 165, 250, 0.45) !important;
+  background: linear-gradient(135deg, rgba(22, 27, 34, 0.92), rgba(13, 17, 23, 0.7)) !important;
 }
 
 .dark .stt-select.ant-select-focused .ant-select-selector {
   border-color: #60a5fa !important;
-  box-shadow: 0 0 0 3px rgba(96, 165, 250, 0.2), inset 0 1px 0 rgba(255, 255, 255, 0.06) !important;
+  box-shadow:
+    0 0 0 3px rgba(96, 165, 250, 0.18),
+    inset 0 1px 0 rgba(255, 255, 255, 0.08) !important;
 }
 
 .stt-select .ant-select-selection-item {
