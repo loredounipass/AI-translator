@@ -6,12 +6,14 @@ import { executeStandardRequest, StandardRequestOptions } from "./standard";
 export interface TranslationExecutorOptions {
   modelId: string;
   messages: any[];
-  temperature: number;
+  temperature: number | null;
+  topP?: number | null;
   apiKey?: string;
   provider?: string;
   signal?: AbortSignal;
   onData?: (text: string) => void;
   textLength?: number;
+  maxOutputTokensCap?: number;
 }
 
 export const executeTranslationRequest = async (options: TranslationExecutorOptions): Promise<string> => {

@@ -5,11 +5,13 @@ import { stripXmlWrapper } from "./filters";
 export interface StandardRequestOptions {
   modelId: string;
   messages: any[];
-  temperature: number;
+  temperature: number | null;
+  topP?: number | null;
   apiKey?: string;
   provider?: string;
   signal?: AbortSignal;
   textLength?: number;
+  maxOutputTokensCap?: number;
 }
 
 export const executeStandardRequest = async (options: StandardRequestOptions): Promise<string> => {
@@ -18,12 +20,22 @@ export const executeStandardRequest = async (options: StandardRequestOptions): P
   const requestBody: any = {
     model: options.modelId,
     messages: options.messages,
-    temperature: options.temperature,
-    max_tokens: getAdaptiveMaxTokens(textLen),
+    max_tokens: getAdaptiveMaxTokens(textLen, options.maxOutputTokensCap),
     stream: false,
     apiKey: options.apiKey,
     provider: options.provider,
   };
+
+  // Conditionally include temperature (null = omit, e.g. Gemini 3.x deprecated)
+  if (options.temperature !== null && options.temperature !== undefined) {
+    requestBody.temperature = options.temperature;
+  }
+
+  // Conditionally include top_p (null = omit, e.g. Anthropic, Gemini)
+  if (options.topP !== null && options.topP !== undefined) {
+    requestBody.top_p = options.topP;
+  }
+
 
   if (options.provider === "anthropic") {
     const sysMsg = requestBody.messages.find((m: any) => m.role === "system");

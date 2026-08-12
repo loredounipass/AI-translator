@@ -4,6 +4,18 @@ import { buildSystemPrompt } from "./translation/prompts";
 import { isTrivialText } from "./translation/filters";
 import { executeTranslationRequest } from "./translation/executor";
 import { translationMemory } from "./translation/translationMemory";
+import { AI_MODELS } from "../utils/constants";
+
+
+// Resolve model-specific config from AI_MODELS by matching the modelId
+const resolveModelConfig = (modelId: string) => {
+  const entry = Object.values(AI_MODELS).find((m) => m.id === modelId);
+  return {
+    temperature: entry?.temperature ?? 0.1,
+    topP: entry?.topP ?? undefined,
+    maxOutputTokensCap: entry?.maxOutputTokensCap,
+  };
+};
 
 
 // TRADUCIR TEXTO INDIVIDUAL MEDIANTE MODELOS DE IA
@@ -49,17 +61,20 @@ export const translate = async (
     { role: "user", content: userPrompt },
   ];
 
-  const dynamicTemperature = cleanedText.length < 15 ? 0.0 : 0.1;
+  // Resolve per-model optimal parameters from documentation-based config
+  const modelConfig = resolveModelConfig(modelId);
 
   const translated = await executeTranslationRequest({
     modelId,
     messages,
-    temperature: dynamicTemperature,
+    temperature: modelConfig.temperature,
+    topP: modelConfig.topP,
     apiKey: options?.apiKey,
     provider: options?.provider,
     signal: options?.signal,
     onData: options?.onData,
     textLength: cleanedText.length,
+    maxOutputTokensCap: modelConfig.maxOutputTokensCap,
   });
 
   translationCache.set(cacheKey, translated);

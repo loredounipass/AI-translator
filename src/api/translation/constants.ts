@@ -19,12 +19,17 @@ export const getAdaptiveTimeout = (textLength: number): number => {
 /**
  * Calculate adaptive max_tokens based on the length of the source text.
  * Short inputs need fewer output tokens; long inputs may need up to 4096.
+ * An optional cap limits output for models with small context windows.
  */
-export const getAdaptiveMaxTokens = (textLength: number): number => {
-  if (textLength > 4000) return 4096;
-  if (textLength > 1000) return 3072;
-  return 2048; // Aumentado para dar espacio suficiente a los modelos de razonamiento (Chain of Thought)
+export const getAdaptiveMaxTokens = (textLength: number, maxOutputTokensCap?: number): number => {
+  let tokens: number;
+  if (textLength > 4000) tokens = 4096;
+  else if (textLength > 1000) tokens = 3072;
+  else tokens = 2048; // Aumentado para dar espacio suficiente a los modelos de razonamiento (Chain of Thought)
+
+  return maxOutputTokensCap ? Math.min(tokens, maxOutputTokensCap) : tokens;
 };
+
 
 export const LANGUAGE_NAMES: Record<string, string> = {
   ar: "Arabic",
