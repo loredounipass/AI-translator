@@ -22,9 +22,8 @@ export const getAdaptiveTimeout = (textLength: number): number => {
  */
 export const getAdaptiveMaxTokens = (textLength: number): number => {
   if (textLength > 4000) return 4096;
-  if (textLength > 1000) return 2048;
-  if (textLength > 200) return 1024;
-  return 512;
+  if (textLength > 1000) return 3072;
+  return 2048; // Aumentado para dar espacio suficiente a los modelos de razonamiento (Chain of Thought)
 };
 
 export const LANGUAGE_NAMES: Record<string, string> = {
