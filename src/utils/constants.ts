@@ -41,26 +41,12 @@ export const AI_MODELS: Record<string, AIModel> = {
     apiProvider: "nvidia",
     free: true,
   },
-  "nvidia-deepseek-r1": {
-    id: "deepseek-ai/deepseek-r1",
-    name: "DeepSeek R1",
+  "nvidia-deepseek-v4-flash": {
+    id: "deepseek-ai/deepseek-v4-flash",
+    name: "DeepSeek V4 Flash",
     provider: "NVIDIA",
     apiProvider: "nvidia",
     free: false,
-  },
-  "nvidia-deepseek-r1-llama-8b": {
-    id: "deepseek-ai/deepseek-r1-distill-llama-8b",
-    name: "DeepSeek R1 (Llama 8B)",
-    provider: "NVIDIA",
-    apiProvider: "nvidia",
-    free: true,
-  },
-  "nvidia-deepseek-r1-qwen-32b": {
-    id: "deepseek-ai/deepseek-r1-distill-qwen-32b",
-    name: "DeepSeek R1 (Qwen 32B)",
-    provider: "NVIDIA",
-    apiProvider: "nvidia",
-    free: true,
   },
   "nvidia-gpt-oss": {
     id: "openai/gpt-oss-20b",
