@@ -5,6 +5,7 @@ import { historyService } from "utils/historyService";
 import type { HistoryItem } from "utils/historyService";
 import { translationMemory } from "api/translation/translationMemory";
 import { clearTranslationCache, removeFromCacheByPair } from "api/translation/cache";
+import { showHistoryLimitNotification } from "./AppNotifications";
 import AddInterpretationModal from "./AddInterpretationModal";
 
 interface HistoryPanelProps {
@@ -20,24 +21,42 @@ const HistoryPanel = ({ isOpen, onClose }: HistoryPanelProps) => {
   const [searchParams, setSearchParams] = useSearchParams();
   const { user } = useAuth();
 
-  const loadHistory = useCallback(async () => {
+  const historyLoadedRef = React.useRef(false);
+
+  const loadHistory = useCallback(async (force = false) => {
     if (!user) {
       setHistory([]);
       return;
     }
+    // Si no estamos forzando (force=false), ya cargamos, y hay historial, evitamos el refetch.
+    if (!force && historyLoadedRef.current) return;
+    
     const data = await historyService.getAll(user.id);
+    
+    // Check limit
+    if (data.length >= 100) {
+      showHistoryLimitNotification();
+    }
+    
     setHistory(data);
+    historyLoadedRef.current = true;
   }, [user]);
 
   useEffect(() => {
-    if (isOpen) loadHistory();
+    if (isOpen) loadHistory(false);
   }, [isOpen, loadHistory]);
 
   useEffect(() => {
-    if (!user) return;
-    loadHistory();
-    window.addEventListener("historyUpdated", loadHistory);
-    return () => window.removeEventListener("historyUpdated", loadHistory);
+    if (!user) {
+      historyLoadedRef.current = false;
+      return;
+    }
+    // Only load if it's not already loaded
+    loadHistory(false);
+    
+    const handleHistoryUpdate = () => loadHistory(true); // Force refetch on update
+    window.addEventListener("historyUpdated", handleHistoryUpdate);
+    return () => window.removeEventListener("historyUpdated", handleHistoryUpdate);
   }, [user, loadHistory]);
 
   const clearHistory = async () => {
@@ -45,6 +64,7 @@ const HistoryPanel = ({ isOpen, onClose }: HistoryPanelProps) => {
     await historyService.clearAll(user.id);
     setHistory([]);
     setShowClearConfirm(false);
+    historyLoadedRef.current = false; // Reset ref
 
     // Fresh start: clear all in-memory translation layers
     translationMemory.clear();
@@ -107,7 +127,7 @@ const HistoryPanel = ({ isOpen, onClose }: HistoryPanelProps) => {
   };
 
   const handleInterpretationAdded = () => {
-    loadHistory();
+    loadHistory(true);
     // Dispatch event to notify other components
     window.dispatchEvent(new Event("historyUpdated"));
   };

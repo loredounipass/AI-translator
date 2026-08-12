@@ -17,7 +17,8 @@ export const historyService = {
             .from("translation_history")
             .select("*")
             .eq("user_id", userId)
-            .order("created_at", { ascending: false });
+            .order("created_at", { ascending: false })
+            .limit(100);
 
         if (error) {
             console.error("Error fetching history");

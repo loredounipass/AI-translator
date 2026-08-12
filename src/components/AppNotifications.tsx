@@ -57,6 +57,59 @@ export const showAuthRequiredNotification = () => {
 };
 
 
+// SHOW HISTORY LIMIT NOTIFICATION
+export const showHistoryLimitNotification = () => {
+  notification.open({
+    message: (
+      <span style={{ fontWeight: 700, fontSize: 14, color: "#1e293b" }}>
+        History Limit Reached
+      </span>
+    ),
+    description: (
+      <span style={{ fontSize: 13, color: "#64748b", lineHeight: 1.5 }}>
+        You have reached the maximum limit of 100 translation pairs. You must clear your history.
+      </span>
+    ),
+    icon: (
+      <div
+        style={{
+          width: 36,
+          height: 36,
+          borderRadius: 10,
+          background: "linear-gradient(135deg, #ef4444, #b91c1c)",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          flexShrink: 0,
+        }}
+      >
+        <svg
+          width="18"
+          height="18"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="#fff"
+          strokeWidth="2.2"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+        >
+          <path d="M3 6h18M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a2 2 0 012-2h4a2 2 0 012 2v2" />
+        </svg>
+      </div>
+    ),
+    placement: "topRight",
+    duration: 5,
+    style: {
+      borderRadius: 14,
+      boxShadow:
+        "0 8px 32px rgba(239,68,68,0.18), 0 2px 8px rgba(0,0,0,0.08)",
+      border: "1px solid #fee2e2",
+      padding: "14px 18px",
+    },
+  });
+};
+
+
 // SHOW API KEY REQUIRED NOTIFICATION
 export const showApiKeyRequiredNotification = () => {
   notification.open({
