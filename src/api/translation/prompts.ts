@@ -4,7 +4,7 @@ import { getLanguageName } from "./constants";
 // IDENTIFICA SI EL MODELO ES LIVIANO
 export const isLightweightModel = (modelId: string): boolean => {
   const lowerId = modelId.toLowerCase();
-  return lowerId.includes("riva") || lowerId.includes("nemotron") || lowerId.includes("llama");
+  return lowerId.includes("riva");
 };
 
 
