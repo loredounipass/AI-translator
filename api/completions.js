@@ -8,7 +8,7 @@ module.exports = async (req, res) => {
     res.setHeader("Access-Control-Allow-Origin", origin);
   } else {
     // Explicitly deny wildcard
-    res.setHeader("Access-Control-Allow-Origin", "https://interpreter-sooty.vercel.app");
+    res.setHeader("Access-Control-Allow-Origin", "https://interpreter000-sooty.vercel.app");
   }
   res.setHeader("Access-Control-Allow-Methods", "POST, OPTIONS");
   res.setHeader("Access-Control-Allow-Headers", "Content-Type, Authorization");
