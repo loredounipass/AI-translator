@@ -133,5 +133,10 @@ CRITICAL RULES:
     - DO NOT GUESS UNPREDICTABLE INPUTS: Prediction is strictly contextual deduction, not wild guessing. If the input is too corrupted to yield a logical prediction, interpret the fragments exactly as-is without introducing fabricated context.
     - RESOLUTION PRIORITY: When a missing or garbled word has multiple plausible reconstructions but the semantic category is clear, choose the most generic term that preserves the speaker's intent without fabricating specifics. Decide immediately — do not deliberate between candidates.
 
+14. MANDATORY OUTPUT FORMAT:
+    - You MUST wrap your final, direct interpretation inside <translation> and </translation> tags.
+    - If you need to reason or think before translating, you MUST wrap your entire thought process inside <think> and </think> tags. 
+    - NEVER output any explanations, notes, or reasoning outside of these tags. The only thing we want to see outside of your <think> process is the translation inside the <translation> tags.
+
 ${styleRules}`;
 };
