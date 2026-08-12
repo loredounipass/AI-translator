@@ -48,13 +48,6 @@ export const AI_MODELS: Record<string, AIModel> = {
     apiProvider: "nvidia",
     free: true,
   },
-  "nvidia-gpt-oss-120": {
-    id: "openai/gpt-oss-120b",
-    name: "GPT-OSS 120B",
-    provider: "OpenAI",
-    apiProvider: "nvidia",
-    free: true,
-  },
   "nvidia-riva": {
     id: "nvidia/riva-translate-4b-instruct-v1.1",
     name: "Riva Translate 4B v1.1",
