@@ -1,7 +1,7 @@
 const crypto = require("crypto");
 const { cleanupRateLimiter } = require("./rateLimiter");
 
-const CACHE_TTL = 5 * 60 * 1000;
+const CACHE_TTL = 3 * 60 * 1000;
 const MAX_CACHE_SIZE = 1000;
 const cache = new Map();
 const pendingRequests = new Map();

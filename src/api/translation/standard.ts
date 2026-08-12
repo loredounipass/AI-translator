@@ -1,5 +1,5 @@
 import axios from "axios";
-import { NVIDIA_API_URL } from "./constants";
+import { NVIDIA_API_URL, getAdaptiveTimeout, getAdaptiveMaxTokens } from "./constants";
 import { stripXmlWrapper } from "./filters";
 
 export interface StandardRequestOptions {
@@ -9,14 +9,17 @@ export interface StandardRequestOptions {
   apiKey?: string;
   provider?: string;
   signal?: AbortSignal;
+  textLength?: number;
 }
 
 export const executeStandardRequest = async (options: StandardRequestOptions): Promise<string> => {
+  const textLen = options.textLength || 0;
+
   const requestBody: any = {
     model: options.modelId,
     messages: options.messages,
     temperature: options.temperature,
-    max_tokens: 1024,
+    max_tokens: getAdaptiveMaxTokens(textLen),
     stream: false,
     apiKey: options.apiKey,
     provider: options.provider,
@@ -36,6 +39,7 @@ export const executeStandardRequest = async (options: StandardRequestOptions): P
     {
       headers: { "Content-Type": "application/json" },
       signal: options.signal,
+      timeout: getAdaptiveTimeout(textLen),
     }
   );
 
@@ -53,3 +57,4 @@ export const executeStandardRequest = async (options: StandardRequestOptions): P
 
   return translated;
 };
+

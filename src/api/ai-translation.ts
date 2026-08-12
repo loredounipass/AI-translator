@@ -12,7 +12,7 @@ export const translate = async (
   sourceLang: string,
   text: string,
   modelId: string,
-  options?: { signal?: AbortSignal; onData?: (text: string) => void; apiKey?: string; provider?: string }
+  options?: { signal?: AbortSignal; onData?: (text: string) => void; apiKey?: string; provider?: string; bypassCache?: boolean }
 ): Promise<string> => {
   const cleanedText = text.trim();
   if (!cleanedText) throw new Error("El texto a traducir no puede estar vacío.");
@@ -22,12 +22,16 @@ export const translate = async (
   }
 
   const cacheKey = getCacheKey(cleanedText, targetLang, sourceLang, modelId);
-  const cached = translationCache.get(cacheKey);
-  if (cached) {
-    if (options?.onData) {
-      options.onData(cached);
+
+  // Allow callers to skip the cache (e.g. after a language or model change)
+  if (!options?.bypassCache) {
+    const cached = translationCache.get(cacheKey);
+    if (cached) {
+      if (options?.onData) {
+        options.onData(cached);
+      }
+      return cached;
     }
-    return cached;
   }
 
   const systemPrompt = buildSystemPrompt(targetLang, sourceLang, modelId, cleanedText);
@@ -55,6 +59,7 @@ export const translate = async (
     provider: options?.provider,
     signal: options?.signal,
     onData: options?.onData,
+    textLength: cleanedText.length,
   });
 
   translationCache.set(cacheKey, translated);

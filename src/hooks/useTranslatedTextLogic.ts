@@ -7,7 +7,7 @@ import { useAuth } from "contexts/AuthContext";
 import { useApiKey } from "../contexts/ApiKeyContext";
 import { historyService } from "utils/historyService";
 import { showAuthRequiredNotification, showApiKeyRequiredNotification, showErrorToast } from "components/AppNotifications";
-import { translationCache, getCacheKey } from "api/translation/cache";
+import { invalidateCacheForLanguagePair, invalidateCacheForModel } from "api/translation/cache";
 import { translationMemory } from "api/translation/translationMemory";
 import React from "react";
 
@@ -51,6 +51,8 @@ export const useTranslatedTextLogic = () => {
   const historyLoadedRef = React.useRef(false);
   const prevModelKeyRef = React.useRef(modelId);
   const prevProviderRef = React.useRef(apiProvider);
+  const prevSlRef = React.useRef(sl);
+  const prevTlRef = React.useRef(tl);
 
 
 
@@ -69,12 +71,6 @@ export const useTranslatedTextLogic = () => {
         for (let i = recent.length - 1; i >= 0; i--) {
           const item = recent[i];
           if (!item.source_text?.trim() || !item.translated_text?.trim()) continue;
-
-          // Populate LRU cache for all known models
-          const cacheKey = getCacheKey(item.source_text.trim(), item.target_lang, item.source_lang, modelId);
-          if (!translationCache.has(cacheKey)) {
-            translationCache.set(cacheKey, item.translated_text.trim());
-          }
 
           // Populate translation memory for model context
           translationMemory.add(
@@ -95,7 +91,7 @@ export const useTranslatedTextLogic = () => {
 
 
   // HANDLE TRANSLATION REQUEST AND MANAGE STREAMING RESPONSE
-  const translateHandler = React.useCallback(async (value: string, targetLang: string, sourceLang: string, mId: string) => {
+  const translateHandler = React.useCallback(async (value: string, targetLang: string, sourceLang: string, mId: string, bypassCache: boolean = false) => {
     if (!value) {
       setTranslatedText([]);
       setIsTranslating(false);
@@ -116,6 +112,7 @@ export const useTranslatedTextLogic = () => {
         signal: abortControllerRef.current.signal,
         apiKey: apiKeyRef.current || undefined,
         provider: apiProvider,
+        bypassCache,
         onData: (text) => {
           const cleaned = cleanText(text);
           if (cleaned) {
@@ -185,8 +182,8 @@ export const useTranslatedTextLogic = () => {
   // DEBOUNCE TRANSLATE HANDLER FOR PERFORMANCE
   const debouncedTranslateHandler = React.useMemo(
     () =>
-      debounce((text: string, targetLang: string, sourceLang: string, mId: string) => {
-        translateHandler(text, targetLang, sourceLang, mId);
+      debounce((text: string, targetLang: string, sourceLang: string, mId: string, bypassCache: boolean = false) => {
+        translateHandler(text, targetLang, sourceLang, mId, bypassCache);
       }, 400),
     [translateHandler]
   );
@@ -199,9 +196,21 @@ export const useTranslatedTextLogic = () => {
 
     // CLEAR PREVIOUS TRANSLATION WHEN THE MODEL OR PROVIDER CHANGES
     const modelChanged = prevModelKeyRef.current !== modelId || prevProviderRef.current !== apiProvider;
+    if (modelChanged) {
+      invalidateCacheForModel(prevModelKeyRef.current);
+    }
     prevModelKeyRef.current = modelId;
     prevProviderRef.current = apiProvider;
-    if (modelChanged) {
+
+    const langChanged = prevSlRef.current !== sl || prevTlRef.current !== tl;
+    if (langChanged) {
+      invalidateCacheForLanguagePair(prevSlRef.current, prevTlRef.current);
+      invalidateCacheForLanguagePair(sl, tl);
+    }
+    prevSlRef.current = sl;
+    prevTlRef.current = tl;
+
+    if (modelChanged || langChanged) {
       requestIdRef.current += 1;
       debouncedTranslateHandler.cancel();
       if (abortControllerRef.current) {
@@ -250,7 +259,7 @@ export const useTranslatedTextLogic = () => {
 
     apiKeyNotifiedRef.current = false;
 
-    debouncedTranslateHandler(text, tl, sl, modelId);
+    debouncedTranslateHandler(text, tl, sl, modelId, langChanged);
 
     return () => {
       debouncedTranslateHandler.cancel();

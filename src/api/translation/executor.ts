@@ -11,6 +11,7 @@ export interface TranslationExecutorOptions {
   provider?: string;
   signal?: AbortSignal;
   onData?: (text: string) => void;
+  textLength?: number;
 }
 
 export const executeTranslationRequest = async (options: TranslationExecutorOptions): Promise<string> => {
@@ -60,3 +61,4 @@ export const executeTranslationRequest = async (options: TranslationExecutorOpti
 
   throw new Error(`Error en traducción AI (after ${MAX_RETRIES} retries): ${(lastError as Error).message}`);
 };
+

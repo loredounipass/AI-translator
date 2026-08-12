@@ -33,3 +33,35 @@ export const removeFromCacheByPair = (text: string, targetLang: string, sourceLa
     }
   }
 };
+
+
+// REMOVE ALL CACHE ENTRIES THAT INVOLVE A SPECIFIC LANGUAGE PAIR (ANY TEXT, ANY MODEL)
+// Used when the user switches languages to force a fresh translation.
+export const invalidateCacheForLanguagePair = (sourceLang: string, targetLang: string): void => {
+  const langFragment = `:${sourceLang}:${targetLang}:`;
+  const cache = translationCache as unknown as {
+    keys(): string[];
+    delete(key: string): unknown;
+  };
+  for (const key of cache.keys()) {
+    if (key.includes(langFragment)) {
+      cache.delete(key);
+    }
+  }
+};
+
+
+// REMOVE ALL CACHE ENTRIES FOR A SPECIFIC MODEL (ANY LANGUAGE PAIR, ANY TEXT)
+// Used when the user switches models to avoid serving translations from a different model.
+export const invalidateCacheForModel = (modelId: string): void => {
+  const prefix = `${modelId}:`;
+  const cache = translationCache as unknown as {
+    keys(): string[];
+    delete(key: string): unknown;
+  };
+  for (const key of cache.keys()) {
+    if (key.startsWith(prefix)) {
+      cache.delete(key);
+    }
+  }
+};

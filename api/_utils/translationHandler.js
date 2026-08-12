@@ -32,6 +32,21 @@ module.exports = async (req, res, contentLength) => {
 
   const isStreaming = cleanBody.stream === true;
 
+  let textLength = 0;
+  if (cleanBody.messages && cleanBody.messages.length > 0) {
+    const lastMsg = cleanBody.messages[cleanBody.messages.length - 1];
+    textLength = lastMsg.content ? lastMsg.content.length : 0;
+  }
+  
+  let timeoutMs = 30000;
+  if (textLength > 5000) timeoutMs = 120000;
+  else if (textLength > 2000) timeoutMs = 90000;
+  else if (textLength > 500) timeoutMs = 60000;
+  
+  const clientTimeout = req.headers['x-request-timeout'];
+  if (clientTimeout && !isNaN(parseInt(clientTimeout))) {
+    timeoutMs = Math.max(timeoutMs, parseInt(clientTimeout));
+  }
   if (isStreaming) {
     const bodyStr = JSON.stringify(cleanBody);
     const headers = {
@@ -61,6 +76,7 @@ module.exports = async (req, res, contentLength) => {
     proxyReq.on("error", (err) => {
       if (!res.headersSent) res.status(502).json({ error: "Proxy stream error" });
     });
+    proxyReq.setTimeout(timeoutMs, () => { proxyReq.destroy(); });
     proxyReq.end(bodyStr);
     return;
   }
@@ -123,7 +139,7 @@ module.exports = async (req, res, contentLength) => {
       });
     });
     proxyReq.on("error", reject);
-    proxyReq.setTimeout(45000, () => { proxyReq.destroy(); reject(new Error("Translation request timed out")); });
+    proxyReq.setTimeout(timeoutMs, () => { proxyReq.destroy(); reject(new Error("Translation request timed out")); });
     proxyReq.end(bodyStr);
   });
 
