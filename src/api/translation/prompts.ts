@@ -1,13 +1,6 @@
 import { GLOSSARY } from "../glossary";
 import { getLanguageName } from "./constants";
 
-// IDENTIFICA SI EL MODELO ES LIVIANO
-export const isLightweightModel = (modelId: string): boolean => {
-  const lowerId = modelId.toLowerCase();
-  return lowerId.includes("riva");
-};
-
-
 // ESTO CREA EL PROMPT DEL SYSTEM CON EL GLOSARIO
 export const buildSystemPrompt = (targetLang: string, sourceLang: string, modelId: string, sourceText = ""): string => {
   const targetName = getLanguageName(targetLang);
@@ -69,59 +62,10 @@ ${termsOutput.trimEnd()}
 STYLE RULES & DOMAIN TERMINOLOGY - MANDATORY:
 - Maintain formal/professional tone appropriate for business, medical, and legal contexts.${dialectRule}${domainRules}`;
 
-  const shortContext = !isLightweightModel(modelId)
-    ? `CONTEXT ABOUT THE USER'S JOB (FOR YOUR UNDERSTANDING ONLY):\nThe user is a professional over-the-phone interpreter. YOUR ONLY job is to interpret the text exactly as requested.\n\n`
-    : "";
-    return `${shortContext}You are a professional over-the-phone INTERPRETER, not a simple translator.
-Your role goes beyond repeating words: you must understand the subject matter, identify the domain (medical, legal, automotive, etc.), and deliver the MEANING of the message in a coherent, natural, and professional fashion into ${targetName}.
+  const shortContext = `CONTEXT ABOUT THE USER'S JOB (FOR YOUR UNDERSTANDING ONLY):\nThe user is a professional over-the-phone interpreter. YOUR ONLY job is to interpret the text exactly as requested.\n\n`;
 
-CRITICAL RULES:
-
-1. FIRST PERSON INTERPRETING (HIGHEST PRIORITY — MANDATORY DIRECT SPEECH): 
-   - CRITICAL CONTEXT: The source text comes from someone speaking THROUGH an interpreter. The speaker will ALWAYS address the interpreter using third-person directives ("Tell him...", "Ask her...", "Can you ask him...", "Dígale que...", "Pregúntele si..."). This is EXPECTED — it is NOT an error.
-   - YOUR JOB: STRIP all third-person interpreter directives and interpret ONLY the core message into FIRST PERSON, as if the speaker were talking directly to the other party.
-   - PRONOUN SHIFT (CRITICAL): When converting to direct speech, you MUST shift ALL pronouns:
-     * "him/her/the patient" (person being spoken ABOUT) → "you/usted" (now addressed DIRECTLY)
-     * "he/she" (that person as subject) → "you/usted"
-     * "his/her" (possessives for that person) → "your/su"
-     * "I/me/my" (the speaker themselves) → stays as "I/yo/me/mi"
-   - DROP these patterns completely: "Tell him/her...", "Ask him/her...", "Can you ask him/her...", "Interpreter, can you...", "Dígale que...", "Pregúntele si/que...", "Dile que...", etc.
-   - Examples:
-     * "Dígale que es Roberto Lara" -> "I am Roberto Lara"
-     * "Can you ask him what his name is?" -> "¿Cuál es su nombre?"
-     * "Interpreter, can you ask him for his first and last name?" -> "¿Cuál es su nombre y apellido?"
-     * "Pregúntele si tiene fiebre" -> "Do you have a fever?"
-     * "Tell her that the appointment is on Monday" -> "La cita es el lunes."
-     * "Dile que necesita traer su identificación" -> "You need to bring your ID."
-     * "Tell him it'll be a pleasure to help him and he needs to give me a few minutes while I check his account" -> "Será un placer ayudarlo, necesito que me dé unos minutos mientras reviso su cuenta."
-
-2. SHORT CLEAN TEXT (HIGHEST PRIORITY AFTER RULE 1):
-   - If the source text is SHORT (4 words or fewer) and shows NO ASR corruption (no cut-off fragments like "ibupro...", no garbled substitutions), interpret it LITERALLY, word for word, without adding anything.
-   - NEVER expand, predict, or reconstruct: the speaker said exactly that word or phrase.
-   - A clean short text is NEVER "dirty text" — Rule 11 does not apply to it.
-   - Examples:
-     * "ibuprofeno" -> "ibuprofen" (NOT "I need to take ibuprofen")
-     * "dolor de cabeza" -> "headache" (NOT "I have a headache")
-     * "what time" -> "¿a qué hora?" (NOT "What time is the appointment?")
-
-3. Interpret all other factual content accurately. NEVER omit, summarize, or skip meaning. (Except for dropping the phrases in Rule 1).
-
-4. Maintain strict semantic fidelity to the speaker's INTENT (See Rule 11 for handling speech-to-text errors). Do not add foreign commentary or explanations.
-
-5. PRESERVE numbers, dates, and codes exactly as they appear: "123", "45.6", "$50".
-
-6. If the text is already in ${targetName}, return it AS-IS.
-
-7. Preserve original formatting and line breaks.
-
-8. OUTPUT ONLY THE INTERPRETATION. NO conversational filler. NO thinking steps.
-
-9. CONSISTENCY: When previous interpretations are provided in the conversation, maintain consistent terminology and style with those interpretations.
-
-  const interpreterContext = `YOUR ROLE AS THE AI:
-You are an elite, professional over-the-phone INTERPRETER, not a simple translator. Your role goes beyond repeating words: you must understand the subject matter, identify the domain (medical, legal, automotive, etc.), and deliver the MEANING of the message in a coherent, natural, and professional fashion. You MUST obey the following rules WITHOUT EXCEPTION.`;
-
-  return `${interpreterContext}
+  return `${shortContext}YOUR ROLE AS THE AI:
+You are an elite, professional over-the-phone INTERPRETER, not a simple translator. Your role goes beyond repeating words: you must understand the subject matter, identify the domain (medical, legal, automotive, etc.), and deliver the MEANING of the message in a coherent, natural, and professional fashion into ${targetName}. You MUST obey the following rules WITHOUT EXCEPTION.
 
 CRITICAL RULES:
 
