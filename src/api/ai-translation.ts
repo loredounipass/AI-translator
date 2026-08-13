@@ -1,10 +1,10 @@
 import { getLanguageName } from "./translation/constants";
 import { translationCache, getCacheKey } from "./translation/cache";
-import { buildSystemPrompt } from "./translation/prompts";
+import { buildSystemPrompt, buildSimpleTranslationSystemPrompt, buildSimpleTranslationUserPrompt } from "./translation/prompts";
 import { isTrivialText } from "./translation/filters";
 import { executeTranslationRequest } from "./translation/executor";
 import { translationMemory } from "./translation/translationMemory";
-import { AI_MODELS } from "../utils/constants";
+import { AI_MODELS, AIModel } from "../utils/constants";
 
 
 // Resolve model-specific config from AI_MODELS by matching the modelId
@@ -14,6 +14,7 @@ const resolveModelConfig = (modelId: string) => {
     temperature: entry?.temperature ?? 0.1,
     topP: entry?.topP ?? undefined,
     maxOutputTokensCap: entry?.maxOutputTokensCap,
+    modelType: entry?.modelType ?? "chat",
   };
 };
 
@@ -46,14 +47,26 @@ export const translate = async (
     }
   }
 
-  const systemPrompt = buildSystemPrompt(targetLang, sourceLang, modelId, cleanedText);
+  // Resolve per-model optimal parameters and type from documentation-based config
+  const modelConfig = resolveModelConfig(modelId);
+  const isTranslationOnly = modelConfig.modelType === "translation-only";
+
   const sourceName = getLanguageName(sourceLang);
   const targetName = getLanguageName(targetLang);
 
-  const userPrompt = `Interpret the following text from ${sourceName} to ${targetName}. Apply first-person interpreting rules. If you need to reason or think step-by-step, you MUST wrap your reasoning entirely inside <thinking>...</thinking> tags. Your final raw interpreted text MUST be wrapped strictly inside <translation>...</translation> tags.\n\nText to interpret:\n${cleanedText}`;
+  const systemPrompt = isTranslationOnly
+    ? buildSimpleTranslationSystemPrompt(sourceLang, targetLang)
+    : buildSystemPrompt(targetLang, sourceLang, modelId, cleanedText);
 
-  // Build memory pairs from recent translations for consistency
-  const memoryMessages = translationMemory.buildMemoryMessages(sourceLang, targetLang, cleanedText);
+  const userPrompt = isTranslationOnly
+    ? buildSimpleTranslationUserPrompt(cleanedText)
+    : `Interpret the following text from ${sourceName} to ${targetName}. Apply first-person interpreting rules. If you need to reason or think step-by-step, you MUST wrap your reasoning entirely inside <thinking>...</thinking> tags. Your final raw interpreted text MUST be wrapped strictly inside <translation>...</translation> tags.\n\nText to interpret:\n${cleanedText}`;
+
+  // Build memory pairs from recent translations for consistency (only for chat models)
+  // Translation-only models often get confused by complex few-shot history unless formatted perfectly.
+  const memoryMessages = isTranslationOnly
+    ? []
+    : translationMemory.buildMemoryMessages(sourceLang, targetLang, cleanedText);
 
   const messages = [
     { role: "system", content: systemPrompt },

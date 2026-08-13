@@ -1,7 +1,7 @@
 import { GLOSSARY } from "../glossary";
 import { getLanguageName } from "./constants";
 
-// ESTO CREA EL PROMPT DEL SYSTEM CON EL GLOSARIO
+// ESTO CREA EL PROMPT DEL SYSTEM CON EL GLOSARIO (PARA MODELOS DE CHAT/INSTRUCT)
 export const buildSystemPrompt = (targetLang: string, sourceLang: string, modelId: string, sourceText = ""): string => {
   const targetName = getLanguageName(targetLang);
 
@@ -139,4 +139,18 @@ CRITICAL RULES:
     - Just output the direct translation. If you must reason (only for advanced reasoning models), wrap it STRICTLY in <think>...</think> tags, but it is highly preferred that you just output the <translation> directly.
 
 ${styleRules}`;
+};
+
+// NUEVO: PROMPT DE SISTEMA PARA MODELOS DE TRADUCCIÓN PURA (EJ: RIVA)
+// Según la documentación de NVIDIA Riva, el system prompt solo necesita la etiqueta de idioma
+export const buildSimpleTranslationSystemPrompt = (sourceLang: string, targetLang: string): string => {
+  // Riva espera un formato como "en-es" o "en-es-es" en el system prompt para definir el par de idiomas.
+  // Mapeamos los códigos genéricos a los que espera Riva si es necesario, o simplemente pasamos el source-target.
+  return `${sourceLang}-${targetLang}`;
+};
+
+// NUEVO: PROMPT DE USUARIO PARA MODELOS DE TRADUCCIÓN PURA
+// Estos modelos no entienden instrucciones complejas, por lo que solo enviamos el texto a traducir.
+export const buildSimpleTranslationUserPrompt = (text: string): string => {
+  return text;
 };

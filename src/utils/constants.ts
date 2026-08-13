@@ -10,6 +10,8 @@ export interface AIModel {
   provider: string;
   apiProvider: string;
   free: boolean;
+  /** Identifies whether the model expects complex instructions or just raw text to translate */
+  modelType: "chat" | "translation-only";
   /** Sampling temperature. null = omit from request (e.g. Gemini 3.x deprecated params). */
   temperature: number | null;
   /** Nucleus sampling top_p. null = omit from request (e.g. Anthropic, Gemini). */
@@ -26,6 +28,7 @@ export const AI_MODELS: Record<string, AIModel> = {
     provider: "Meta",
     apiProvider: "nvidia",
     free: true,
+    modelType: "chat",
     temperature: 0.1,
     topP: 0.9,
   },
@@ -35,6 +38,7 @@ export const AI_MODELS: Record<string, AIModel> = {
     provider: "Meta",
     apiProvider: "nvidia",
     free: true,
+    modelType: "chat",
     temperature: 0.1,
     topP: 0.9,
   },
@@ -44,6 +48,7 @@ export const AI_MODELS: Record<string, AIModel> = {
     provider: "NVIDIA",
     apiProvider: "nvidia",
     free: true,
+    modelType: "chat",
     temperature: 0.2,
     topP: 0.9,
   },
@@ -53,6 +58,7 @@ export const AI_MODELS: Record<string, AIModel> = {
     provider: "NVIDIA",
     apiProvider: "nvidia",
     free: true,
+    modelType: "chat",
     temperature: 0.2,
     topP: 0.9,
     maxOutputTokensCap: 2048, // 4096-token context window
@@ -63,6 +69,7 @@ export const AI_MODELS: Record<string, AIModel> = {
     provider: "OpenAI",
     apiProvider: "nvidia",
     free: true,
+    modelType: "chat",
     temperature: 0.15,
     topP: 0.9,
   },
@@ -72,6 +79,7 @@ export const AI_MODELS: Record<string, AIModel> = {
     provider: "NVIDIA",
     apiProvider: "nvidia",
     free: false,
+    modelType: "translation-only",
     temperature: 0.0,
     topP: 0.9,
     maxOutputTokensCap: 1024, // Translation-specialized; 8K context
@@ -82,6 +90,7 @@ export const AI_MODELS: Record<string, AIModel> = {
     provider: "NVIDIA",
     apiProvider: "nvidia",
     free: true,
+    modelType: "translation-only",
     temperature: 0.0,
     topP: 0.9,
     maxOutputTokensCap: 1024, // Translation-specialized; 8K context
@@ -95,6 +104,7 @@ export const AI_MODELS: Record<string, AIModel> = {
     provider: "Google",
     apiProvider: "google",
     free: true,
+    modelType: "chat",
     temperature: null,
     topP: null,
   },
@@ -104,6 +114,7 @@ export const AI_MODELS: Record<string, AIModel> = {
     provider: "Google",
     apiProvider: "google",
     free: false,
+    modelType: "chat",
     temperature: null,
     topP: null,
   },
@@ -113,6 +124,7 @@ export const AI_MODELS: Record<string, AIModel> = {
     provider: "Google",
     apiProvider: "google",
     free: true,
+    modelType: "chat",
     temperature: null,
     topP: null,
   },
@@ -124,6 +136,7 @@ export const AI_MODELS: Record<string, AIModel> = {
     provider: "OpenAI",
     apiProvider: "openai",
     free: false,
+    modelType: "chat",
     temperature: 0.0,
     topP: 1.0,
   },
@@ -133,6 +146,7 @@ export const AI_MODELS: Record<string, AIModel> = {
     provider: "OpenAI",
     apiProvider: "openai",
     free: false,
+    modelType: "chat",
     temperature: 0.0,
     topP: 1.0,
   },
@@ -145,6 +159,7 @@ export const AI_MODELS: Record<string, AIModel> = {
     provider: "Anthropic",
     apiProvider: "anthropic",
     free: false,
+    modelType: "chat",
     temperature: 0.1,
     topP: null, // Anthropic advises against using both
   },
@@ -154,6 +169,7 @@ export const AI_MODELS: Record<string, AIModel> = {
     provider: "Anthropic",
     apiProvider: "anthropic",
     free: false,
+    modelType: "chat",
     temperature: 0.1,
     topP: null, // Anthropic advises against using both
   },
