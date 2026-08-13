@@ -9,7 +9,7 @@ export interface TranslationPair {
 }
 
 const MAX_MEMORY_ITEMS = 50;
-const MAX_PAIRS_PER_REQUEST = 15;
+const MAX_PAIRS_PER_REQUEST = 10;
 
 const memoryBuffer: TranslationPair[] = [];
 
@@ -95,9 +95,10 @@ export const translationMemory = {
   buildMemoryMessages(
     sourceLang: string,
     targetLang: string,
-    currentText?: string
+    currentText?: string,
+    limit: number = MAX_PAIRS_PER_REQUEST
   ): Array<{ role: string; content: string }> {
-    const pairs = this.getRelevant(sourceLang, targetLang, currentText);
+    const pairs = this.getRelevant(sourceLang, targetLang, currentText, limit);
     if (pairs.length === 0) return [];
 
     const messages: Array<{ role: string; content: string }> = [];

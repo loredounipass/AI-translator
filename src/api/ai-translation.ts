@@ -58,9 +58,18 @@ export const translate = async (
     ? buildSimpleTranslationUserPrompt(cleanedText)
     : `Interpret the following text from ${sourceName} to ${targetName}. Apply first-person interpreting rules. If you need to reason or think step-by-step, you MUST wrap your reasoning entirely inside <thinking>...</thinking> tags. Your final raw interpreted text MUST be wrapped strictly inside <translation>...</translation> tags.\n\nText to interpret:\n${cleanedText}`;
 
+  let memoryLimit = 10;
+  if (modelConfig.maxOutputTokensCap && modelConfig.maxOutputTokensCap <= 2048) {
+    memoryLimit = 2; // Strict limit for models with tiny context windows
+  } else if (modelId.includes("3b") || modelId.includes("4b") || modelId.includes("mini") || modelId.includes("nano")) {
+    memoryLimit = 2; // Strict limit for small parameter models
+  } else if (modelId.includes("8b")) {
+    memoryLimit = 5; // Moderate limit for medium models
+  }
+
   const memoryMessages = isTranslationOnly
     ? []
-    : translationMemory.buildMemoryMessages(sourceLang, targetLang, cleanedText);
+    : translationMemory.buildMemoryMessages(sourceLang, targetLang, cleanedText, memoryLimit);
 
   const messages = [
     { role: "system", content: systemPrompt },
