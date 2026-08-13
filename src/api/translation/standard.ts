@@ -2,6 +2,7 @@ import axios from "axios";
 import { NVIDIA_API_URL, getAdaptiveTimeout, getAdaptiveMaxTokens } from "./constants";
 import { stripXmlWrapper } from "./filters";
 
+
 export interface StandardRequestOptions {
   modelId: string;
   messages: any[];
@@ -14,6 +15,8 @@ export interface StandardRequestOptions {
   maxOutputTokensCap?: number;
 }
 
+
+// EJECUTAR PETICIÓN DE TRADUCCIÓN ESTÁNDAR
 export const executeStandardRequest = async (options: StandardRequestOptions): Promise<string> => {
   const textLen = options.textLength || 0;
 
@@ -26,16 +29,13 @@ export const executeStandardRequest = async (options: StandardRequestOptions): P
     provider: options.provider,
   };
 
-  // Conditionally include temperature (null = omit, e.g. Gemini 3.x deprecated)
   if (options.temperature !== null && options.temperature !== undefined) {
     requestBody.temperature = options.temperature;
   }
 
-  // Conditionally include top_p (null = omit, e.g. Anthropic, Gemini)
   if (options.topP !== null && options.topP !== undefined) {
     requestBody.top_p = options.topP;
   }
-
 
   if (options.provider === "anthropic") {
     const sysMsg = requestBody.messages.find((m: any) => m.role === "system");
@@ -69,4 +69,3 @@ export const executeStandardRequest = async (options: StandardRequestOptions): P
 
   return translated;
 };
-

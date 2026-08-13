@@ -1,6 +1,7 @@
 import { NVIDIA_API_URL, getAdaptiveTimeout, getAdaptiveMaxTokens } from "./constants";
 import { stripXmlWrapper } from "./filters";
 
+
 export interface StreamRequestOptions {
   modelId: string;
   messages: any[];
@@ -14,6 +15,8 @@ export interface StreamRequestOptions {
   maxOutputTokensCap?: number;
 }
 
+
+// EJECUTAR PETICIÓN DE TRADUCCIÓN MEDIANTE STREAMING
 export const executeStreamRequest = async (options: StreamRequestOptions): Promise<string> => {
   const textLen = options.textLength || 0;
 
@@ -26,16 +29,13 @@ export const executeStreamRequest = async (options: StreamRequestOptions): Promi
     provider: options.provider,
   };
 
-  // Conditionally include temperature (null = omit, e.g. Gemini 3.x deprecated)
   if (options.temperature !== null && options.temperature !== undefined) {
     requestBody.temperature = options.temperature;
   }
 
-  // Conditionally include top_p (null = omit, e.g. Anthropic, Gemini)
   if (options.topP !== null && options.topP !== undefined) {
     requestBody.top_p = options.topP;
   }
-
 
   if (options.provider === "anthropic") {
     const sysMsg = requestBody.messages.find((m: any) => m.role === "system");
@@ -45,27 +45,23 @@ export const executeStreamRequest = async (options: StreamRequestOptions): Promi
     }
   }
 
-  // Build a combined signal: user abort + adaptive timeout fallback
   const timeoutMs = getAdaptiveTimeout(textLen);
   const timeoutController = new AbortController();
   const timeoutId = setTimeout(() => timeoutController.abort(), timeoutMs);
 
   let combinedSignal: AbortSignal;
   if (options.signal) {
-    // If the user signal fires, also clean up our timeout
     const onUserAbort = () => {
       timeoutController.abort();
       clearTimeout(timeoutId);
     };
     options.signal.addEventListener("abort", onUserAbort, { once: true });
-    // Use whichever fires first
+    
     combinedSignal = options.signal.aborted ? options.signal : timeoutController.signal;
     if (!options.signal.aborted) {
-      // We need a proper composite — use AbortSignal.any if available, else fallback
       if (typeof AbortSignal.any === "function") {
         combinedSignal = AbortSignal.any([options.signal, timeoutController.signal]);
       } else {
-        // Fallback: prefer user signal, but timeout controller will also abort fetch
         combinedSignal = timeoutController.signal;
       }
     }
@@ -150,4 +146,5 @@ export const executeStreamRequest = async (options: StreamRequestOptions): Promi
     clearTimeout(timeoutId);
   }
 };
+
 

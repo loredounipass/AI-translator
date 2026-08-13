@@ -6,8 +6,7 @@ import { executeTranslationRequest } from "./translation/executor";
 import { translationMemory } from "./translation/translationMemory";
 import { AI_MODELS, AIModel } from "../utils/constants";
 
-
-// Resolve model-specific config from AI_MODELS by matching the modelId
+// RESOLVER CONFIGURACIÓN ESPECÍFICA DEL MODELO POR ID
 const resolveModelConfig = (modelId: string) => {
   const entry = Object.values(AI_MODELS).find((m) => m.id === modelId);
   return {
@@ -17,7 +16,6 @@ const resolveModelConfig = (modelId: string) => {
     modelType: entry?.modelType ?? "chat",
   };
 };
-
 
 // TRADUCIR TEXTO INDIVIDUAL MEDIANTE MODELOS DE IA
 export const translate = async (
@@ -36,7 +34,6 @@ export const translate = async (
 
   const cacheKey = getCacheKey(cleanedText, targetLang, sourceLang, modelId);
 
-  // Allow callers to skip the cache (e.g. after a language or model change)
   if (!options?.bypassCache) {
     const cached = translationCache.get(cacheKey);
     if (cached) {
@@ -47,7 +44,6 @@ export const translate = async (
     }
   }
 
-  // Resolve per-model optimal parameters and type from documentation-based config
   const modelConfig = resolveModelConfig(modelId);
   const isTranslationOnly = modelConfig.modelType === "translation-only";
 
@@ -62,8 +58,6 @@ export const translate = async (
     ? buildSimpleTranslationUserPrompt(cleanedText)
     : `Interpret the following text from ${sourceName} to ${targetName}. Apply first-person interpreting rules. If you need to reason or think step-by-step, you MUST wrap your reasoning entirely inside <thinking>...</thinking> tags. Your final raw interpreted text MUST be wrapped strictly inside <translation>...</translation> tags.\n\nText to interpret:\n${cleanedText}`;
 
-  // Build memory pairs from recent translations for consistency (only for chat models)
-  // Translation-only models often get confused by complex few-shot history unless formatted perfectly.
   const memoryMessages = isTranslationOnly
     ? []
     : translationMemory.buildMemoryMessages(sourceLang, targetLang, cleanedText);
@@ -73,9 +67,6 @@ export const translate = async (
     ...memoryMessages,
     { role: "user", content: userPrompt },
   ];
-
-  // Resolve per-model optimal parameters from documentation-based config
-  const modelConfig = resolveModelConfig(modelId);
 
   const translated = await executeTranslationRequest({
     modelId,
@@ -91,15 +82,12 @@ export const translate = async (
   });
 
   translationCache.set(cacheKey, translated);
-
-  // Save to translation memory for future consistency
   translationMemory.add(cleanedText, translated, sourceLang, targetLang);
 
   return translated;
 };
 
-
-// TRADUCIR MULTIPLES TEXTOS MEDIANTE MODELOS DE IA
+// TRADUCIR MÚLTIPLES TEXTOS MEDIANTE MODELOS DE IA
 export const translateMultiple = async (
   texts: string[],
   targetLang: string,

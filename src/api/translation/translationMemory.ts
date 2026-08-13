@@ -1,12 +1,5 @@
 import { isTrivialText } from "./filters";
 
-// ==========================================
-// TRANSLATION MEMORY — IN-MEMORY BUFFER
-// ==========================================
-// Mantiene un buffer circular de las últimas traducciones
-// para inyectar como few-shot examples al modelo,
-// dándole consistencia terminológica y memoria de sesión.
-
 export interface TranslationPair {
   source: string;
   translated: string;
@@ -21,14 +14,14 @@ const MAX_PAIRS_PER_REQUEST = 15;
 const memoryBuffer: TranslationPair[] = [];
 
 
-// ADD A NEW TRANSLATION PAIR TO THE MEMORY BUFFER
+// MEMORIA DE TRADUCCIÓN — BUFFER EN MEMORIA
 export const translationMemory = {
 
+  // AÑADIR UN NUEVO PAR DE TRADUCCIÓN AL BUFFER DE MEMORIA
   add(source: string, translated: string, sourceLang: string, targetLang: string): void {
     if (!source.trim() || !translated.trim()) return;
     if (isTrivialText(source, sourceLang, targetLang)) return;
 
-    // Avoid duplicates — remove existing entry for same source+langs
     const existingIndex = memoryBuffer.findIndex(
       (p) => p.source === source.trim() && p.sourceLang === sourceLang && p.targetLang === targetLang
     );
@@ -44,18 +37,13 @@ export const translationMemory = {
       timestamp: Date.now(),
     });
 
-    // Enforce max buffer size (circular)
     while (memoryBuffer.length > MAX_MEMORY_ITEMS) {
       memoryBuffer.shift();
     }
   },
 
 
-  // GET RELEVANT TRANSLATION PAIRS FOR A LANGUAGE PAIR.
-  // Pairs are bidirectional: a pair stored as en -> es is also
-  // usable when translating es -> en (aligned to the requested direction).
-  // For short inputs (<= 4 words) only pairs of similar length are injected,
-  // so a long example never imposes an expanded style on a single word.
+  // OBTENER PARES DE TRADUCCIÓN RELEVANTES PARA UN PAR DE IDIOMAS
   getRelevant(
     sourceLang: string,
     targetLang: string,
@@ -89,8 +77,6 @@ export const translationMemory = {
       if (p.sourceLang === sourceLang && p.targetLang === targetLang) {
         relevant.push(p);
       } else {
-        // Reverse direction: align so source is in sourceLang and
-        // translation is in targetLang
         relevant.push({
           source: p.translated,
           translated: p.source,
@@ -101,12 +87,11 @@ export const translationMemory = {
       }
     }
 
-    // Return the most recent N pairs
     return relevant.slice(-limit);
   },
 
 
-  // BUILD MESSAGES ARRAY FOR INJECTION INTO THE MODEL CONVERSATION
+  // CONSTRUIR ARRAY DE MENSAJES PARA INYECTAR EN LA CONVERSACIÓN DEL MODELO
   buildMemoryMessages(
     sourceLang: string,
     targetLang: string,
@@ -124,8 +109,7 @@ export const translationMemory = {
   },
 
 
-  // REMOVE A SPECIFIC SOURCE TEXT FROM THE MEMORY BUFFER.
-  // Optionally restrict by language pair so only that entry is removed.
+  // ELIMINAR UN TEXTO DE ORIGEN ESPECÍFICO DEL BUFFER DE MEMORIA
   remove(sourceText: string, sourceLang?: string, targetLang?: string): void {
     const trimmed = sourceText.trim();
     for (let i = memoryBuffer.length - 1; i >= 0; i--) {
@@ -141,14 +125,14 @@ export const translationMemory = {
   },
 
 
-  // CLEAR THE ENTIRE MEMORY BUFFER (FRESH START)
+  // LIMPIAR TODO EL BUFFER DE MEMORIA (REINICIO)
   clear(): void {
     memoryBuffer.length = 0;
   },
 
 
-  // GET THE CURRENT SIZE OF THE MEMORY BUFFER
+  // OBTENER EL TAMAÑO ACTUAL DEL BUFFER DE MEMORIA
   get size(): number {
     return memoryBuffer.length;
-  },
+  }
 };
