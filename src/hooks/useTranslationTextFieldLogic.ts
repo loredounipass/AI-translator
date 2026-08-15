@@ -209,8 +209,8 @@ export const useTranslationTextFieldLogic = () => {
         const wasRecording = aiStt.isRecording;
         if (wasRecording) aiStt.stopRecording();
         stopAudio();
-        await startAudio(true);
-        if (wasRecording) aiStt.startRecording();
+        const stream = await startAudio(true);
+        if (wasRecording && stream) aiStt.startRecording(stream);
       };
       restart().catch(console.error);
     } else {
@@ -219,8 +219,8 @@ export const useTranslationTextFieldLogic = () => {
           const wasRecording = aiStt.isRecording;
           if (wasRecording) aiStt.stopRecording();
           stopAudio();
-          await startAudio(false);
-          if (wasRecording) aiStt.startRecording();
+          const stream = await startAudio(false);
+          if (wasRecording && stream) aiStt.startRecording(stream);
         };
         restart().catch(console.error);
       }
@@ -240,9 +240,11 @@ export const useTranslationTextFieldLogic = () => {
           if (!keepMicOnRef.current) stopAudio();
         } else {
           if (!mediaStream) {
-            await startAudio(captureSystemAudio);
+            const stream = await startAudio(captureSystemAudio);
+            aiStt.startRecording(stream);
+          } else {
+            aiStt.startRecording();
           }
-          aiStt.startRecording();
         }
       } else {
         if (listening) {

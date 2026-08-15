@@ -263,8 +263,9 @@ export const useAiSpeechToText = (
 
 
   // START RECORDING USING THE PROVIDED MEDIA STREAM
-  const startRecording = useCallback(() => {
-    if (!mediaStream) {
+  const startRecording = useCallback((streamOverride?: MediaStream) => {
+    const stream = streamOverride || mediaStream;
+    if (!stream) {
       setError("No media stream available");
       return;
     }
@@ -278,7 +279,7 @@ export const useAiSpeechToText = (
     const recorderOptions: MediaRecorderOptions = {};
     if (mimeType) recorderOptions.mimeType = mimeType;
 
-    const recorder = new MediaRecorder(mediaStream, recorderOptions);
+    const recorder = new MediaRecorder(stream, recorderOptions);
     mediaRecorderRef.current = recorder;
 
     recorder.ondataavailable = (event) => {
