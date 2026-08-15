@@ -137,6 +137,8 @@ export const useAiSpeechToText = (
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const { getKey } = useApiKey();
   const maxDurationTimeoutRef = useRef<number | null>(null);
+  const onStopRequestRef = useRef(onStopRequest);
+  onStopRequestRef.current = onStopRequest;
 
 
   // PERSIST AI SPEECH TO TEXT TOGGLE STATE
@@ -165,14 +167,15 @@ export const useAiSpeechToText = (
     }
 
     const recorder = mediaRecorderRef.current;
-    if (recorder && recorder.state !== "inactive") {
+    const wasActive = recorder && recorder.state !== "inactive";
+    if (wasActive) {
       try { recorder.stop(); } catch { }
     }
 
     mediaRecorderRef.current = null;
     setIsRecording(false);
-    if (onStopRequest) onStopRequest();
-  }, [onStopRequest]);
+    if (wasActive && onStopRequestRef.current) onStopRequestRef.current();
+  }, []);
 
 
   // CONVERT AUDIO BLOB SEND TO API FOR TRANSCRIPTION AND PROCESS RESPONSE
