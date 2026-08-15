@@ -141,15 +141,17 @@ const TranslationTextField = () => {
             {regionesActuales && (
               <div className="flex items-center ml-2 pl-2 border-l border-slate-200 dark:border-slate-700">
                 <GlassTooltip label="Jerga">
-                  <Select<string>
+                  <select
                     value={regionActual}
-                    onChange={handleChangeRegion}
-                    options={(regionesFiltradas ?? regionesActuales).map(r => ({ value: r.code, label: r.nombre }))}
-                    popupMatchSelectWidth={false}
-                    popupClassName="region-select"
-                    size="small"
-                    className="stt-select w-24 text-xs"
-                  />
+                    onChange={(e) => handleChangeRegion(e.target.value)}
+                    className="glass-select text-slate-700 dark:text-slate-200 text-xs rounded-lg px-2 py-1 outline-none focus:border-blue-400 shadow-sm font-sans w-24 truncate transition-colors cursor-pointer"
+                  >
+                    {(regionesFiltradas ?? regionesActuales).map(r => (
+                      <option key={r.code} value={r.code}>
+                        {r.nombre}
+                      </option>
+                    ))}
+                  </select>
                 </GlassTooltip>
               </div>
             )}
