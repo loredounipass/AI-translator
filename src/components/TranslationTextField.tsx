@@ -26,7 +26,9 @@ const TranslationTextField = () => {
     isMicrophoneAvailable,
     isMicActive,
     isVoiceActive,
-    startAudio
+    startAudio,
+    captureSystemAudio,
+    setCaptureSystemAudio
   } = logic;
 
   const micNotifiedRef = useRef(false);
@@ -108,6 +110,8 @@ const TranslationTextField = () => {
         browserSupportsSpeechRecognition={browserSupportsSpeechRecognition}
         startAudio={startAudio}
         isMicActive={isMicActive}
+        captureSystemAudio={captureSystemAudio}
+        onToggleSystemAudio={() => setCaptureSystemAudio(prev => !prev)}
       />
     </div>
   );

@@ -55,6 +55,8 @@ interface SpeechControlsProps {
   // Unified Audio State
   startAudio: (captureSystemAudio?: boolean) => Promise<any>;
   isMicActive: boolean;
+  captureSystemAudio: boolean;
+  onToggleSystemAudio: () => void;
 }
 
 const SpeechControls = ({
@@ -70,7 +72,9 @@ const SpeechControls = ({
   regionesActuales,
   browserSupportsSpeechRecognition,
   startAudio,
-  isMicActive
+  isMicActive,
+  captureSystemAudio,
+  onToggleSystemAudio
 }: SpeechControlsProps) => {
 
   const isRecording = aiStt.isAiStt ? aiStt.isRecording : listening;
@@ -83,8 +87,8 @@ const SpeechControls = ({
         onToggle={aiStt.toggleAiStt}
         isRecording={aiStt.isRecording}
         isProcessing={aiStt.isProcessing}
-        captureSystemAudio={aiStt.captureSystemAudio}
-        onToggleSystemAudio={aiStt.toggleSystemAudio}
+        captureSystemAudio={captureSystemAudio}
+        onToggleSystemAudio={onToggleSystemAudio}
         error={aiStt.error}
         selectedModel={aiStt.selectedModel}
         onModelChange={aiStt.setSelectedModel}

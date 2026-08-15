@@ -197,8 +197,11 @@ export const useTranslationTextFieldLogic = () => {
   };
 
 
+  const [captureSystemAudio, setCaptureSystemAudio] = React.useState(false);
+
+
   // TOGGLES EITHER THE AI STT ENGINE OR THE NATIVE BROWSER SPEECH RECOGNITION
-  const handleSpeech = async (captureSystemAudio = false) => {
+  const handleSpeech = async () => {
     try {
       setIsProcessing(true);
 
@@ -348,6 +351,8 @@ export const useTranslationTextFieldLogic = () => {
     isMicActive,
     isVoiceActive,
     systemAudioActive,
-    startAudio
+    startAudio,
+    captureSystemAudio,
+    setCaptureSystemAudio
   };
 };
