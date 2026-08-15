@@ -146,6 +146,7 @@ const TranslationTextField = () => {
                     onChange={handleChangeRegion}
                     options={(regionesFiltradas ?? regionesActuales).map(r => ({ value: r.code, label: r.nombre }))}
                     popupMatchSelectWidth={false}
+                    popupClassName="region-select"
                     size="small"
                     className="region-select stt-select w-24 text-xs"
                   />
