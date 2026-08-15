@@ -200,6 +200,35 @@ export const useTranslationTextFieldLogic = () => {
   const [captureSystemAudio, setCaptureSystemAudio] = React.useState(false);
 
 
+  // REINICIA EL AUDIO AL CAMBIAR EL TOGGLE DE CAPTURA DE SISTEMA
+  React.useEffect(() => {
+    if (!aiStt.isAiStt) return;
+
+    if (captureSystemAudio) {
+      const restart = async () => {
+        const wasRecording = aiStt.isRecording;
+        if (wasRecording) aiStt.stopRecording();
+        stopAudio();
+        await startAudio(true);
+        if (wasRecording) aiStt.startRecording();
+      };
+      restart().catch(console.error);
+    } else {
+      if (systemAudioActive && isMicActive) {
+        const restart = async () => {
+          const wasRecording = aiStt.isRecording;
+          if (wasRecording) aiStt.stopRecording();
+          stopAudio();
+          await startAudio(false);
+          if (wasRecording) aiStt.startRecording();
+        };
+        restart().catch(console.error);
+      }
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [captureSystemAudio]);
+
+
   // TOGGLES EITHER THE AI STT ENGINE OR THE NATIVE BROWSER SPEECH RECOGNITION
   const handleSpeech = async () => {
     try {
@@ -210,9 +239,7 @@ export const useTranslationTextFieldLogic = () => {
           aiStt.stopRecording();
           if (!keepMicOnRef.current) stopAudio();
         } else {
-          const needsSystemAudio = captureSystemAudio && !systemAudioActive;
-          if (!mediaStream || needsSystemAudio) {
-            stopAudio();
+          if (!mediaStream) {
             await startAudio(captureSystemAudio);
           }
           aiStt.startRecording();
