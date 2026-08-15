@@ -210,7 +210,9 @@ export const useTranslationTextFieldLogic = () => {
           aiStt.stopRecording();
           if (!keepMicOnRef.current) stopAudio();
         } else {
-          if (!mediaStream) {
+          const needsSystemAudio = captureSystemAudio && !systemAudioActive;
+          if (!mediaStream || needsSystemAudio) {
+            stopAudio();
             await startAudio(captureSystemAudio);
           }
           aiStt.startRecording();
