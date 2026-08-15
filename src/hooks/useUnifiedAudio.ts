@@ -190,12 +190,13 @@ export const useUnifiedAudio = ({ onSilenceTimeout, enableVad = true }: UseUnifi
             displayStreamRef.current = displayStream;
             setSystemAudioActive(true);
 
-            displayStream.getTracks().forEach(track => {
-              track.addEventListener("ended", () => {
+            const tracks = displayStream.getTracks();
+            if (tracks.length > 0) {
+              tracks[0].addEventListener("ended", () => {
                 showInfoToast("Información", "Compartición de audio del sistema terminada");
                 setSystemAudioActive(false);
               });
-            });
+            }
 
             const AudioCtx = (window as any).AudioContext || (window as any).webkitAudioContext;
             const mixCtx = new AudioCtx({ sampleRate: 16000 });
