@@ -8,21 +8,7 @@
    APPLE-STYLE GLASSMORPHISM — GLOBAL STYLES
    ═══════════════════════════════════════════════════════════════ */
 
-/* ── Animated Mesh Gradient Background ── */
-@keyframes meshGradient {
-  0%, 100% {
-    background-position: 0% 50%;
-  }
-  25% {
-    background-position: 50% 0%;
-  }
-  50% {
-    background-position: 100% 50%;
-  }
-  75% {
-    background-position: 50% 100%;
-  }
-}
+
 
 body {
   margin: 0;
@@ -33,20 +19,7 @@ body {
 
 /* ── Light Mode Mesh Background ── */
 .glass-bg {
-  background:
-    linear-gradient(
-      135deg,
-      #e0e7ff 0%,
-      #dbeafe 15%,
-      #e0f2fe 30%,
-      #bae6fd 45%,
-      #dbeafe 60%,
-      #e0e7ff 75%,
-      #e0f2fe 90%,
-      #dbeafe 100%
-    );
-  background-size: 400% 400%;
-  animation: meshGradient 20s ease infinite;
+  background: linear-gradient(135deg, #e0e7ff 0%, #e0f2fe 100%);
 }
 
 /* ── Dark Mode GitHub-like Background ── */
