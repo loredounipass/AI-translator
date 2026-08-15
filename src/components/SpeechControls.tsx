@@ -104,7 +104,7 @@ const SpeechControls = ({
 
           {regionesActuales && (
             <div className="flex items-center ml-2 pl-2 border-l border-slate-200 dark:border-slate-700">
-              <GlassTooltip label="Jerga">
+              <GlassTooltip label="Motor de acentos">
                 <select
                   value={regionActual}
                   onChange={(e) => handleChangeRegion(e.target.value)}
