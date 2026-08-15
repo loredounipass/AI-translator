@@ -30,6 +30,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         needsEmailVerification: false,
     });
 
+
+    // MANAGE SUPABASE AUTH SESSION AND VISIBILITY REFRESH
     useEffect(() => {
         let mounted = true;
 
@@ -43,9 +45,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             });
         };
 
-        supabase.auth.getSession().then(({ data: { session } }) => {
+        const fetchSession = async () => {
+            const { data: { session } } = await supabase.auth.getSession();
             updateState(session);
-        });
+        };
+
+        fetchSession();
 
         const {
             data: { subscription },
@@ -53,12 +58,23 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             updateState(session);
         });
 
+        const handleVisibilityChange = () => {
+            if (document.visibilityState === "visible") {
+                fetchSession();
+            }
+        };
+
+        document.addEventListener("visibilitychange", handleVisibilityChange);
+
         return () => {
             mounted = false;
             subscription.unsubscribe();
+            document.removeEventListener("visibilitychange", handleVisibilityChange);
         };
     }, []);
 
+
+    // REGISTER USER WITH EMAIL AND PASSWORD
     const registerWithEmail = useCallback(
         async (
             email: string,
@@ -88,6 +104,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         []
     );
 
+
+    // LOGIN USER WITH EMAIL AND PASSWORD
     const loginWithEmail = useCallback(
         async (email: string, password: string): Promise<{ error: string | null }> => {
             const { error } = await supabase.auth.signInWithPassword({
@@ -104,9 +122,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         []
     );
 
+
+    // LOGOUT USER
     const logout = useCallback(async () => {
         await supabase.auth.signOut();
-        // The onAuthStateChange listener will automatically clear the local state
     }, []);
 
     return (
@@ -116,6 +135,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     );
 };
 
+
+// CUSTOM HOOK TO ACCESS AUTH CONTEXT
 export const useAuth = () => {
     const context = useContext(AuthContext);
     if (context === undefined) {
@@ -124,6 +145,8 @@ export const useAuth = () => {
     return context;
 };
 
+
+// MAP SUPABASE AUTH ERRORS TO LOCALIZED MESSAGES
 function mapSupabaseError(error: AuthError): string {
     const message = error.message.toLowerCase();
 
@@ -136,6 +159,6 @@ function mapSupabaseError(error: AuthError): string {
     if (message.includes("network") || message.includes("fetch")) {
         return AUTH_ERRORS.NETWORK_ERROR;
     }
-    // Generic message for all other errors (prevents email enumeration)
+
     return AUTH_ERRORS.UNKNOWN;
 }

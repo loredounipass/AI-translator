@@ -41,6 +41,7 @@ export const useAddInterpretationModalLogic = ({
     const [targetLang, setTargetLang] = useState(DEFAULT_TARGET_LANGUAGE);
     const [isSubmitting, setIsSubmitting] = useState(false);
 
+
     // LOAD EDITING ITEM OR LANGUAGE PREFERENCES WHEN MODAL OPENS
     useEffect(() => {
         if (isOpen && user) {
@@ -87,6 +88,7 @@ export const useAddInterpretationModalLogic = ({
         }
     }, [isOpen, user, searchParams, editingItem]);
 
+
     // RESET FORM WHEN MODAL CLOSES
     useEffect(() => {
         if (!isOpen) {
@@ -101,6 +103,7 @@ export const useAddInterpretationModalLogic = ({
         label: lang.name,
     }));
 
+
     // SWAP SOURCE AND TARGET LANGUAGES AND TEXTS
     const handleSwitchLanguages = useCallback(() => {
         setSourceLang(targetLang);
@@ -110,6 +113,7 @@ export const useAddInterpretationModalLogic = ({
             setTargetText(sourceText);
         }
     }, [sourceLang, targetLang, sourceText, targetText]);
+
 
     // HANDLE SOURCE LANGUAGE CHANGE WITH AUTO-SWAP IF SAME AS TARGET
     const handleSourceLangChange = useCallback(
@@ -123,6 +127,7 @@ export const useAddInterpretationModalLogic = ({
         [targetLang, handleSwitchLanguages]
     );
 
+
     // HANDLE TARGET LANGUAGE CHANGE WITH AUTO-SWAP IF SAME AS SOURCE
     const handleTargetLangChange = useCallback(
         (value: string) => {
@@ -134,6 +139,7 @@ export const useAddInterpretationModalLogic = ({
         },
         [sourceLang, handleSwitchLanguages]
     );
+
 
     // SUBMIT INTERPRETATION TO HISTORY (ADD OR EDIT)
     const handleSubmit = useCallback(async () => {
@@ -168,18 +174,18 @@ export const useAddInterpretationModalLogic = ({
 
             const result = editingItem
                 ? await historyService.update(editingItem.id, user.id, {
-                      source_text: src,
-                      translated_text: trg,
-                      source_lang: srcLang,
-                      target_lang: trgLang,
-                  })
+                    source_text: src,
+                    translated_text: trg,
+                    source_lang: srcLang,
+                    target_lang: trgLang,
+                })
                 : await historyService.add(
-                      user.id,
-                      src,
-                      trg,
-                      srcLang,
-                      trgLang
-                  );
+                    user.id,
+                    src,
+                    trg,
+                    srcLang,
+                    trgLang
+                );
 
             if (result) {
                 // Drop the old pair from in-memory layers, then inject the new one

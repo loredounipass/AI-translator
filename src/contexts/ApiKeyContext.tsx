@@ -37,9 +37,11 @@ export const ApiKeyProvider = ({ children }: { children: React.ReactNode }) => {
   const { user } = useAuth();
   const [keys, setKeys] = useState<Record<string, string>>({});
   const [keysLoaded, setKeysLoaded] = useState(false);
-  const [keysLoading, setKeysLoading] = useState(true); // true desde el inicio para bloquear hasta que la carga real termine
+  const [keysLoading, setKeysLoading] = useState(true);
   const [keysForUserId, setKeysForUserId] = useState<string | null>(null);
 
+
+  // FETCH ALL API KEYS FOR LOGGED IN USER
   const fetchKeys = useCallback(async () => {
     setKeysLoading(true);
     setKeysLoaded(false);
@@ -61,15 +63,21 @@ export const ApiKeyProvider = ({ children }: { children: React.ReactNode }) => {
     setKeysForUserId(user.id);
   }, [user]);
 
+
+  // INITIAL FETCH OF API KEYS ON MOUNT OR USER CHANGE
   useEffect(() => {
     fetchKeys();
   }, [fetchKeys]);
 
+
+  // RETRIEVE A SPECIFIC API KEY BY PROVIDER
   const getKey = useCallback(
     (provider: string): string | null => keys[provider] || null,
     [keys]
   );
 
+
+  // STORE AN API KEY FOR A SPECIFIC PROVIDER IN STATE
   const setKey = useCallback(
     (provider: string, key: string) => {
       setKeys((prev) => ({ ...prev, [provider]: key }));
@@ -77,6 +85,8 @@ export const ApiKeyProvider = ({ children }: { children: React.ReactNode }) => {
     []
   );
 
+
+  // REMOVE AN API KEY FROM STATE
   const removeKey = useCallback(
     (provider: string) => {
       setKeys((prev) => {
@@ -95,4 +105,6 @@ export const ApiKeyProvider = ({ children }: { children: React.ReactNode }) => {
   );
 };
 
+
+// CUSTOM HOOK TO ACCESS API KEY CONTEXT
 export const useApiKey = () => useContext(ApiKeyContext);
