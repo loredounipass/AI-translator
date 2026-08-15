@@ -45,7 +45,7 @@ const TranslationTextField = () => {
     <div className="relative flex flex-col flex-1 min-h-0 font-sans font-normal leading-normal bg-white/40 dark:bg-slate-800/40 transition-colors">
       <div className="flex-1 relative min-h-0">
         <div
-          className={`absolute top-0 left-0 right-0 bottom-0 flex items-start justify-start p-4 text-lg text-[#9ca3af] dark:text-slate-500 font-sans pointer-events-none z-10 ${!text && (aiStt.isProcessing || aiStt.isRecording || placeholder) ? 'flex' : 'hidden'}`}
+          className={`absolute top-0 left-0 right-0 bottom-0 flex items-center justify-center text-lg text-[#9ca3af] dark:text-slate-500 font-sans pointer-events-none z-10 ${!text && (aiStt.isProcessing || aiStt.isRecording || placeholder) ? 'flex' : 'hidden'}`}
         >
           {aiStt.isProcessing ? (
             <span className="animate-pulse">Transcribing...</span>

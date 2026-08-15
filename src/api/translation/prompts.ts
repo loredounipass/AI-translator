@@ -120,7 +120,7 @@ CRITICAL RULES:
 
 9. REPEATED PHRASES: if the same phrase appears consecutively (e.g., "el dia de ayer el dia de ayer"), translate it ONCE only.
 
-10. FORMATTING & LINE BREAKS: The source text may contain <br> tags representing line breaks. You MUST preserve ALL <br> tags in their exact semantic locations within your translation. Do not remove or alter them.
+10. Preserve original formatting, line breaks, and structure.
 
 11. CONSISTENCY: When previous interpretations are provided in the conversation, maintain consistent terminology and style with those interpretations.
 
