@@ -89,10 +89,7 @@ export const useTranslationTextFieldLogic = () => {
   const aiStt = useAiSpeechToText(
     React.useCallback((chunk: string) => onChunkRef.current(chunk), []),
     sl,
-    mediaStream,
-    () => {
-      if (!keepMicOnRef.current) stopAudio();
-    }
+    mediaStream
   );
 
   React.useEffect(() => {
@@ -237,7 +234,6 @@ export const useTranslationTextFieldLogic = () => {
       if (aiStt.isAiStt) {
         if (aiStt.isRecording) {
           aiStt.stopRecording();
-          if (!keepMicOnRef.current) stopAudio();
         } else {
           if (!mediaStream) {
             const stream = await startAudio(captureSystemAudio);
