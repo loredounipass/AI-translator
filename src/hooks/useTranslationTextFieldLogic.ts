@@ -340,19 +340,16 @@ export const useTranslationTextFieldLogic = () => {
     } catch (e) { }
 
     if (keepMicOn) {
-      if (browserSupportsSpeechRecognition && isMicrophoneAvailable && !mediaStream) {
+      if (browserSupportsSpeechRecognition && isMicrophoneAvailable && !mediaStream && !aiStt.isAiStt) {
         startAudio(false).catch(console.warn);
       }
-    } else {
+    } else if (!aiStt.isAiStt) {
       if (listening) {
         SpeechRecognition.stopListening().catch(() => { });
       }
-      if (aiStt.isRecording) {
-        aiStt.stopRecording();
-      }
       stopAudio();
     }
-  }, [keepMicOn, browserSupportsSpeechRecognition, isMicrophoneAvailable, startAudio, stopAudio, listening, mediaStream]);
+  }, [keepMicOn, browserSupportsSpeechRecognition, isMicrophoneAvailable, startAudio, stopAudio, listening, mediaStream, aiStt.isAiStt]);
 
   React.useEffect(() => {
     return () => {
