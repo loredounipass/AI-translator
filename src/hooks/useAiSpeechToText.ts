@@ -1,26 +1,20 @@
 import { useState, useRef, useCallback, useEffect } from "react";
 import { useApiKey } from "../contexts/ApiKeyContext";
 import { showInfoToast, showWarningToast, showErrorToast } from "../components/AppNotifications";
-import { analyzeAudioFrame } from "../utils/vadMath";
-import { vadCheckInterval } from "../utils/vadConstants";
 
 const STORAGE_KEY = "aiSttEnabled";
 
 
-
-// INITIALIZE OFFLINE AUDIO CONTEXT FOR DECODING (Guarantees 16kHz & prevents hardware context leaks)
+// INITIALIZE OFFLINE AUDIO CONTEXT FOR DECODING
 const getOfflineAudioContext = () => {
   const OfflineAudioCtx = (window as any).OfflineAudioContext || (window as any).webkitOfflineAudioContext;
   if (OfflineAudioCtx) {
-    // 1 channel, 1 frame (length doesn't matter for decodeAudioData), 16000 Hz
     return new OfflineAudioCtx(1, 1, 16000);
   }
-  // Fallback for extremely old browsers
   const AudioCtx = (window.AudioContext || (window as any).webkitAudioContext) as any;
   return new AudioCtx({ sampleRate: 16000 });
 };
 let sharedAudioContext: AudioContext | null = null;
-
 
 
 // LOG TO CONSOLE IN DEVELOPMENT MODE
@@ -31,14 +25,12 @@ const logDev = (...args: any[]) => {
 };
 
 
-
 // LOG ERROR TO CONSOLE IN DEVELOPMENT MODE
 const errorDev = (...args: any[]) => {
   if (process.env.NODE_ENV === "development") {
     console.error(...args);
   }
 };
-
 
 
 // CONVERT AUDIO BLOB TO MONO WAV BASE64 STRING
@@ -115,7 +107,6 @@ const blobToWavBase64 = async (blob: Blob): Promise<string> => {
 };
 
 
-
 // CHECK IF ERROR MESSAGE IS FATAL
 const isFatalError = (errorMsg: string): boolean => {
   const fatalPatterns = [
@@ -126,11 +117,12 @@ const isFatalError = (errorMsg: string): boolean => {
 };
 
 
-
 // MAIN HOOK FOR AI SPEECH TO TEXT
 export const useAiSpeechToText = (
   onChunk: (text: string) => void,
-  sourceLang: string
+  sourceLang: string,
+  mediaStream: MediaStream | null,
+  onStopRequest?: () => void
 ) => {
   const [isAiStt, setIsAiStt] = useState(() => {
     try { return localStorage.getItem(STORAGE_KEY) === "true"; } catch { return false; }
@@ -140,28 +132,11 @@ export const useAiSpeechToText = (
   });
   const [isRecording, setIsRecording] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
-  const [isVoiceActive, setIsVoiceActive] = useState(false);
-  const [captureSystemAudio, setCaptureSystemAudio] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
-  const streamRef = useRef<MediaStream | null>(null);
-  const displayStreamRef = useRef<MediaStream | null>(null);
-  const mixAudioContextRef = useRef<AudioContext | null>(null);
-  const isRequestingSystemAudioRef = useRef<boolean>(false);
   const { getKey } = useApiKey();
-
-  const audioContextRef = useRef<AudioContext | null>(null);
-  const analyserRef = useRef<AnalyserNode | null>(null);
-  const vadIntervalRef = useRef<number | null>(null);
-  const rmsSmoothRef = useRef<number>(0);
-  const noiseFloorRef = useRef<number>(1);
-  const floatDataRef = useRef<Float32Array | null>(null);
-  const byteDataRef = useRef<Uint8Array | null>(null);
-  const fftDataRef = useRef<Uint8Array | null>(null);
-  const prevVoiceActiveRef = useRef<boolean>(false);
   const maxDurationTimeoutRef = useRef<number | null>(null);
-
 
 
   // PERSIST AI SPEECH TO TEXT TOGGLE STATE
@@ -171,7 +146,6 @@ export const useAiSpeechToText = (
   }, []);
 
 
-
   // PERSIST SELECTED AI MODEL
   const handleSetModel = useCallback((model: string) => {
     setSelectedModel(model);
@@ -179,180 +153,15 @@ export const useAiSpeechToText = (
   }, []);
 
 
-
   // TOGGLE AI SPEECH TO TEXT STATE
   const toggleAiStt = useCallback(() => setAiStt(!isAiStt), [isAiStt, setAiStt]);
 
 
-
-  // CLEANUP DISPLAY MEDIA STREAM FOR SYSTEM AUDIO
-  const cleanupDisplayStream = useCallback(() => {
-    if (displayStreamRef.current) {
-      const stream = displayStreamRef.current;
-      displayStreamRef.current = null;
-      stream.getTracks().forEach(t => t.stop());
-    }
-  }, []);
-
-
-
-  // STOP SYSTEM AUDIO CAPTURE
-  const stopSystemAudioCapture = useCallback(() => {
-    cleanupDisplayStream();
-    setCaptureSystemAudio(false);
-  }, [cleanupDisplayStream]);
-
-
-
-  // REQUEST AND START SYSTEM AUDIO CAPTURE
-  const startSystemAudioCapture = useCallback(async () => {
-    if (isRequestingSystemAudioRef.current) return;
-    isRequestingSystemAudioRef.current = true;
-    setError(null);
-    try {
-      const displayStream = await navigator.mediaDevices.getDisplayMedia({
-        audio: {
-          sampleRate: 16000,
-          channelCount: 1,
-          echoCancellation: false,
-          noiseSuppression: false,
-          autoGainControl: false
-        },
-        video: true
-      });
-
-      const hasAudioTrack = displayStream.getAudioTracks().length > 0;
-
-      const onStreamEnded = () => {
-        cleanupDisplayStream();
-        setCaptureSystemAudio(false);
-        if (hasAudioTrack) {
-          showInfoToast("Información", "Compartición de audio del sistema terminada");
-        }
-      };
-      displayStream.getTracks().forEach(track => {
-        track.addEventListener("ended", onStreamEnded);
-      });
-
-      displayStreamRef.current = displayStream;
-
-      if (!hasAudioTrack) {
-        showWarningToast("Aviso", "No compartiste el audio del sistema.");
-        cleanupDisplayStream();
-        setCaptureSystemAudio(false);
-        return;
-      }
-
-      setCaptureSystemAudio(true);
-    } catch (err) {
-      console.warn("Failed to get display media:", err);
-      showInfoToast("Cancelado", "Captura de sistema cancelada");
-      setCaptureSystemAudio(false);
-    } finally {
-      isRequestingSystemAudioRef.current = false;
-    }
-  }, [cleanupDisplayStream]);
-
-
-
-  // TOGGLE SYSTEM AUDIO CAPTURE
-  const toggleSystemAudio = useCallback(() => {
-    if (captureSystemAudio) {
-      stopSystemAudioCapture();
-    } else {
-      startSystemAudioCapture();
-    }
-  }, [captureSystemAudio, stopSystemAudioCapture, startSystemAudioCapture]);
-
-
-
-  // STOP VOICE ACTIVITY DETECTION AND RESET BUFFERS
-  const stopVAD = useCallback(() => {
-    if (vadIntervalRef.current) {
-      window.clearInterval(vadIntervalRef.current);
-      vadIntervalRef.current = null;
-    }
-    rmsSmoothRef.current = 0;
-    noiseFloorRef.current = 1;
-    floatDataRef.current = null;
-    byteDataRef.current = null;
-    fftDataRef.current = null;
-    analyserRef.current = null;
-    prevVoiceActiveRef.current = false;
-    setIsVoiceActive(false);
-  }, []);
-
-
-
-  // INITIALIZE AND START VOICE ACTIVITY DETECTION ON AUDIO STREAM
-  const startVAD = useCallback((stream: MediaStream) => {
-    stopVAD();
-
-    const AudioCtx = (window as any).AudioContext || (window as any).webkitAudioContext;
-    const audioCtx: AudioContext = new AudioCtx();
-    audioContextRef.current = audioCtx;
-    
-    if (audioCtx.state === 'suspended') {
-      audioCtx.resume().catch(console.warn);
-    }
-
-    const source = audioCtx.createMediaStreamSource(stream);
-    const analyser = audioCtx.createAnalyser();
-    analyser.fftSize = 2048;
-    source.connect(analyser);
-    analyserRef.current = analyser;
-
-    const floatData = new Float32Array(analyser.fftSize);
-    const byteData = new Uint8Array(analyser.fftSize);
-    const fftData = new Uint8Array(analyser.frequencyBinCount);
-    floatDataRef.current = floatData;
-    byteDataRef.current = byteData;
-    fftDataRef.current = fftData;
-
-    vadIntervalRef.current = window.setInterval(() => {
-      if (!analyserRef.current) return;
-
-      analyserRef.current.getByteTimeDomainData(byteData as any);
-      for (let i = 0; i < byteData.length; i++) {
-        floatData[i] = (byteData[i] - 128) / 128;
-      }
-      analyserRef.current.getByteFrequencyData(fftData as any);
-
-      const nyquist = audioCtx.sampleRate / 2;
-      const binWidth = nyquist / fftData.length;
-
-      const { isVoiceDetected, newSmooth, newNoiseFloor } = analyzeAudioFrame(
-        floatData, fftData, binWidth, nyquist,
-        rmsSmoothRef.current, noiseFloorRef.current
-      );
-
-      rmsSmoothRef.current = newSmooth;
-      noiseFloorRef.current = newNoiseFloor;
-      
-      if (prevVoiceActiveRef.current !== isVoiceDetected) {
-        prevVoiceActiveRef.current = isVoiceDetected;
-        setIsVoiceActive(isVoiceDetected);
-      }
-    }, vadCheckInterval);
-  }, [stopVAD]);
-
-
-
-  // STOP RECORDING AUDIO AND VAD AND TRIGGER AUDIO SEND
+  // STOP RECORDING AUDIO AND TRIGGER STOP CALLBACK
   const stopRecording = useCallback(() => {
     if (maxDurationTimeoutRef.current) {
       window.clearTimeout(maxDurationTimeoutRef.current);
       maxDurationTimeoutRef.current = null;
-    }
-    stopVAD();
-    if (audioContextRef.current) {
-      try { audioContextRef.current.close(); } catch { }
-      audioContextRef.current = null;
-    }
-
-    if (mixAudioContextRef.current) {
-      try { mixAudioContextRef.current.close(); } catch { }
-      mixAudioContextRef.current = null;
     }
 
     const recorder = mediaRecorderRef.current;
@@ -360,15 +169,10 @@ export const useAiSpeechToText = (
       try { recorder.stop(); } catch { }
     }
 
-    if (streamRef.current) {
-      streamRef.current.getTracks().forEach((t) => t.stop());
-      streamRef.current = null;
-    }
-
     mediaRecorderRef.current = null;
     setIsRecording(false);
-  }, [stopVAD]);
-
+    if (onStopRequest) onStopRequest();
+  }, [onStopRequest]);
 
 
   // CONVERT AUDIO BLOB SEND TO API FOR TRANSCRIPTION AND PROCESS RESPONSE
@@ -391,7 +195,6 @@ export const useAiSpeechToText = (
     setIsProcessing(true);
     try {
       const base64 = await blobToWavBase64(blob);
-      // Ensure language is a 2-letter ISO code (e.g. 'en-US' -> 'en') as required by Whisper/Nvidia ASR
       const cleanLang = (sourceLang || "auto").split("-")[0].toLowerCase();
 
       const res = await fetch("/api/completions", {
@@ -459,111 +262,60 @@ export const useAiSpeechToText = (
   }, [getKey, onChunk, selectedModel, sourceLang]);
 
 
-
-  // REQUEST MICROPHONE MIX SYSTEM AUDIO AND START CONTINUOUS RECORDING
-  const startRecording = useCallback(async () => {
+  // START RECORDING USING THE PROVIDED MEDIA STREAM
+  const startRecording = useCallback(() => {
+    if (!mediaStream) {
+      setError("No media stream available");
+      return;
+    }
     setError(null);
-    try {
-      const micStream = await navigator.mediaDevices.getUserMedia({
-        audio: {
-          sampleRate: 16000,
-          channelCount: 1,
-          echoCancellation: true,
-          noiseSuppression: true,
-          autoGainControl: true
-        }
-      });
-      streamRef.current = micStream;
 
-      let finalStream = micStream;
+    let mimeType = "audio/webm;codecs=opus";
+    if (!MediaRecorder.isTypeSupported(mimeType)) mimeType = "audio/webm";
+    if (!MediaRecorder.isTypeSupported(mimeType)) mimeType = "audio/mp4";
+    if (!MediaRecorder.isTypeSupported(mimeType)) mimeType = "";
 
-      if (captureSystemAudio) {
-        const displayStream = displayStreamRef.current;
-        const isStreamActive = displayStream && displayStream.getTracks().some(t => t.readyState === 'live');
+    const recorderOptions: MediaRecorderOptions = {};
+    if (mimeType) recorderOptions.mimeType = mimeType;
 
-        if (isStreamActive) {
-          try {
-            const AudioCtx = (window as any).AudioContext || (window as any).webkitAudioContext;
-            const mixCtx = new AudioCtx({ sampleRate: 16000 });
-            mixAudioContextRef.current = mixCtx;
+    const recorder = new MediaRecorder(mediaStream, recorderOptions);
+    mediaRecorderRef.current = recorder;
 
-            if (mixCtx.state === 'suspended') {
-              mixCtx.resume().catch(console.warn);
-            }
+    recorder.ondataavailable = (event) => {
+      if (event.data.size > 0) sendAudioChunk(event.data);
+    };
 
-            const dest = mixCtx.createMediaStreamDestination();
+    recorder.onerror = () => {
+      showErrorToast("Error", "Error en la grabación");
+      stopRecording();
+    };
 
-            mixCtx.createMediaStreamSource(micStream).connect(dest);
-            mixCtx.createMediaStreamSource(displayStream).connect(dest);
+    recorder.start();
+    setIsRecording(true);
 
-            finalStream = dest.stream;
-          } catch (err) {
-            console.warn("Failed to mix system audio:", err);
-          }
-        } else {
-          setCaptureSystemAudio(false);
-        }
-      }
+    maxDurationTimeoutRef.current = window.setTimeout(() => {
+      showWarningToast("Límite de tiempo", "Tiempo máximo de grabación (60s) alcanzado.");
+      stopRecording();
+    }, 60000);
 
-      let mimeType = "audio/webm;codecs=opus";
-      if (!MediaRecorder.isTypeSupported(mimeType)) mimeType = "audio/webm";
-      if (!MediaRecorder.isTypeSupported(mimeType)) mimeType = "audio/mp4";
-      if (!MediaRecorder.isTypeSupported(mimeType)) mimeType = "";
-
-      const recorderOptions: MediaRecorderOptions = {};
-      if (mimeType) recorderOptions.mimeType = mimeType;
-
-      const recorder = new MediaRecorder(finalStream, recorderOptions);
-      mediaRecorderRef.current = recorder;
-
-      recorder.ondataavailable = (event) => {
-        if (event.data.size > 0) sendAudioChunk(event.data);
-      };
-
-      recorder.onerror = () => {
-        showErrorToast("Error", "Error en la grabación");
-      };
-
-      recorder.start();
-      setIsRecording(true);
-
-      startVAD(finalStream);
-
-      maxDurationTimeoutRef.current = window.setTimeout(() => {
-        showWarningToast("Límite de tiempo", "Tiempo máximo de grabación (60s) alcanzado.");
-        stopRecording();
-      }, 60000);
-
-      logDev("[AI-STT:start] Recording started (continuous, send on stop), mime:", mimeType || "default");
-    } catch {
-      setError("Microphone access denied");
-      showErrorToast("Error", "No se pudo acceder al micrófono");
-    }
-  }, [sendAudioChunk, startVAD, captureSystemAudio]);
+    logDev("[AI-STT:start] Recording started (continuous, send on stop), mime:", mimeType || "default");
+  }, [mediaStream, sendAudioChunk, stopRecording]);
 
 
-
-  // HANDLE SIDE EFFECTS FOR AI STT TOGGLE
   useEffect(() => {
-    if (!isAiStt) {
-      if (isRecording) stopRecording();
-      stopSystemAudioCapture();
+    if (!isAiStt && isRecording) {
+      stopRecording();
     }
-  }, [isAiStt, isRecording, stopRecording, stopSystemAudioCapture]);
+  }, [isAiStt, isRecording, stopRecording]);
 
 
-
-  // CLEANUP ON UNMOUNT
   useEffect(() => () => {
     stopRecording();
-    cleanupDisplayStream();
-  }, [stopRecording, cleanupDisplayStream]);
+  }, [stopRecording]);
 
   return {
     isAiStt, setAiStt, toggleAiStt,
-    isRecording, isProcessing, isVoiceActive,
-    captureSystemAudio, setCaptureSystemAudio,
-    toggleSystemAudio,
+    isRecording, isProcessing,
     error, startRecording, stopRecording,
     selectedModel, setSelectedModel: handleSetModel,
   };

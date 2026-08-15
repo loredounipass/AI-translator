@@ -4,15 +4,10 @@ import { useSearchParams } from "react-router-dom";
 import { DEFAULT_SOURCE_LANGUAGE } from "utils/constants";
 import { MAPEO_LOCALES, REGIONES_POR_IDIOMA, REGION_A_IDIOMA_BASE, normalizarLocale, filtrarRegiones, localeSoportado, saveRegion } from "../utils/mapeoLocales";
 import { useAuth } from "contexts/AuthContext";
-import {
-  vadCheckInterval,
-  silenceHoldCount,
-  silenceTimeout
-} from "../utils/vadConstants";
 import { addPunctuation } from "../utils/punctuationLogic";
-import { analyzeAudioFrame } from "../utils/vadMath";
 import { useTypewriterPlaceholder } from "./useTypewriterPlaceholder";
 import { useAiSpeechToText } from "./useAiSpeechToText";
+import { useUnifiedAudio } from "./useUnifiedAudio";
 import { showAudioErrorNotification } from "../components/AppNotifications";
 
 export const MAX_URL_TEXT_LENGTH = 8000;
@@ -32,21 +27,7 @@ export const useTranslationTextFieldLogic = () => {
     : (REGION_A_IDIOMA_BASE[sl] && regionesFiltradas?.some(r => r.code === sl) ? sl : regionPorDefecto);
   const { user } = useAuth();
   const [isProcessing, setIsProcessing] = React.useState(false);
-  const [selectedDeviceId, setSelectedDeviceId] = React.useState<string | null>(null);
-  const audioContextRef = React.useRef<AudioContext | null>(null);
-  const mediaStreamRef = React.useRef<MediaStream | null>(null);
-  const analyserRef = React.useRef<AnalyserNode | null>(null);
-  const vadIntervalRef = React.useRef<number | null>(null);
-  const silenceTimerRef = React.useRef<number | null>(null);
-  const activeFramesRef = React.useRef<number>(0);
-  const silentFramesRef = React.useRef<number>(0);
-  const rmsSmoothRef = React.useRef<number>(0);
-  const noiseFloorRef = React.useRef<number>(1);
-  const floatDataRef = React.useRef<Float32Array | null>(null);
-  const byteDataRef = React.useRef<Uint8Array | null>(null);
-  const fftDataRef = React.useRef<Uint8Array | null>(null);
-  const fftSizeRef = React.useRef<number>(0);
-  const currentAnalyserRef = React.useRef<AnalyserNode | null>(null);
+
   const {
     transcript,
     listening,
@@ -62,58 +43,11 @@ export const useTranslationTextFieldLogic = () => {
       }
     ]
   });
+
   const textareaRef = React.useRef<HTMLTextAreaElement>(null);
   const manualEditRef = React.useRef<boolean>(false);
   const manualEditTimeoutRef = React.useRef<number | null>(null);
   const textAtMicStartRef = React.useRef<string>("");
-
-
-
-  // RESET VAD (VOICE ACTIVITY DETECTION) INTERVALS AND CLEAR AUDIO BUFFERS
-  const resetVADState = React.useCallback(() => {
-    if (vadIntervalRef.current) {
-      window.clearInterval(vadIntervalRef.current);
-      vadIntervalRef.current = null;
-    }
-    if (silenceTimerRef.current) {
-      window.clearTimeout(silenceTimerRef.current);
-      silenceTimerRef.current = null;
-    }
-    activeFramesRef.current = 0;
-    silentFramesRef.current = 0;
-    rmsSmoothRef.current = 0;
-    noiseFloorRef.current = 1;
-    floatDataRef.current = null;
-    byteDataRef.current = null;
-    fftDataRef.current = null;
-    fftSizeRef.current = 0;
-    currentAnalyserRef.current = null;
-    analyserRef.current = null;
-  }, []);
-
-
-
-  // STOP MEDIA TRACKS AND CLOSE AUDIO CONTEXT RESOURCES SAFELY
-  const teardownAudioResources = React.useCallback(async (
-    stream: MediaStream | null,
-    audioCtx: AudioContext | null
-  ) => {
-    if (stream) {
-      stream.getTracks().forEach(t => t.stop());
-    }
-    if (audioCtx) {
-      try { await audioCtx.close(); } catch (_) { /* already closed */ }
-    }
-  }, []);
-
-
-  React.useEffect(() => {
-    return () => {
-      resetVADState();
-      teardownAudioResources(mediaStreamRef.current, audioContextRef.current);
-      SpeechRecognition.abortListening();
-    };
-  }, [resetVADState, teardownAudioResources]);
 
   const [keepMicOn, setKeepMicOn] = React.useState<boolean>(() => {
     try {
@@ -136,9 +70,29 @@ export const useTranslationTextFieldLogic = () => {
     }
   };
 
+  const {
+    startAudio,
+    stopAudio,
+    mediaStream,
+    isMicActive,
+    isVoiceActive,
+    systemAudioActive
+  } = useUnifiedAudio({
+    onSilenceTimeout: () => {
+      if (listening && !keepMicOnRef.current) {
+        SpeechRecognition.stopListening().catch(() => {});
+      }
+    },
+    enableVad: true
+  });
+
   const aiStt = useAiSpeechToText(
     React.useCallback((chunk: string) => onChunkRef.current(chunk), []),
-    sl
+    sl,
+    mediaStream,
+    () => {
+      if (!keepMicOnRef.current) stopAudio();
+    }
   );
 
   React.useEffect(() => {
@@ -147,31 +101,8 @@ export const useTranslationTextFieldLogic = () => {
     }
   }, [aiStt.isAiStt, listening]);
 
-  React.useEffect(() => {
-    const initDevices = async () => {
-      try {
-        if (selectedDeviceId) return;
 
-        const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-        stream.getTracks().forEach(t => t.stop());
-        const list = await navigator.mediaDevices.enumerateDevices();
-        const inputs = list.filter(d => d.kind === 'audioinput');
-        if (inputs.length > 0 && !selectedDeviceId) setSelectedDeviceId(inputs[0].deviceId);
-      } catch (err) {
-      console.warn('No se pudo acceder a dispositivos de audio');
-      showAudioErrorNotification(
-        "Micrófono no disponible",
-        "No se pudo acceder a los dispositivos de audio. Verifica los permisos del navegador."
-      );
-    }
-    };
-
-    initDevices();
-  }, [selectedDeviceId]);
-
-
-
-  // UPDATE TEXT STATE AND SYNCHRONIZE WITH URL SEARCH PARAMETERS
+  // UPDATES THE TEXT STATE AND SYNCHRONIZES WITH THE URL SEARCH PARAMETERS
   const setTextParam = React.useCallback((value: string | ((prev: string) => string)) => {
     setText((prevText) => {
       const nextValue = typeof value === "function" ? value(prevText) : value;
@@ -201,13 +132,12 @@ export const useTranslationTextFieldLogic = () => {
     if (urlTextParam !== text && urlTextParam.trim() !== text.trim()) {
       setText(urlTextParam);
     } else if (urlTextParam === "" && text !== "") {
-      setText(""); // handle clear properly
+      setText("");
     }
   }, [urlTextParam, text]);
 
 
-
-  // HANDLE DIALECT/REGION SELECTION AND UPDATE USER PREFERENCES
+  // HANDLES REGION CHANGE AND SAVES THE USER PREFERENCE TO THE DATABASE
   const handleChangeRegion = async (value: string) => {
     if (!user) return;
     const locale = MAPEO_LOCALES[value] || value;
@@ -229,8 +159,7 @@ export const useTranslationTextFieldLogic = () => {
   };
 
 
-
-  // CLEAR TEXT CONTENT AND RESET SPEECH RECOGNITION STATE
+  // CLEARS ALL TEXT CONTENT AND STOPS ANY ACTIVE RECORDING SESSIONS
   const clearTextHandler = async () => {
     setTextParam("");
     resetTranscript();
@@ -239,12 +168,13 @@ export const useTranslationTextFieldLogic = () => {
       await SpeechRecognition.stopListening();
       SpeechRecognition.abortListening();
     }
-    await cleanupAudioProcessing();
+    if (!keepMicOnRef.current && !aiStt.isRecording) {
+      stopAudio();
+    }
   };
 
 
-
-  // HANDLE MANUAL TEXTAREA INPUT WITH DEBOUNCED EDIT TRACKING
+  // MANAGES MANUAL TYPING INPUT IN THE TEXTAREA AND PAUSES TRANSCRIPTION UPDATES
   const handleChangeText = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
     if (manualEditTimeoutRef.current) {
       window.clearTimeout(manualEditTimeoutRef.current);
@@ -258,7 +188,6 @@ export const useTranslationTextFieldLogic = () => {
 
     setTextParam(e.target.value);
 
-    // If the user types manually, reset the transcript to avoid overwrite conflicts
     if (listening) {
       resetTranscript();
       textAtMicStartRef.current = e.target.value;
@@ -268,39 +197,53 @@ export const useTranslationTextFieldLogic = () => {
   };
 
 
-
-  // TOGGLE SPEECH RECOGNITION AND MANAGE MICROPHONE STATE
-  const handleSpeech = async () => {
+  // TOGGLES EITHER THE AI STT ENGINE OR THE NATIVE BROWSER SPEECH RECOGNITION
+  const handleSpeech = async (captureSystemAudio = false) => {
     try {
       setIsProcessing(true);
-      if (listening) {
-        await SpeechRecognition.stopListening();
-        if (!keepMicOnRef.current) await cleanupAudioProcessing();
-      } else {
-        if (!keepMicOnRef.current) {
-          setIsProcessing(false);
-          return;
-        }
-        if (isMicrophoneAvailable === false) {
-          setIsProcessing(false);
-          return;
-        }
-        await setupAudioProcessing(selectedDeviceId);
 
-        const effectiveSl = sr || sl;
-        const slSanitizado = effectiveSl.toLowerCase().trim().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
-        const idiomaOptimizado = normalizarLocale(MAPEO_LOCALES[slSanitizado] || sl);
-        
-        textAtMicStartRef.current = text;
-        
-        await SpeechRecognition.startListening({
-          continuous: true,
-          interimResults: true,
-          language: idiomaOptimizado
-        });
+      if (aiStt.isAiStt) {
+        if (aiStt.isRecording) {
+          aiStt.stopRecording();
+          if (!keepMicOnRef.current) stopAudio();
+        } else {
+          if (!mediaStream) {
+            await startAudio(captureSystemAudio);
+          }
+          aiStt.startRecording();
+        }
+      } else {
+        if (listening) {
+          await SpeechRecognition.stopListening();
+          if (!keepMicOnRef.current) stopAudio();
+        } else {
+          if (!keepMicOnRef.current) {
+            setIsProcessing(false);
+            return;
+          }
+          if (isMicrophoneAvailable === false) {
+            setIsProcessing(false);
+            return;
+          }
+          if (!mediaStream) {
+             await startAudio(false);
+          }
+          
+          const effectiveSl = sr || sl;
+          const slSanitizado = effectiveSl.toLowerCase().trim().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+          const idiomaOptimizado = normalizarLocale(MAPEO_LOCALES[slSanitizado] || sl);
+          
+          textAtMicStartRef.current = text;
+          
+          await SpeechRecognition.startListening({
+            continuous: true,
+            interimResults: true,
+            language: idiomaOptimizado
+          });
+        }
       }
     } catch (error) {
-      console.error("Error in speech handler");
+      console.error("Error in speech handler", error);
       showAudioErrorNotification(
         "Error de dictado",
         "Ocurrió un error al iniciar o detener el reconocimiento de voz."
@@ -309,185 +252,6 @@ export const useTranslationTextFieldLogic = () => {
       setIsProcessing(false);
     }
   };
-
-
-
-  // CLEANUP AUDIO RESOURCES AND STOP RECOGNITION WHEN MIC IS TURNED OFF
-  const cleanupAudioProcessing = React.useCallback(async () => {
-    try {
-      if (!keepMicOnRef.current) {
-        resetVADState();
-        await teardownAudioResources(mediaStreamRef.current, audioContextRef.current);
-        mediaStreamRef.current = null;
-        audioContextRef.current = null;
-      }
-    } catch {
-      console.warn('Error during cleanupAudioProcessing');
-    }
-  }, [resetVADState, teardownAudioResources]);
-
-  const isSettingUpRef = React.useRef<boolean>(false);
-  const startVADRef = React.useRef<(() => void) | null>(null);
-
-
-
-  // INITIALIZE AUDIO CONTEXT, REQUEST MICROPHONE PERMISSIONS, AND SETUP AUDIO NODES
-  const setupAudioProcessing = React.useCallback(async (deviceId: string | null) => {
-    const oldAudioCtx = audioContextRef.current;
-    const oldStream = mediaStreamRef.current;
-
-    resetVADState();
-
-    await teardownAudioResources(oldStream, oldAudioCtx);
-    mediaStreamRef.current = null;
-    audioContextRef.current = null;
-
-    const AudioContextClass = (window as any).AudioContext || (window as any).webkitAudioContext;
-    const audioCtx = new AudioContextClass();
-    audioContextRef.current = audioCtx;
-    if (audioCtx.state === 'suspended') {
-      await audioCtx.resume();
-    }
-
-    if (audioContextRef.current !== audioCtx || audioCtx.state === 'closed') return;
-
-    try {
-      const constraints: MediaStreamConstraints = {
-        audio: {
-          deviceId: deviceId ? { exact: deviceId } : undefined,
-          sampleRate: 16000,
-          channelCount: 1,
-          echoCancellation: true,
-          noiseSuppression: true,
-          autoGainControl: true
-        }
-      };
-      const stream = await navigator.mediaDevices.getUserMedia(constraints);
-
-      if (audioContextRef.current !== audioCtx || audioCtx.state === 'closed') {
-        stream.getTracks().forEach(t => t.stop());
-        return;
-      }
-
-      mediaStreamRef.current = stream;
-
-      const source = audioCtx.createMediaStreamSource(stream);
-      const compressor = audioCtx.createDynamicsCompressor();
-      const gain = audioCtx.createGain();
-      const analyser = audioCtx.createAnalyser();
-      analyser.fftSize = 2048;
-
-      source.connect(compressor);
-      compressor.connect(gain);
-      gain.connect(analyser);
-
-      analyserRef.current = analyser;
-
-      startVADRef.current?.();
-    } catch (err) {
-      console.error('No se pudo inicializar audio');
-      showAudioErrorNotification(
-        "Error de audio",
-        "No se pudo inicializar el audio del micrófono. Conecta un micrófono y vuelve a intentarlo."
-      );
-    }
-  }, [resetVADState, teardownAudioResources]);
-
-
-
-  // VERIFY OR INITIALIZE AUDIO STREAM BEFORE STARTING SPEECH RECOGNITION
-  const ensureAudioStreamActive = React.useCallback(async () => {
-    if (isSettingUpRef.current) return;
-    isSettingUpRef.current = true;
-    try {
-      if (!mediaStreamRef.current) {
-        await setupAudioProcessing(selectedDeviceId);
-      }
-    } catch (e) {
-      console.warn('No se pudo activar captura de audio');
-      showAudioErrorNotification(
-        "Error de audio",
-        "No se pudo activar la captura de audio."
-      );
-    } finally {
-      isSettingUpRef.current = false;
-    }
-  }, [selectedDeviceId, setupAudioProcessing]);
-
-
-
-  // START VOICE ACTIVITY DETECTION INTERVAL TO ANALYZE AUDIO FRAMES FOR SPEECH OR SILENCE
-  const startVAD = React.useCallback(() => {
-    if (!analyserRef.current) return;
-    const analyser = analyserRef.current;
-    currentAnalyserRef.current = analyser;
-
-    if (!floatDataRef.current || fftSizeRef.current !== analyser.fftSize) {
-      floatDataRef.current = new Float32Array(analyser.fftSize) as Float32Array;
-      byteDataRef.current = new Uint8Array(analyser.fftSize) as Uint8Array;
-      fftDataRef.current = new Uint8Array(analyser.frequencyBinCount) as Uint8Array;
-      fftSizeRef.current = analyser.fftSize;
-    }
-
-    const floatData = floatDataRef.current;
-    const byteData = byteDataRef.current;
-    const fftData = fftDataRef.current;
-
-    vadIntervalRef.current = window.setInterval(() => {
-      const analyser = currentAnalyserRef.current;
-      if (!analyser || !floatData || !byteData || !fftData) return;
-
-      analyser.getByteTimeDomainData(byteData as any);
-      for (let i = 0; i < byteData.length; i++) {
-        floatData[i] = (byteData[i] - 128) / 128;
-      }
-
-      analyser.getByteFrequencyData(fftData as any);
-
-      const nyquist = analyser.context.sampleRate / 2;
-      const binWidth = nyquist / fftData.length;
-
-      const { isVoiceDetected, newSmooth, newNoiseFloor } = analyzeAudioFrame(
-        floatData,
-        fftData,
-        binWidth,
-        nyquist,
-        rmsSmoothRef.current || 0,
-        noiseFloorRef.current
-      );
-
-      rmsSmoothRef.current = newSmooth;
-      noiseFloorRef.current = newNoiseFloor;
-
-      if (isVoiceDetected) {
-        activeFramesRef.current += 1;
-        silentFramesRef.current = 0;
-
-        if (silenceTimerRef.current) {
-          window.clearTimeout(silenceTimerRef.current);
-          silenceTimerRef.current = null;
-        }
-      } else {
-        silentFramesRef.current += 1;
-        activeFramesRef.current = 0;
-
-        if (silentFramesRef.current >= silenceHoldCount) {
-          if (!silenceTimerRef.current && listening) {
-            silenceTimerRef.current = window.setTimeout(() => {
-              if (listening && !keepMicOnRef.current) {
-                SpeechRecognition.stopListening().catch(() => { });
-              }
-              silenceTimerRef.current = null;
-            }, silenceTimeout);
-          }
-        }
-      }
-    }, vadCheckInterval);
-  }, [listening]);
-
-  React.useEffect(() => {
-    startVADRef.current = startVAD;
-  }, [startVAD]);
 
   const previousTranscriptRef = React.useRef("");
 
@@ -512,13 +276,13 @@ export const useTranslationTextFieldLogic = () => {
   }, [transcript, setTextParam, listening, MAX_URL_TEXT_LENGTH]);
 
   React.useEffect(() => {
-    if (textareaRef.current && !listening) {
+    if (textareaRef.current && !listening && !aiStt.isRecording) {
       textareaRef.current.focus();
     }
-  }, [listening]);
+  }, [listening, aiStt.isRecording]);
 
   React.useEffect(() => {
-    if (listening) {
+    if (listening && !aiStt.isAiStt) {
       const restartWithNewLang = async () => {
         await SpeechRecognition.stopListening();
         const effectiveSl = sr || sl;
@@ -542,16 +306,26 @@ export const useTranslationTextFieldLogic = () => {
     } catch (e) { }
 
     if (keepMicOn) {
-      if (browserSupportsSpeechRecognition && isMicrophoneAvailable) {
-        ensureAudioStreamActive();
+      if (browserSupportsSpeechRecognition && isMicrophoneAvailable && !mediaStream) {
+        startAudio(false).catch(console.warn);
       }
     } else {
       if (listening) {
         SpeechRecognition.stopListening().catch(() => { });
       }
-      cleanupAudioProcessing();
+      if (aiStt.isRecording) {
+        aiStt.stopRecording();
+      }
+      stopAudio();
     }
-  }, [keepMicOn, browserSupportsSpeechRecognition, isMicrophoneAvailable, ensureAudioStreamActive, listening, cleanupAudioProcessing]);
+  }, [keepMicOn, browserSupportsSpeechRecognition, isMicrophoneAvailable, startAudio, stopAudio, listening, mediaStream]);
+
+  React.useEffect(() => {
+    return () => {
+      stopAudio();
+      SpeechRecognition.abortListening();
+    };
+  }, [stopAudio]);
 
   return {
     text,
@@ -571,9 +345,9 @@ export const useTranslationTextFieldLogic = () => {
     regionesActuales,
     browserSupportsSpeechRecognition,
     isMicrophoneAvailable,
-    mediaStreamRef,
-    ensureAudioStreamActive
+    isMicActive,
+    isVoiceActive,
+    systemAudioActive,
+    startAudio
   };
 };
-
-

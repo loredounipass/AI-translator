@@ -12,14 +12,12 @@ import { translationMemory } from "api/translation/translationMemory";
 import React from "react";
 
 
-
 // CLEAN TRANSLATED TEXT FROM INCOMPLETE XML TAGS
 const cleanText = (rawText: string) => {
   if (!rawText) return "";
   
   return rawText.replace(/<\/?[a-z]*\s*$/i, "");
 };
-
 
 
 // MAIN HOOK FOR TRANSLATED TEXT COMPONENT
@@ -58,7 +56,6 @@ export const useTranslatedTextLogic = () => {
   const [isStale, setIsStale] = React.useState(false);
 
 
-
   // POPULATE CACHE AND TRANSLATION MEMORY FROM HISTORY ON FIRST MOUNT
   React.useEffect(() => {
     if (!user || historyLoadedRef.current) return;
@@ -67,15 +64,12 @@ export const useTranslatedTextLogic = () => {
     const loadHistoryIntoMemory = async () => {
       try {
         const items = await historyService.getAll(user.id);
-        // Load the last 50 items (already sorted desc by created_at)
         const recent = items.slice(0, 50);
 
-        // Iterate in reverse so oldest are added first (memory is chronological)
         for (let i = recent.length - 1; i >= 0; i--) {
           const item = recent[i];
           if (!item.source_text?.trim() || !item.translated_text?.trim()) continue;
 
-          // Populate translation memory for model context
           translationMemory.add(
             item.source_text.trim(),
             item.translated_text.trim(),
@@ -90,7 +84,6 @@ export const useTranslatedTextLogic = () => {
 
     loadHistoryIntoMemory();
   }, [user, modelId]);
-
 
 
   // HANDLE TRANSLATION REQUEST AND MANAGE STREAMING RESPONSE
@@ -163,7 +156,6 @@ export const useTranslatedTextLogic = () => {
   const deleteTimeoutRef = React.useRef<number | null>(null);
 
 
-
   // COPY TRANSLATED TEXT TO CLIPBOARD
   const copyHandler = async () => {
     try {
@@ -187,7 +179,6 @@ export const useTranslatedTextLogic = () => {
   };
 
 
-
   // DEBOUNCE TRANSLATE HANDLER FOR PERFORMANCE
   const debouncedTranslateHandler = React.useMemo(
     () =>
@@ -198,12 +189,10 @@ export const useTranslatedTextLogic = () => {
   );
 
 
-
   // TRIGGER TRANSLATION WHEN URL PARAMS OR AUTH STATE CHANGES
   React.useEffect(() => {
     currentTextRef.current = text;
 
-    // CLEAR PREVIOUS TRANSLATION WHEN THE MODEL OR PROVIDER CHANGES
     const modelChanged = prevModelKeyRef.current !== modelId || prevProviderRef.current !== apiProvider;
     if (modelChanged) {
       invalidateCacheForModel(prevModelKeyRef.current);
@@ -286,7 +275,6 @@ export const useTranslatedTextLogic = () => {
   }, [text, tl, sl, modelId, debouncedTranslateHandler, user, apiKey, apiProvider, authLoading, keysLoaded, keysLoading, keysForUserId]);
 
 
-
   // DISPATCH CUSTOM EVENT WHEN TRANSLATED TEXT CHANGES
   React.useEffect(() => {
     const event = new CustomEvent("translatedTextChanged", {
@@ -306,7 +294,6 @@ export const useTranslatedTextLogic = () => {
   const [placeholderIndex, setPlaceholderIndex] = React.useState(0);
   const [displayedText, setDisplayedText] = React.useState("");
   const [isDeleting, setIsDeleting] = React.useState(false);
-
 
 
   // ANIMATE TYPEWRITER EFFECT FOR PLACEHOLDER MESSAGES
@@ -335,7 +322,6 @@ export const useTranslatedTextLogic = () => {
       }
     };
   }, [displayedText, isDeleting, placeholderIndex, messages, translatedText.length, isTranslating]);
-
 
 
   // CLEANUP DEBOUNCER AND TIMEOUTS ON UNMOUNT

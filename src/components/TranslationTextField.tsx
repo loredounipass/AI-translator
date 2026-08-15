@@ -1,13 +1,11 @@
 import React, { useEffect, useRef } from "react";
 import CloseIcon from "../assets/CloseIcon";
-import MicIcon from "assets/MicIcon";
-import PauseIcon from "assets/PauseIcon";
-import AISpeechToText from "./AISpeechToText";
-import GlassTooltip from "./GlassTooltip";
+import SpeechControls from "./SpeechControls";
 import { showMicNotDetectedNotification } from "./AppNotifications";
 import { useTranslationTextFieldLogic, MAX_URL_TEXT_LENGTH } from "../hooks/useTranslationTextFieldLogic";
 
 const TranslationTextField = () => {
+  const logic = useTranslationTextFieldLogic();
   const {
     text,
     aiStt,
@@ -26,11 +24,11 @@ const TranslationTextField = () => {
     regionesActuales,
     browserSupportsSpeechRecognition,
     isMicrophoneAvailable,
-    mediaStreamRef,
-    ensureAudioStreamActive
-  } = useTranslationTextFieldLogic();
+    isMicActive,
+    isVoiceActive,
+    startAudio
+  } = logic;
 
-  // SHOW NOTIFICATION WHEN NO MICROPHONE IS DETECTED
   const micNotifiedRef = useRef(false);
   useEffect(() => {
     if (isMicrophoneAvailable === false && !micNotifiedRef.current) {
@@ -40,19 +38,23 @@ const TranslationTextField = () => {
     if (isMicrophoneAvailable) micNotifiedRef.current = false;
   }, [isMicrophoneAvailable]);
 
+  // Determine which recording state to show
+  const isRecording = aiStt.isAiStt ? aiStt.isRecording : listening;
+  const isVoiceCurrentlyActive = aiStt.isAiStt ? isVoiceActive : isVoiceActive; // It uses the unified VAD state
+
   return (
     <div className="relative flex flex-col flex-1 min-h-0 font-sans font-normal leading-normal bg-white/40 dark:bg-slate-800/40 transition-colors">
       <div className="flex-1 relative min-h-0">
         <div
-          className={`absolute top-0 left-0 right-0 bottom-0 flex items-center justify-center text-lg text-[#9ca3af] dark:text-slate-500 font-sans pointer-events-none z-10 ${!text && (aiStt.isProcessing || aiStt.isRecording || placeholder) ? 'flex' : 'hidden'}`}
+          className={`absolute top-0 left-0 right-0 bottom-0 flex items-center justify-center text-lg text-[#9ca3af] dark:text-slate-500 font-sans pointer-events-none z-10 ${!text && (aiStt.isProcessing || isRecording || placeholder) ? 'flex' : 'hidden'}`}
         >
           {aiStt.isProcessing ? (
             <span className="animate-pulse">Transcribing...</span>
-          ) : aiStt.isRecording ? (
+          ) : isRecording ? (
             <span className="flex items-center gap-2">
-              <span className={`inline-block w-3 h-3 rounded-full transition-colors duration-200 ${aiStt.isVoiceActive ? 'bg-green-500 shadow-[0_0_8px_rgba(34,197,94,0.6)]' : 'bg-red-400 animate-pulse'}`} />
-              <span className={aiStt.isVoiceActive ? "text-green-600 dark:text-green-500 font-medium" : "text-[#9ca3af] dark:text-slate-500"}>
-                {aiStt.isVoiceActive ? "Listening..." : "Waiting..."}
+              <span className={`inline-block w-3 h-3 rounded-full transition-colors duration-200 ${isVoiceCurrentlyActive ? 'bg-green-500 shadow-[0_0_8px_rgba(34,197,94,0.6)]' : 'bg-red-400 animate-pulse'}`} />
+              <span className={isVoiceCurrentlyActive ? "text-green-600 dark:text-green-500 font-medium" : "text-[#9ca3af] dark:text-slate-500"}>
+                {isVoiceCurrentlyActive ? "Listening..." : "Waiting..."}
               </span>
             </span>
           ) : (
@@ -61,6 +63,7 @@ const TranslationTextField = () => {
             </>
           )}
         </div>
+        
         <textarea
           ref={textareaRef}
           value={text}
@@ -72,6 +75,7 @@ const TranslationTextField = () => {
           maxLength={MAX_URL_TEXT_LENGTH}
           className="absolute inset-0 w-full h-full bg-transparent border-none outline-none shadow-none text-[#111111] dark:text-slate-100 p-4 pr-10 pb-16 text-lg resize-none transition-colors duration-200 focus:outline-none focus:shadow-none custom-scrollbar"
         ></textarea>
+        
         {text && (
           <button
             className="absolute top-4 right-4 bg-none border-none cursor-pointer p-0 transition-opacity duration-200 text-[#333] dark:text-slate-400 hover:opacity-80 dark:hover:text-slate-200"
@@ -82,84 +86,29 @@ const TranslationTextField = () => {
           </button>
         )}
       </div>
+      
       <div className="flex shrink-0 pl-3 md:pl-4 pb-1">
         <span className="text-[10px] text-[#999] dark:text-slate-500 opacity-40 leading-none">
           {text.length.toLocaleString()} / {MAX_URL_TEXT_LENGTH.toLocaleString()}
         </span>
       </div>
-      <div className="flex shrink-0 items-center gap-2 flex-wrap pl-3 md:pl-4 pb-2.5">
-        <AISpeechToText
-          aiEnabled={aiStt.isAiStt}
-          onToggle={aiStt.toggleAiStt}
-          isRecording={aiStt.isRecording}
-          isProcessing={aiStt.isProcessing}
-          isVoiceActive={aiStt.isVoiceActive}
-          captureSystemAudio={aiStt.captureSystemAudio}
-          onToggleSystemAudio={aiStt.toggleSystemAudio}
-          error={aiStt.error}
-          onStartRecording={aiStt.startRecording}
-          onStopRecording={aiStt.stopRecording}
-          selectedModel={aiStt.selectedModel}
-          onModelChange={aiStt.setSelectedModel}
-        />
-        {!aiStt.isAiStt && browserSupportsSpeechRecognition && (
-          <div className="flex items-center gap-2">
-            <GlassTooltip label="Speech to Text">
-              <button
-                type="button"
-                role="switch"
-                aria-checked={keepMicOn}
-                aria-label="Toggle keep microphone on"
-                onClick={() => setKeepMicOn(prev => !prev)}
-                onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setKeepMicOn(prev => !prev); } }}
-                className={`w-11 h-6 rounded-full border-none relative cursor-pointer p-0 transition-colors ${keepMicOn ? 'bg-[#4caf50] dark:bg-green-500' : 'bg-black dark:bg-slate-600'}`}
-              >
-                <span style={{
-                  position: 'absolute',
-                  top: 2,
-                  left: keepMicOn ? 22 : 2,
-                  width: 20,
-                  height: 20,
-                  borderRadius: '50%',
-                  background: '#fff',
-                  transition: 'left 0.15s',
-                  boxShadow: '0 1px 2px rgba(0,0,0,0.2)'
-                }} />
-              </button>
-            </GlassTooltip>
-            <button
-              onMouseDown={() => { if (!mediaStreamRef.current && keepMicOn) ensureAudioStreamActive(); }}
-              onTouchStart={() => { if (!mediaStreamRef.current && keepMicOn) ensureAudioStreamActive(); }}
-              onClick={handleSpeech}
-              disabled={isProcessing}
-              aria-label={listening ? "Detener reconocimiento" : "Iniciar reconocimiento"}
-              className="bg-none border-none cursor-pointer p-1 transition-all duration-200 text-[#111] dark:text-slate-300 disabled:cursor-not-allowed disabled:opacity-50 hover:not-disabled:scale-105"
-            >
-              {listening ? <PauseIcon /> : <MicIcon />}
-            </button>
-            {regionesActuales && (
-              <div className="flex items-center ml-2 pl-2 border-l border-slate-200 dark:border-slate-700">
-                <GlassTooltip label="Jerga">
-                  <select
-                    value={regionActual}
-                    onChange={(e) => handleChangeRegion(e.target.value)}
-                    className="glass-select text-slate-700 dark:text-slate-200 text-xs rounded-lg px-2 py-1 outline-none focus:border-blue-400 shadow-sm font-sans w-24 truncate transition-colors cursor-pointer"
-                  >
-                    {(regionesFiltradas ?? regionesActuales).map(r => (
-                      <option key={r.code} value={r.code}>
-                        {r.nombre}
-                      </option>
-                    ))}
-                  </select>
-                </GlassTooltip>
-              </div>
-            )}
-          </div>
-        )}
-        {!aiStt.isAiStt && !browserSupportsSpeechRecognition && (
-          <p className="text-xs text-slate-400">Reconocimiento de voz no soportado</p>
-        )}
-      </div>
+      
+      {/* Speech Controls Component */}
+      <SpeechControls
+        aiStt={aiStt}
+        keepMicOn={keepMicOn}
+        setKeepMicOn={setKeepMicOn}
+        handleSpeech={handleSpeech}
+        isProcessing={isProcessing}
+        listening={listening}
+        regionActual={regionActual}
+        handleChangeRegion={handleChangeRegion}
+        regionesFiltradas={regionesFiltradas}
+        regionesActuales={regionesActuales}
+        browserSupportsSpeechRecognition={browserSupportsSpeechRecognition}
+        startAudio={startAudio}
+        isMicActive={isMicActive}
+      />
     </div>
   );
 };
