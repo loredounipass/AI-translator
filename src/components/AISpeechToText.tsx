@@ -90,6 +90,7 @@ const AISpeechToText = ({
           size="small"
           className="stt-select w-24 text-xs"
           popupMatchSelectWidth={false}
+          popupClassName="region-select"
           disabled={isRecording || isProcessing}
         />
       )}
