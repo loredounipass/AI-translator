@@ -1,5 +1,4 @@
 import React, { useEffect } from "react";
-import { Select } from "antd";
 import MicIcon from "../assets/MicIcon";
 import PauseIcon from "../assets/PauseIcon";
 import { showErrorToast } from "./AppNotifications";
@@ -82,17 +81,18 @@ const AISpeechToText = ({
       <ToggleSwitch checked={aiEnabled} onChange={onToggle} tooltip="AI Transcription" />
       
       {aiEnabled && (
-        <Select
+        <select
           value={selectedModel}
-          onChange={onModelChange}
-          options={AI_MODELS}
-          optionLabelProp="shortLabel"
-          size="small"
-          className="stt-select w-24 text-xs"
-          popupMatchSelectWidth={false}
-          popupClassName="region-select"
+          onChange={(e) => onModelChange(e.target.value)}
           disabled={isRecording || isProcessing}
-        />
+          className="glass-select text-slate-700 dark:text-slate-200 text-xs rounded-lg px-2 py-1 outline-none focus:border-blue-400 shadow-sm font-sans w-32 truncate transition-colors cursor-pointer"
+        >
+          {AI_MODELS.map((model) => (
+            <option key={model.value} value={model.value}>
+              {model.shortLabel}
+            </option>
+          ))}
+        </select>
       )}
 
       {aiEnabled && (

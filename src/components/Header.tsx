@@ -4,7 +4,6 @@ import type { User } from "@supabase/supabase-js";
 import { AI_MODELS, DEFAULT_MODEL } from "utils/constants";
 import { useApiKey } from "contexts/ApiKeyContext";
 import UserAvatar from "./UserAvatar";
-import { Select } from "antd";
 
 import { SunIcon, MoonIcon, HistoryIcon, UserIcon } from "./icons";
 
@@ -34,9 +33,14 @@ const Header = ({
   const currentProvider = searchParams.get("provider") || AI_MODELS[currentModel]?.apiProvider || "nvidia";
   const { getKey } = useApiKey();
 
-  const handleModelChange = (value: string) => {
+  const handleModelChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    const value = e.target.value;
     if (value === "__settings__") {
       onOpenApiSettings();
+      setTimeout(() => {
+        const el = e.target;
+        el.value = currentModel;
+      }, 0);
       return;
     }
     const modelConfig = AI_MODELS[value as keyof typeof AI_MODELS];
@@ -90,10 +94,10 @@ const Header = ({
             </div>
           </div>
           <div className="flex gap-2">
-            <Select
+            <select
               value={currentProvider}
-              onChange={(value) => {
-                const newProvider = value;
+              onChange={(e) => {
+                const newProvider = e.target.value;
                 const newParams = new URLSearchParams(searchParams);
                 newParams.set("provider", newProvider);
                 if (newProvider === "nvidia") {
@@ -109,30 +113,28 @@ const Header = ({
                 }
                 setSearchParams(newParams);
               }}
-              popupMatchSelectWidth={false}
-              popupClassName="region-select"
-              className="stt-select w-[90px] sm:w-[100px] text-xs"
-              options={[
-                { value: "nvidia", label: "NVIDIA" },
-                { value: "openai", label: "OpenAI" },
-                { value: "anthropic", label: "Anthropic" },
-                { value: "google", label: "Google" }
-              ]}
-            />
+              className="glass-select text-slate-700 dark:text-slate-200 text-xs rounded-lg px-2 py-1 outline-none focus:border-blue-400 shadow-sm font-sans max-w-[100px] sm:max-w-none truncate transition-colors cursor-pointer"
+            >
+              <option value="nvidia">NVIDIA</option>
+              <option value="openai">OpenAI</option>
+              <option value="anthropic">Anthropic</option>
+              <option value="google">Google</option>
+            </select>
 
-            <Select
-              value={currentModel || undefined}
+            <select
+              value={currentModel || ""}
               onChange={handleModelChange}
-              popupMatchSelectWidth={false}
-              popupClassName="region-select"
-              className="stt-select w-[120px] sm:w-[140px] text-xs"
-              options={[
-                ...Object.entries(AI_MODELS)
-                  .filter(([_, model]) => model.apiProvider === currentProvider)
-                  .map(([key, model]) => ({ value: key, label: model.name })),
-                { value: "__settings__", label: "── API Keys ──" }
-              ]}
-            />
+              className="glass-select text-slate-700 dark:text-slate-200 text-xs rounded-lg px-2 py-1 outline-none focus:border-blue-400 shadow-sm font-sans max-w-[120px] sm:max-w-none truncate transition-colors cursor-pointer"
+            >
+              {Object.entries(AI_MODELS)
+                .filter(([_, model]) => model.apiProvider === currentProvider)
+                .map(([key, model]) => (
+                  <option key={key} value={key}>
+                    {model.name}
+                  </option>
+                ))}
+              <option value="__settings__">── API Keys ──</option>
+            </select>
           </div>
 
           <div className="relative group">
