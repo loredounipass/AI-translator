@@ -139,16 +139,17 @@ const TranslationTextField = () => {
               {listening ? <PauseIcon /> : <MicIcon />}
             </button>
             {regionesActuales && (
-              <div className="flex items-center gap-1.5 ml-2 pl-2 border-l border-slate-200 dark:border-slate-700">
-                <span className="text-[10px] uppercase tracking-widest text-slate-400 dark:text-slate-500 font-semibold">Jerga</span>
-                <Select<string>
-                  value={regionActual}
-                  onChange={handleChangeRegion}
-                  options={(regionesFiltradas ?? regionesActuales).map(r => ({ value: r.code, label: r.nombre }))}
-                  popupMatchSelectWidth={false}
-                  size="small"
-                  className="region-select stt-select w-24 text-xs"
-                />
+              <div className="flex items-center ml-2 pl-2 border-l border-slate-200 dark:border-slate-700">
+                <GlassTooltip label="Jerga">
+                  <Select<string>
+                    value={regionActual}
+                    onChange={handleChangeRegion}
+                    options={(regionesFiltradas ?? regionesActuales).map(r => ({ value: r.code, label: r.nombre }))}
+                    popupMatchSelectWidth={false}
+                    size="small"
+                    className="region-select stt-select w-24 text-xs"
+                  />
+                </GlassTooltip>
               </div>
             )}
           </div>
