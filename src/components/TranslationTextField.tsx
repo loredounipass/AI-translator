@@ -75,7 +75,7 @@ const TranslationTextField = () => {
           autoFocus
           spellCheck={false}
           maxLength={MAX_URL_TEXT_LENGTH}
-          className="absolute inset-0 w-full h-full bg-transparent border-none outline-none shadow-none text-[#111111] dark:text-slate-100 p-4 pr-10 pb-16 text-lg resize-none transition-colors duration-200 focus:outline-none focus:shadow-none custom-scrollbar"
+          className="absolute inset-0 w-full h-full bg-transparent border-none outline-none shadow-none text-[#111111] dark:text-slate-100 p-4 pl-5 md:pl-6 pr-10 pb-16 text-lg resize-none transition-colors duration-200 focus:outline-none focus:shadow-none custom-scrollbar"
         ></textarea>
         
         {text && (
