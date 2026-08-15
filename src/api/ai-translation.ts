@@ -54,9 +54,11 @@ export const translate = async (
     ? buildSimpleTranslationSystemPrompt(sourceLang, targetLang)
     : buildSystemPrompt(targetLang, sourceLang, modelId, cleanedText);
 
+  const llmInputText = cleanedText.replace(/\n/g, ' <br> ');
+
   const userPrompt = isTranslationOnly
-    ? buildSimpleTranslationUserPrompt(cleanedText)
-    : `Interpret the following text from ${sourceName} to ${targetName}. Apply first-person interpreting rules. If you need to reason or think step-by-step, you MUST wrap your reasoning entirely inside <thinking>...</thinking> tags. Your final raw interpreted text MUST be wrapped strictly inside <translation>...</translation> tags.\n\nText to interpret:\n${cleanedText}`;
+    ? buildSimpleTranslationUserPrompt(llmInputText)
+    : `Interpret the following text from ${sourceName} to ${targetName}. Apply first-person interpreting rules. If you need to reason or think step-by-step, you MUST wrap your reasoning entirely inside <thinking>...</thinking> tags. Your final raw interpreted text MUST be wrapped strictly inside <translation>...</translation> tags.\n\nText to interpret:\n${llmInputText}`;
 
   let memoryLimit = 10;
   if (modelConfig.maxOutputTokensCap && modelConfig.maxOutputTokensCap <= 2048) {
@@ -85,15 +87,19 @@ export const translate = async (
     apiKey: options?.apiKey,
     provider: options?.provider,
     signal: options?.signal,
-    onData: options?.onData,
+    onData: options?.onData ? (chunk: string) => {
+      options.onData!(chunk.replace(/ ?<br> ?/gi, '\n'));
+    } : undefined,
     textLength: cleanedText.length,
     maxOutputTokensCap: modelConfig.maxOutputTokensCap,
   });
 
-  translationCache.set(cacheKey, translated);
-  translationMemory.add(cleanedText, translated, sourceLang, targetLang);
+  const finalTranslated = translated.replace(/ ?<br> ?/gi, '\n');
 
-  return translated;
+  translationCache.set(cacheKey, finalTranslated);
+  translationMemory.add(cleanedText, finalTranslated, sourceLang, targetLang);
+
+  return finalTranslated;
 };
 
 // TRADUCIR MÚLTIPLES TEXTOS MEDIANTE MODELOS DE IA
