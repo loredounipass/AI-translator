@@ -13,9 +13,8 @@ export const ToggleSwitch = ({ checked, onChange, tooltip, disabled }: { checked
       aria-label={tooltip}
       onClick={onChange}
       disabled={disabled}
-      className={`w-11 h-6 rounded-full border-none relative cursor-pointer p-0 transition-colors disabled:opacity-50 disabled:cursor-not-allowed ${
-        checked ? "bg-blue-500" : "bg-black dark:bg-slate-600"
-      }`}
+      className={`w-11 h-6 rounded-full border-none relative cursor-pointer p-0 transition-colors disabled:opacity-50 disabled:cursor-not-allowed ${checked ? "bg-blue-500" : "bg-black dark:bg-slate-600"
+        }`}
     >
       <span
         style={{
@@ -42,16 +41,16 @@ interface SpeechControlsProps {
   handleSpeech: () => void;
   isProcessing: boolean;
   listening: boolean;
-  
+
   // Region State
   regionActual: string;
   handleChangeRegion: (region: string) => void;
   regionesFiltradas: any[] | null;
   regionesActuales: any[] | null;
-  
+
   // Browser capabilities
   browserSupportsSpeechRecognition: boolean;
-  
+
   // Unified Audio State
   startAudio: (captureSystemAudio?: boolean) => Promise<any>;
   isMicActive: boolean;
@@ -97,10 +96,10 @@ const SpeechControls = ({
       {/* Native STT Options (Hidden if AI STT is ON) */}
       {!aiStt.isAiStt && browserSupportsSpeechRecognition && (
         <div className="flex items-center gap-2">
-          <ToggleSwitch 
-            checked={keepMicOn} 
-            onChange={() => setKeepMicOn(prev => !prev)} 
-            tooltip="Mantener Micrófono Activo" 
+          <ToggleSwitch
+            checked={keepMicOn}
+            onChange={() => setKeepMicOn(prev => !prev)}
+            tooltip="Speech to Text"
           />
 
           {regionesActuales && (
