@@ -148,7 +148,7 @@ const TranslationTextField = () => {
                     popupMatchSelectWidth={false}
                     popupClassName="region-select"
                     size="small"
-                    className="region-select stt-select w-24 text-xs"
+                    className="stt-select w-24 text-xs"
                   />
                 </GlassTooltip>
               </div>
