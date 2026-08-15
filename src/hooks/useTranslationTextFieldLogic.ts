@@ -165,7 +165,7 @@ export const useTranslationTextFieldLogic = () => {
       await SpeechRecognition.stopListening();
       SpeechRecognition.abortListening();
     }
-    if (!keepMicOnRef.current && !aiStt.isRecording) {
+    if (!keepMicOnRef.current && !aiStt.isRecording && !aiStt.isAiStt) {
       stopAudio();
     }
   };
