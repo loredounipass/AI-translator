@@ -52,8 +52,6 @@ interface SpeechControlsProps {
   browserSupportsSpeechRecognition: boolean;
 
   // Unified Audio State
-  startAudio: (captureSystemAudio?: boolean) => Promise<any>;
-  isMicActive: boolean;
   captureSystemAudio: boolean;
   onToggleSystemAudio: () => void;
 }
@@ -70,8 +68,6 @@ const SpeechControls = ({
   regionesFiltradas,
   regionesActuales,
   browserSupportsSpeechRecognition,
-  startAudio,
-  isMicActive,
   captureSystemAudio,
   onToggleSystemAudio
 }: SpeechControlsProps) => {

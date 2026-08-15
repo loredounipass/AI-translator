@@ -108,8 +108,6 @@ const TranslationTextField = () => {
         regionesFiltradas={regionesFiltradas}
         regionesActuales={regionesActuales}
         browserSupportsSpeechRecognition={browserSupportsSpeechRecognition}
-        startAudio={startAudio}
-        isMicActive={isMicActive}
         captureSystemAudio={captureSystemAudio}
         onToggleSystemAudio={() => setCaptureSystemAudio(prev => !prev)}
       />
