@@ -3,6 +3,7 @@ import MicIcon from "../assets/MicIcon";
 import PauseIcon from "../assets/PauseIcon";
 import { showErrorToast } from "./AppNotifications";
 import GlassTooltip from "./GlassTooltip";
+import { AI_TRANSCRIPTION_MODELS } from "../utils/AITranscriptionModels";
 
 interface AISpeechToTextProps {
   aiEnabled: boolean;
@@ -19,11 +20,7 @@ interface AISpeechToTextProps {
   onModelChange: (model: string) => void;
 }
 
-const AI_MODELS = [
-  { value: "nvidia/nemotron-3-nano-omni-30b-a3b-reasoning", label: "Nemotron Omni 30B", shortLabel: "Nemotron Omni" },
-  { value: "google/gemini-3.5-flash", label: "Gemini 3.5 Flash", shortLabel: "Gemini Flash" },
-  { value: "google/gemini-3.5-flash-lite", label: "Gemini 3.5 Flash-Lite", shortLabel: "Gemini Lite" },
-];
+
 
 const ToggleSwitch = ({ checked, onChange, tooltip, disabled }: { checked: boolean; onChange: () => void; tooltip: string; disabled?: boolean }) => (
   <GlassTooltip label={tooltip}>
@@ -87,7 +84,7 @@ const AISpeechToText = ({
           disabled={isRecording || isProcessing}
           className="glass-select text-slate-700 dark:text-slate-200 text-xs rounded-lg px-2 py-1 outline-none focus:border-blue-400 shadow-sm font-sans w-32 truncate transition-colors cursor-pointer"
         >
-          {AI_MODELS.map((model) => (
+          {AI_TRANSCRIPTION_MODELS.map((model) => (
             <option key={model.value} value={model.value}>
               {model.shortLabel}
             </option>
