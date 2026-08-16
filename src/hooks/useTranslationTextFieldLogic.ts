@@ -263,6 +263,8 @@ export const useTranslationTextFieldLogic = () => {
           const slSanitizado = effectiveSl.toLowerCase().trim().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
           const idiomaOptimizado = normalizarLocale(MAPEO_LOCALES[slSanitizado] || sl);
           
+          resetTranscript();
+          previousTranscriptRef.current = "";
           textAtMicStartRef.current = text;
           
           await SpeechRecognition.startListening({
