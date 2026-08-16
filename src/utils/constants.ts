@@ -80,8 +80,9 @@ export const AI_MODELS: Record<string, AIModel> = {
     apiProvider: "nvidia",
     free: true,
     modelType: "chat",
-    temperature: 0.2,
-    topP: 0.9,
+    temperature: 1,
+    topP: 1,
+    maxOutputTokensCap: 4096,
   },
   "nvidia-riva": {
     id: "nvidia/riva-translate-4b-instruct-v1.1",
