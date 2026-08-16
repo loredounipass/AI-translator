@@ -63,6 +63,17 @@ export const AI_MODELS: Record<string, AIModel> = {
     topP: 0.9,
     maxOutputTokensCap: 2048,
   },
+  "mistral-nemotron": {
+    id: "mistralai/mistral-nemotron",
+    name: "Mistral Nemotron",
+    provider: "NVIDIA",
+    apiProvider: "nvidia",
+    free: true,
+    modelType: "chat",
+    temperature: 0.6,
+    topP: 0.7,
+    maxOutputTokensCap: 4096,
+  },
   "nvidia-gpt-oss": {
     id: "openai/gpt-oss-20b",
     name: "GPT-OSS 20B",
