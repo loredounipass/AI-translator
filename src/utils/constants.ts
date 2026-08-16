@@ -72,7 +72,7 @@ export const AI_MODELS: Record<string, AIModel> = {
     apiProvider: "nvidia",
     free: true,
     modelType: "chat",
-    temperature: 0.0,
+    temperature: 0.2,
     topP: 0.9,
     //maxOutputTokensCap: 4096,
   },
