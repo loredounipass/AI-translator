@@ -39,8 +39,10 @@ export const AI_MODELS: Record<string, AIModel> = {
     apiProvider: "nvidia",
     free: true,
     modelType: "chat",
-    temperature: 0.0,
-    topP: 0.9,
+    temperature: 0.2,
+    topP: 0.7,
+    maxOutputTokensCap: 1024,
+
   },
   "nvidia-nemotron": {
     id: "nvidia/nemotron-3-nano-30b-a3b",
