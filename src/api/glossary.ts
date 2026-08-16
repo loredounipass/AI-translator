@@ -81,6 +81,23 @@ export const GLOSSARY: Record<string, Record<string, Record<string, string>>> = 
       "declaración de culpabilidad": "guilty plea",
       "apelar": "to appeal"
     },
+
+    "business_ames": {
+      "remitly": "remitly",
+      "wester union": "wester union",
+      "moneygram": "moneygram",
+      "spectrum": "spectrum",
+      "verizon": "verizon",
+      "at&t": "at&t",
+      "spectrum bill": "spectrum bill",
+      "verizon bill": "verizon bill",
+      "at&t bill": "at&t bill",
+      "Department of Labor of New York": "Department of Labor of New York",
+      "New York State Tax Department": "New York State Tax Department",
+      "NYS DOL": "New York State Tax Department",
+      "NYS Tax Department": "New York State Tax Department"
+    },
+
     "veterinary_banfield": {
       "pulgas": "fleas",
       "garrapatas": "ticks",
