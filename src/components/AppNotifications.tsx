@@ -67,7 +67,7 @@ export const showHistoryLimitNotification = () => {
     ),
     description: (
       <span style={{ fontSize: 13, color: "#64748b", lineHeight: 1.5 }}>
-        You have reached the maximum limit of 100 translation pairs. You must clear your history.
+        You have reached the maximum limit of 300 translation pairs. You must clear your history.
       </span>
     ),
     icon: (

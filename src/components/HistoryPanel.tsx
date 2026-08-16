@@ -34,7 +34,7 @@ const HistoryPanel = ({ isOpen, onClose }: HistoryPanelProps) => {
     const data = await historyService.getAll(user.id);
     
     // Check limit
-    if (data.length >= 100) {
+    if (data.length >= 300) {
       showHistoryLimitNotification();
     }
     

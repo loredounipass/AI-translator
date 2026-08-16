@@ -19,6 +19,11 @@ export const useUnifiedAudio = ({ onSilenceTimeout, enableVad = true }: UseUnifi
   const audioContextRef = useRef<AudioContext | null>(null);
   const mixAudioContextRef = useRef<AudioContext | null>(null);
   const analyserRef = useRef<AnalyserNode | null>(null);
+  
+  const onSilenceTimeoutRef = useRef(onSilenceTimeout);
+  useEffect(() => {
+    onSilenceTimeoutRef.current = onSilenceTimeout;
+  }, [onSilenceTimeout]);
 
   const vadIntervalRef = useRef<number | null>(null);
   const silenceTimerRef = useRef<number | null>(null);
@@ -140,16 +145,16 @@ export const useUnifiedAudio = ({ onSilenceTimeout, enableVad = true }: UseUnifi
         activeFramesRef.current = 0;
 
         if (silentFramesRef.current >= silenceHoldCount) {
-          if (!silenceTimerRef.current && onSilenceTimeout) {
+          if (!silenceTimerRef.current && onSilenceTimeoutRef.current) {
             silenceTimerRef.current = window.setTimeout(() => {
-              onSilenceTimeout();
+              onSilenceTimeoutRef.current?.();
               silenceTimerRef.current = null;
             }, silenceTimeout);
           }
         }
       }
     }, vadCheckInterval);
-  }, [cleanupVAD, enableVad, onSilenceTimeout]);
+  }, [cleanupVAD, enableVad]);
 
 
   // INICIA LA CAPTURA DEL MICRÓFONO Y OPCIONALMENTE EL AUDIO DEL SISTEMA
