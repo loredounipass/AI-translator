@@ -39,7 +39,7 @@ export const AI_MODELS: Record<string, AIModel> = {
     apiProvider: "nvidia",
     free: true,
     modelType: "chat",
-    temperature: 0.2,
+    temperature: 0.0,
     topP: 0.9,
   },
   "nvidia-nemotron": {
@@ -70,7 +70,7 @@ export const AI_MODELS: Record<string, AIModel> = {
     apiProvider: "nvidia",
     free: true,
     modelType: "chat",
-    temperature: 0.2,
+    temperature: 0.0,
     topP: 0.9,
   },
   "nvidia-gpt-oss": {
