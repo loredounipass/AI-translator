@@ -72,8 +72,8 @@ export const AI_MODELS: Record<string, AIModel> = {
     apiProvider: "nvidia",
     free: true,
     modelType: "chat",
-    temperature: null,
-    topP: null,
+    temperature: 0.0,
+    topP: 0.9,
     //maxOutputTokensCap: 4096,
   },
   "nvidia-gpt-oss": {
