@@ -317,6 +317,9 @@ export const useTranslationTextFieldLogic = () => {
     if (listening && !aiStt.isAiStt) {
       const restartWithNewLang = async () => {
         await SpeechRecognition.stopListening();
+        resetTranscript();
+        previousTranscriptRef.current = "";
+        textAtMicStartRef.current = "";
         const effectiveSl = sr || sl;
         const slSanitizado = effectiveSl.toLowerCase().trim().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
         const idiomaOptimizado = normalizarLocale(MAPEO_LOCALES[slSanitizado] || sl);
