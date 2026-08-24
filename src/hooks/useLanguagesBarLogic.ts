@@ -67,7 +67,6 @@ export const useLanguagesBarLogic = () => {
   const switchLangsHandler = () => {
     const newSource = targetLang;
     const newTarget = sourceLang;
-    const newText = translatedTextRef.current;
     const regiones = REGIONES_POR_IDIOMA[newSource];
     const nuevoSr = regiones
       ? (getSavedRegion(newSource) || regiones[0].code)
@@ -78,9 +77,7 @@ export const useLanguagesBarLogic = () => {
       params.set("tl", newTarget);
       if (nuevoSr) params.set("sr", nuevoSr);
       else params.delete("sr");
-      if (newText) {
-        params.set("text", newText.length > MAX_URL_TEXT_LENGTH ? newText.slice(0, MAX_URL_TEXT_LENGTH) : newText);
-      }
+      params.delete("text");
       return params;
     }, { replace: true });
 
