@@ -17,6 +17,7 @@ export interface AIModel {
   temperature: number | null;
   topP: number | null;
   maxOutputTokensCap?: number;
+  stream?: boolean;
 }
 
 
@@ -179,8 +180,20 @@ export const AI_MODELS: Record<string, AIModel> = {
     temperature: 0.1,
     topP: null,
   },
+  "qwen-2-5-7b-instruct": {
+    id: "qwen/qwen2.5-7b-instruct",
+    name: "Qwen 2.5 7B Instruct",
+    provider: "Alibaba",
+    apiProvider: "nvidia",
+    free: true,
+    modelType: "chat",
+    temperature: 0.5,
+    topP: 1,
+    maxOutputTokensCap: 1024,
+    stream: true,
+  },
 };
 
 
 // MODELO POR DEFECTO
-export const DEFAULT_MODEL = "nvidia-nemotron";
+export const DEFAULT_MODEL = "nvidia-llama";

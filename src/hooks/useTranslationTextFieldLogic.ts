@@ -60,8 +60,8 @@ export const useTranslationTextFieldLogic = () => {
   const placeholder = useTypewriterPlaceholder(text);
 
   const setTextParamRef = React.useRef<((value: string | ((prev: string) => string)) => void) | null>(null);
-  
-  const onChunkRef = React.useRef<(chunk: string) => void>(() => {});
+
+  const onChunkRef = React.useRef<(chunk: string) => void>(() => { });
   onChunkRef.current = (chunk: string) => {
     if (setTextParamRef.current) {
       setTextParamRef.current((prevText: string) => {
@@ -80,7 +80,7 @@ export const useTranslationTextFieldLogic = () => {
   } = useUnifiedAudio({
     onSilenceTimeout: () => {
       if (listening && !keepMicOnRef.current) {
-        SpeechRecognition.stopListening().catch(() => {});
+        SpeechRecognition.stopListening().catch(() => { });
       }
     },
     enableVad: true
@@ -94,7 +94,7 @@ export const useTranslationTextFieldLogic = () => {
 
   React.useEffect(() => {
     if (aiStt.isAiStt && listening) {
-      SpeechRecognition.stopListening().catch(() => {});
+      SpeechRecognition.stopListening().catch(() => { });
     }
   }, [aiStt.isAiStt, listening]);
 
@@ -105,7 +105,7 @@ export const useTranslationTextFieldLogic = () => {
       const nextValue = typeof value === "function" ? value(prevText) : value;
       const isOnlyWhitespace = nextValue.length > 0 && nextValue.trim() === "";
       const finalValue = isOnlyWhitespace ? "" : nextValue;
-      
+
       const truncatedValue = finalValue.length > MAX_URL_TEXT_LENGTH
         ? finalValue.slice(0, MAX_URL_TEXT_LENGTH)
         : finalValue;
@@ -118,7 +118,7 @@ export const useTranslationTextFieldLogic = () => {
         }
         return params;
       }, { replace: true });
-      
+
       return truncatedValue;
     });
   }, [setURLSearchParams, MAX_URL_TEXT_LENGTH]);
@@ -256,17 +256,17 @@ export const useTranslationTextFieldLogic = () => {
             return;
           }
           if (!mediaStream) {
-             await startAudio(false);
+            await startAudio(false);
           }
-          
+
           const effectiveSl = sr || sl;
           const slSanitizado = effectiveSl.toLowerCase().trim().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
           const idiomaOptimizado = normalizarLocale(MAPEO_LOCALES[slSanitizado] || sl);
-          
+
           resetTranscript();
           previousTranscriptRef.current = "";
           textAtMicStartRef.current = text;
-          
+
           await SpeechRecognition.startListening({
             continuous: true,
             interimResults: true,
