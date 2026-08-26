@@ -18,7 +18,6 @@ export interface AIModel {
   topP: number | null;
   maxOutputTokensCap?: number;
   stream?: boolean;
-  reasoningBudget?: number;
 }
 
 
@@ -110,18 +109,6 @@ export const AI_MODELS: Record<string, AIModel> = {
     temperature: 0.0,
     topP: 0.9,
     maxOutputTokensCap: 1024,
-  },
-  "nvidia-nemotron-omni-reasoning": {
-    id: "nvidia/nemotron-3-nano-omni-30b-a3b-reasoning",
-    name: "Nemotron 3 Nano Omni 30B Reasoning",
-    provider: "NVIDIA",
-    apiProvider: "nvidia",
-    free: true,
-    modelType: "chat",
-    temperature: 0.6,
-    topP: 0.95,
-    maxOutputTokensCap: 65536,
-    reasoningBudget: 16384,
   },
   "google-gemini-3-5-flash": {
     id: "gemini-3.5-flash",
