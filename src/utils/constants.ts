@@ -14,10 +14,10 @@ export interface AIModel {
   apiProvider: string;
   free: boolean;
   modelType: "chat" | "translation-only";
-  temperature: number | null;
-  topP: number | null;
-  maxOutputTokensCap?: number;
-  stream?: boolean;
+  // temperature: number | null;
+  // topP: number | null;
+  // maxOutputTokensCap?: number;
+  // stream?: boolean;
 }
 
 
@@ -30,8 +30,8 @@ export const AI_MODELS: Record<string, AIModel> = {
     apiProvider: "nvidia",
     free: true,
     modelType: "chat",
-    temperature: 0.2,
-    topP: 0.9,
+    // temperature: 0.2,
+    // topP: 0.9,
   },
   "nvidia-llama-3.2": {
     id: "meta/llama-3.2-3b-instruct",
@@ -40,9 +40,9 @@ export const AI_MODELS: Record<string, AIModel> = {
     apiProvider: "nvidia",
     free: true,
     modelType: "chat",
-    temperature: 0.2,
-    topP: 0.7,
-    maxOutputTokensCap: 1024,
+    // temperature: 0.2,
+    // topP: 0.7,
+    // maxOutputTokensCap: 1024,
 
   },
   "nvidia-nemotron": {
@@ -52,8 +52,8 @@ export const AI_MODELS: Record<string, AIModel> = {
     apiProvider: "nvidia",
     free: true,
     modelType: "chat",
-    temperature: 0.2,
-    topP: 0.9,
+    // temperature: 0.2,
+    // topP: 0.9,
   },
   "nvidia-nemotron-mini-4b": {
     id: "nvidia/nemotron-mini-4b-instruct",
@@ -62,9 +62,9 @@ export const AI_MODELS: Record<string, AIModel> = {
     apiProvider: "nvidia",
     free: true,
     modelType: "chat",
-    temperature: 0.2,
-    topP: 0.9,
-    maxOutputTokensCap: 2048,
+    // temperature: 0.2,
+    // topP: 0.9,
+    // maxOutputTokensCap: 2048,
   },
   "mistral-nemotron": {
     id: "mistralai/mistral-nemotron",
@@ -73,9 +73,9 @@ export const AI_MODELS: Record<string, AIModel> = {
     apiProvider: "nvidia",
     free: true,
     modelType: "chat",
-    temperature: 0.2,
-    topP: 0.9,
-    //maxOutputTokensCap: 4096,
+    // temperature: 0.2,
+    // topP: 0.9,
+    // //maxOutputTokensCap: 4096,
   },
   "nvidia-gpt-oss": {
     id: "openai/gpt-oss-20b",
@@ -84,9 +84,9 @@ export const AI_MODELS: Record<string, AIModel> = {
     apiProvider: "nvidia",
     free: true,
     modelType: "chat",
-    temperature: 0.15,
-    topP: 0.9,
-    maxOutputTokensCap: 4096,
+    // temperature: 0.15,
+    // topP: 0.9,
+    // maxOutputTokensCap: 4096,
   },
   "nvidia-riva": {
     id: "nvidia/riva-translate-4b-instruct-v1.1",
@@ -95,9 +95,9 @@ export const AI_MODELS: Record<string, AIModel> = {
     apiProvider: "nvidia",
     free: false,
     modelType: "translation-only",
-    temperature: 0.0,
-    topP: 0.9,
-    maxOutputTokensCap: 1024,
+    // temperature: 0.0,
+    // topP: 0.9,
+    // maxOutputTokensCap: 1024,
   },
   "nvidia-riva-v2": {
     id: "nvidia/riva-translate-4b-instruct-v2",
@@ -106,9 +106,9 @@ export const AI_MODELS: Record<string, AIModel> = {
     apiProvider: "nvidia",
     free: true,
     modelType: "translation-only",
-    temperature: 0.0,
-    topP: 0.9,
-    maxOutputTokensCap: 1024,
+    // temperature: 0.0,
+    // topP: 0.9,
+    // maxOutputTokensCap: 1024,
   },
   "google-gemini-3-5-flash": {
     id: "gemini-3.5-flash",
@@ -117,8 +117,8 @@ export const AI_MODELS: Record<string, AIModel> = {
     apiProvider: "google",
     free: true,
     modelType: "chat",
-    temperature: null,
-    topP: null,
+    // temperature: null,
+    // topP: null,
   },
   "google-gemini-3-1-pro": {
     id: "gemini-3.1-pro",
@@ -127,8 +127,8 @@ export const AI_MODELS: Record<string, AIModel> = {
     apiProvider: "google",
     free: false,
     modelType: "chat",
-    temperature: null,
-    topP: null,
+    // temperature: null,
+    // topP: null,
   },
   "google-gemini-3-5-flash-lite": {
     id: "gemini-3.5-flash-lite",
@@ -137,8 +137,8 @@ export const AI_MODELS: Record<string, AIModel> = {
     apiProvider: "google",
     free: true,
     modelType: "chat",
-    temperature: null,
-    topP: null,
+    // temperature: null,
+    // topP: null,
   },
   "openai-gpt-4o-mini": {
     id: "gpt-4o-mini",
@@ -147,8 +147,8 @@ export const AI_MODELS: Record<string, AIModel> = {
     apiProvider: "openai",
     free: false,
     modelType: "chat",
-    temperature: 0.0,
-    topP: 1.0,
+    // temperature: 0.0,
+    // topP: 1.0,
   },
   "openai-gpt-4.1-nano": {
     id: "gpt-4.1-nano",
@@ -157,8 +157,8 @@ export const AI_MODELS: Record<string, AIModel> = {
     apiProvider: "openai",
     free: false,
     modelType: "chat",
-    temperature: 0.0,
-    topP: 1.0,
+    // temperature: 0.0,
+    // topP: 1.0,
   },
   "anthropic-claude-haiku-3-5": {
     id: "claude-3-5-haiku-20241022",
@@ -167,8 +167,8 @@ export const AI_MODELS: Record<string, AIModel> = {
     apiProvider: "anthropic",
     free: false,
     modelType: "chat",
-    temperature: 0.1,
-    topP: null,
+    // temperature: 0.1,
+    // topP: null,
   },
   "anthropic-claude-sonnet-3-5": {
     id: "claude-3-5-sonnet-20241022",
@@ -177,8 +177,8 @@ export const AI_MODELS: Record<string, AIModel> = {
     apiProvider: "anthropic",
     free: false,
     modelType: "chat",
-    temperature: 0.1,
-    topP: null,
+    // temperature: 0.1,
+    // topP: null,
   },
 };
 
