@@ -10,9 +10,9 @@ import { AI_MODELS, AIModel } from "../utils/constants";
 const resolveModelConfig = (modelId: string) => {
   const entry = Object.values(AI_MODELS).find((m) => m.id === modelId);
   return {
-    temperature: entry?.temperature ?? 0.1,
-    topP: entry?.topP ?? undefined,
-    maxOutputTokensCap: entry?.maxOutputTokensCap,
+    // temperature: entry?.temperature ?? 0.1,
+    // topP: entry?.topP ?? undefined,
+    // maxOutputTokensCap: entry?.maxOutputTokensCap,
     modelType: entry?.modelType ?? "chat",
   };
 };
@@ -59,9 +59,10 @@ export const translate = async (
     : `Interpret the following text from ${sourceName} to ${targetName}. Apply first-person interpreting rules. If you need to reason or think step-by-step, you MUST wrap your reasoning entirely inside <thinking>...</thinking> tags. Your final raw interpreted text MUST be wrapped strictly inside <translation>...</translation> tags.\n\nText to interpret:\n${cleanedText}`;
 
   let memoryLimit = 10;
-  if (modelConfig.maxOutputTokensCap && modelConfig.maxOutputTokensCap <= 2048) {
-    memoryLimit = 2; // Strict limit for models with tiny context windows
-  } else if (modelId.includes("3b") || modelId.includes("4b") || modelId.includes("mini") || modelId.includes("nano")) {
+  // if (modelConfig.maxOutputTokensCap && modelConfig.maxOutputTokensCap <= 2048) {
+  //   memoryLimit = 2; // Strict limit for models with tiny context windows
+  // } else if (modelId.includes("3b") || modelId.includes("4b") || modelId.includes("mini") || modelId.includes("nano")) {
+  if (modelId.includes("3b") || modelId.includes("4b") || modelId.includes("mini") || modelId.includes("nano")) {
     memoryLimit = 2; // Strict limit for small parameter models
   } else if (modelId.includes("8b")) {
     memoryLimit = 5; // Moderate limit for medium models
@@ -80,14 +81,14 @@ export const translate = async (
   const translated = await executeTranslationRequest({
     modelId,
     messages,
-    temperature: modelConfig.temperature,
-    topP: modelConfig.topP,
+    // temperature: modelConfig.temperature,
+    // topP: modelConfig.topP,
     apiKey: options?.apiKey,
     provider: options?.provider,
     signal: options?.signal,
     onData: options?.onData,
     textLength: cleanedText.length,
-    maxOutputTokensCap: modelConfig.maxOutputTokensCap,
+    // maxOutputTokensCap: modelConfig.maxOutputTokensCap,
   });
 
   translationCache.set(cacheKey, translated);
