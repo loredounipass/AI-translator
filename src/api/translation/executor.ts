@@ -6,7 +6,7 @@ import { executeStandardRequest, StandardRequestOptions } from "./standard";
 export interface TranslationExecutorOptions {
   modelId: string;
   messages: any[];
-  temperature: number | null;
+  temperature?: number | null;
   topP?: number | null;
   apiKey?: string;
   provider?: string;
