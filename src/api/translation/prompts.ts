@@ -1,72 +1,8 @@
-import { GLOSSARY } from "../glossary";
 import { getLanguageName } from "./constants";
 
 // ESTO CREA EL PROMPT DEL SYSTEM CON EL GLOSARIO (PARA MODELOS DE CHAT/INSTRUCT)
 export const buildSystemPrompt = (targetLang: string, sourceLang: string, modelId: string, sourceText = ""): string => {
   const targetName = getLanguageName(targetLang);
-
-  const exactKey = `${sourceLang}-${targetLang}`;
-  const reverseKey = `${targetLang}-${sourceLang}`;
-
-  let pairGlossary = GLOSSARY[exactKey];
-  let isReversed = false;
-
-  if (!pairGlossary && GLOSSARY[reverseKey]) {
-    pairGlossary = GLOSSARY[reverseKey];
-    isReversed = true;
-  }
-
-  // RAG CON TEXTO LIMPIO PARA QUE COINCIDA CON LOS TERMINOS DEL GLOSARIO
-  const sourceTextLower = sourceText.toLowerCase();
-  let domainRules = "";
-  if (pairGlossary) {
-    let termsOutput = "";
-    for (const [domain, terms] of Object.entries(pairGlossary)) {
-
-      // NORMALIZA LA PUNTUACION PARA QUE COINCIDA CON LOS TERMINOS DEL GLOSARIO
-      const cleanSourceText = ` ${sourceTextLower.replace(/[^\w\sáéíóúñü]/g, ' ')} `;
-
-      // MATCHING FLEXIBLE (STEMMING LIGERO) PARA TOLERAR PLURALES Y CONJUGACIONES BÁSICAS
-      const isTermInText = (term: string, text: string): boolean => {
-        let root = term.trim().toLowerCase();
-        // Extraemos una raíz básica (si la palabra es suficientemente larga)
-        if (root.length > 4) {
-          if (root.endsWith('es')) root = root.slice(0, -2);
-          else if (root.endsWith('s')) root = root.slice(0, -1);
-        }
-        const escapedRoot = root.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-        // Permite hasta 3 caracteres extra para variaciones (s, es, ed, ing, os, as, o, a)
-        const regex = new RegExp(`\\b${escapedRoot}[a-záéíóúñ]{0,3}\\b`, 'i');
-        return regex.test(text);
-      };
-
-      const relevantTerms = sourceTextLower
-        ? Object.entries(terms).filter(([src, tgt]) => {
-          const searchTerm = (isReversed ? tgt : src).toLowerCase();
-          return isTermInText(searchTerm, cleanSourceText);
-        })
-        : Object.entries(terms);
-
-      if (relevantTerms.length === 0) continue;
-
-      let domainName = domain.toUpperCase().replace(/_/g, " ");
-      if (domain === "medical_vns") domainName = "MEDICAL / VNS HEALTH / MEDICARE";
-      if (domain === "legal_us") domainName = "US LEGAL / COURT";
-      if (domain === "veterinary_banfield") domainName = "VETERINARY / BANFIELD PET HOSPITAL";
-
-      const formattedTerms = relevantTerms
-        .map(([src, tgt]) => isReversed ? `    - "${tgt}" → "${src}"` : `    - "${src}" → "${tgt}"`)
-        .join("\n");
-      termsOutput += `  [${domainName}]:\n${formattedTerms}\n`;
-    }
-
-    if (termsOutput) {
-      domainRules = `
-- The following glossary provides examples of REQUIRED domain-specific terminology. You MUST use these exact equivalents when they appear:
-${termsOutput.trimEnd()}
-- IMPORTANT: This glossary is not exhaustive. You must analyze the context of the phrase to identify the specific domain (e.g., medical, legal, automotive, veterinary) and independently apply the most accurate, natural, and professional terminology for that domain, even for words not listed above.`;
-    }
-  }
 
   let dialectRule = "";
   if (targetLang === "en") dialectRule = "\n- Use professional American English (US dialect, not British).";
@@ -74,7 +10,7 @@ ${termsOutput.trimEnd()}
 
   const styleRules = `
 STYLE RULES & DOMAIN TERMINOLOGY - MANDATORY:
-- Maintain formal/professional tone appropriate for business, medical, and legal contexts.${dialectRule}${domainRules}`;
+- Maintain formal/professional tone appropriate for business, medical, and legal contexts.${dialectRule}`;
 
   const shortContext = `CONTEXT ABOUT THE USER'S JOB (FOR YOUR UNDERSTANDING ONLY):\nThe user is a professional over-the-phone interpreter. YOUR ONLY job is to interpret the text exactly as requested.\n\n`;
 
