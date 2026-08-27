@@ -23,27 +23,16 @@ export interface AIModel {
 
 // REGISTRO DE MODELOS DE IA DISPONIBLES
 export const AI_MODELS: Record<string, AIModel> = {
-  "nvidia-llama": {
-    id: "meta/llama-3.1-8b-instruct",
-    name: "Llama 3.1 8B",
-    provider: "Meta",
+  "nvidia-diffusiongemma": {
+    id: "google/diffusiongemma-26b-a4b-it",
+    name: "DiffusionGemma 26B A4B IT",
+    provider: "Google",
     apiProvider: "nvidia",
     free: true,
     modelType: "chat",
-    // temperature: 0.2,
-    // topP: 0.9,
-  },
-  "nvidia-llama-3.2": {
-    id: "meta/llama-3.2-3b-instruct",
-    name: "Llama 3.2 3B",
-    provider: "Meta",
-    apiProvider: "nvidia",
-    free: true,
-    modelType: "chat",
-    // temperature: 0.2,
-    // topP: 0.7,
-    // maxOutputTokensCap: 1024,
-
+    // temperature: 1,
+    // topP: 0.95,
+    // maxOutputTokensCap: 4096,
   },
   "nvidia-nemotron": {
     id: "nvidia/nemotron-3-nano-30b-a3b",
@@ -184,4 +173,4 @@ export const AI_MODELS: Record<string, AIModel> = {
 
 
 // MODELO POR DEFECTO
-export const DEFAULT_MODEL = "nvidia-llama";
+export const DEFAULT_MODEL = "nvidia-diffusiongemma";
