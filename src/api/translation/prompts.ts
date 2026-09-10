@@ -76,7 +76,7 @@ RULES:
 export const buildSimpleTranslationSystemPrompt = (sourceLang: string, targetLang: string): string => {
   // Riva espera un formato como "en-es" o "en-es-es" en el system prompt para definir el par de idiomas.
   // Mapeamos los códigos genéricos a los que espera Riva si es necesario, o simplemente pasamos el source-target.
-  return \`\${sourceLang}-\${targetLang}\`;
+  return `${sourceLang}-${targetLang}`;
 };
 
 // NUEVO: PROMPT DE USUARIO PARA MODELOS DE TRADUCCIÓN PURA
