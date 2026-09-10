@@ -50,6 +50,14 @@ export const AI_MODELS: Record<string, AIModel> = {
     free: true,
     modelType: "chat",
   },
+  "nvidia-nemotron-3-ultra": {
+    id: "nvidia/nemotron-3-ultra-550b-a55b",
+    name: "Nemotron 3 Ultra 550B",
+    provider: "NVIDIA",
+    apiProvider: "nvidia",
+    free: true,
+    modelType: "chat",
+  },
 
   "nvidia-riva": {
     id: "nvidia/riva-translate-4b-instruct-v1.1",
