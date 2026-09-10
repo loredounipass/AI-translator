@@ -3,6 +3,8 @@ import { analyzeAudioFrame } from "../utils/vadMath";
 import { vadCheckInterval, silenceHoldCount, silenceTimeout } from "../utils/vadConstants";
 import { showAudioErrorNotification, showWarningToast, showInfoToast } from "../components/AppNotifications";
 
+let audioOperationId = 0;
+
 interface UseUnifiedAudioOptions {
   onSilenceTimeout?: () => void;
   enableVad?: boolean;
@@ -83,13 +85,23 @@ export const useUnifiedAudio = ({ onSilenceTimeout, enableVad = true }: UseUnifi
 
 
   // INICIA LA DETECCIÓN DE VOZ ANALIZANDO EL FLUJO DE AUDIO EN INTERVALOS
-  const startVAD = useCallback((stream: MediaStream) => {
+  // FIX 1: Guard contra AudioContext duplicados - reutiliza existente o crea uno solo
+  const startVAD = useCallback((stream: MediaStream, existingCtx?: AudioContext) => {
     if (!enableVad) return;
     cleanupVAD();
 
-    const AudioCtx = (window as any).AudioContext || (window as any).webkitAudioContext;
-    const audioCtx = new AudioCtx({ sampleRate: 16000 });
-    audioContextRef.current = audioCtx;
+    // FIX 1: Si ya existe un AudioContext del mixer, reutilizarlo para evitar
+    // múltiples consumers del micrófono que causan eco
+    let audioCtx: AudioContext;
+    if (existingCtx && existingCtx.state !== "closed") {
+      audioCtx = existingCtx;
+    } else if (audioContextRef.current && audioContextRef.current.state !== "closed") {
+      audioCtx = audioContextRef.current;
+    } else {
+      const AudioCtx = (window as any).AudioContext || (window as any).webkitAudioContext;
+      audioCtx = new AudioCtx({ sampleRate: 16000 });
+      audioContextRef.current = audioCtx;
+    }
 
     if (audioCtx.state === "suspended") {
       audioCtx.resume().catch(console.warn);
@@ -99,6 +111,7 @@ export const useUnifiedAudio = ({ onSilenceTimeout, enableVad = true }: UseUnifi
     const analyser = audioCtx.createAnalyser();
     analyser.fftSize = 2048;
     source.connect(analyser);
+    // FIX 1: No conectar analyser a destination para evitar feedback de audio
     analyserRef.current = analyser;
 
     const floatData = new Float32Array(analyser.fftSize);
@@ -158,8 +171,11 @@ export const useUnifiedAudio = ({ onSilenceTimeout, enableVad = true }: UseUnifi
 
 
   // INICIA LA CAPTURA DEL MICRÓFONO Y OPCIONALMENTE EL AUDIO DEL SISTEMA
+  // FIX 2 & 4: Operación cancelable con ID único para prevenir race conditions
   const startAudio = useCallback(async (captureSystemAudio = false) => {
+    const currentOpId = ++audioOperationId;
     cleanupStreams();
+
     try {
       const micStream = await navigator.mediaDevices.getUserMedia({
         audio: {
@@ -170,9 +186,17 @@ export const useUnifiedAudio = ({ onSilenceTimeout, enableVad = true }: UseUnifi
           autoGainControl: true
         }
       });
+
+      // FIX 4: Si otra operación inició mientras esperábamos, abortar esta
+      if (currentOpId !== audioOperationId) {
+        micStream.getTracks().forEach(t => t.stop());
+        return undefined;
+      }
+
       streamRef.current = micStream;
 
       let finalStream = micStream;
+      let mixerCtx: AudioContext | undefined;
 
       if (captureSystemAudio) {
         try {
@@ -186,6 +210,14 @@ export const useUnifiedAudio = ({ onSilenceTimeout, enableVad = true }: UseUnifi
             },
             video: true
           });
+
+          // FIX 4: Verificar cancelación después de getDisplayMedia (popup largo)
+          if (currentOpId !== audioOperationId) {
+            displayStream.getTracks().forEach(t => t.stop());
+            micStream.getTracks().forEach(t => t.stop());
+            streamRef.current = null;
+            return undefined;
+          }
           
           const hasAudioTrack = displayStream.getAudioTracks().length > 0;
           if (!hasAudioTrack) {
@@ -206,6 +238,7 @@ export const useUnifiedAudio = ({ onSilenceTimeout, enableVad = true }: UseUnifi
             const AudioCtx = (window as any).AudioContext || (window as any).webkitAudioContext;
             const mixCtx = new AudioCtx({ sampleRate: 16000 });
             mixAudioContextRef.current = mixCtx;
+            mixerCtx = mixCtx;
             if (mixCtx.state === 'suspended') {
               mixCtx.resume().catch(console.warn);
             }
@@ -215,17 +248,35 @@ export const useUnifiedAudio = ({ onSilenceTimeout, enableVad = true }: UseUnifi
             finalStream = dest.stream;
           }
         } catch (err) {
+          // FIX 4: Verificar cancelación en catch
+          if (currentOpId !== audioOperationId) {
+            micStream.getTracks().forEach(t => t.stop());
+            streamRef.current = null;
+            return undefined;
+          }
           console.warn("Error capturando sistema:", err);
           showInfoToast("Cancelado", "Captura de sistema cancelada");
         }
       }
 
+      // FIX 4: Verificación final antes de commit
+      if (currentOpId !== audioOperationId) {
+        finalStream.getTracks().forEach(t => t.stop());
+        if (streamRef.current && streamRef.current !== finalStream) {
+          streamRef.current.getTracks().forEach(t => t.stop());
+        }
+        streamRef.current = null;
+        return undefined;
+      }
+
       setMediaStream(finalStream);
       setIsMicActive(true);
-      startVAD(finalStream);
+      // FIX 2: Pasar el mixerCtx al VAD para reutilizarlo y evitar doble AudioContext
+      startVAD(finalStream, mixerCtx);
 
       return finalStream;
     } catch (err) {
+      if (currentOpId !== audioOperationId) return undefined;
       console.error("Error iniciando audio unificado:", err);
       cleanupStreams();
       showAudioErrorNotification("Micrófono denegado", "No se pudo acceder al micrófono.");

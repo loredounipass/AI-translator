@@ -198,8 +198,11 @@ export const useTranslationTextFieldLogic = () => {
 
 
   // REINICIA EL AUDIO AL CAMBIAR EL TOGGLE DE CAPTURA DE SISTEMA
+  // FIX 3: Cancelación de operaciones previas para evitar race conditions
+  const restartOpRef = React.useRef(0);
   React.useEffect(() => {
     if (!aiStt.isAiStt) return;
+    const opId = ++restartOpRef.current;
 
     if (captureSystemAudio) {
       const restart = async () => {
@@ -207,6 +210,8 @@ export const useTranslationTextFieldLogic = () => {
         if (wasRecording) aiStt.stopRecording();
         stopAudio();
         const stream = await startAudio(true);
+        // FIX 3: Si otra operación inició mientras esperábamos, no continuar
+        if (opId !== restartOpRef.current) return;
         if (wasRecording && stream) aiStt.startRecording(stream);
       };
       restart().catch(console.error);
@@ -217,6 +222,8 @@ export const useTranslationTextFieldLogic = () => {
           if (wasRecording) aiStt.stopRecording();
           stopAudio();
           const stream = await startAudio(false);
+          // FIX 3: Verificar cancelación
+          if (opId !== restartOpRef.current) return;
           if (wasRecording && stream) aiStt.startRecording(stream);
         };
         restart().catch(console.error);
@@ -255,9 +262,10 @@ export const useTranslationTextFieldLogic = () => {
             setIsProcessing(false);
             return;
           }
-          if (!mediaStream) {
-            await startAudio(false);
-          }
+          // FIX 5: NO llamar startAudio() para STT nativo.
+          // SpeechRecognition del browser abre su propio mic internamente.
+          // Abrir otro getUserMedia causa DOBLE stream = ECO.
+          // Solo necesitamos startAudio() cuando AI STT necesita MediaRecorder.
 
           const effectiveSl = sr || sl;
           const slSanitizado = effectiveSl.toLowerCase().trim().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
@@ -340,11 +348,9 @@ export const useTranslationTextFieldLogic = () => {
       localStorage.setItem("keepMicOn", keepMicOn ? "true" : "false");
     } catch (e) { }
 
-    if (keepMicOn) {
-      if (browserSupportsSpeechRecognition && isMicrophoneAvailable && !mediaStream && !aiStt.isAiStt) {
-        startAudio(false).catch(console.warn);
-      }
-    } else if (!aiStt.isAiStt) {
+    // FIX 5: keepMicOn ya NO arranca startAudio() para STT nativo.
+    // SpeechRecognition maneja su propio mic. Arrancar otro causa eco.
+    if (!keepMicOn && !aiStt.isAiStt) {
       if (listening) {
         SpeechRecognition.stopListening().catch(() => { });
       }
