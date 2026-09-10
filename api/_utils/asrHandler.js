@@ -85,8 +85,9 @@ CRITICAL RULES:
           ]
         }
       ],
-      max_tokens: 1024,
-      temperature: 0
+      max_tokens: 512,
+      temperature: 0,
+      stream: true
     });
     options = {
       hostname: "integrate.api.nvidia.com",
@@ -114,22 +115,42 @@ CRITICAL RULES:
       proxyReq.end(payloadStr);
     });
 
-    let parsed;
-    try { parsed = JSON.parse(raw); } catch {
-      return res.status(statusCode).send(raw);
-    }
-
+    let transcribedText = "";
+    
     if (statusCode === 200) {
-      let transcribedText = "";
-
       if (reqProvider === "google") {
+        let parsed;
+        try { parsed = JSON.parse(raw); } catch {
+          return res.status(statusCode).send(raw);
+        }
         const candidate = parsed.candidates && parsed.candidates[0];
         if (candidate && candidate.content && candidate.content.parts && candidate.content.parts[0]) {
           transcribedText = (candidate.content.parts[0].text || "").trim();
         }
       } else {
-        if (parsed.choices && parsed.choices[0]) {
-          transcribedText = (parsed.choices[0].message?.content || "").trim();
+        // SSE parsing for NVIDIA stream: true
+        const lines = raw.split("\n");
+        for (const line of lines) {
+          const trimmedLine = line.trim();
+          if (!trimmedLine || trimmedLine === "data: [DONE]") continue;
+          if (trimmedLine.startsWith("data: ")) {
+            try {
+              const data = JSON.parse(trimmedLine.substring(6));
+              const content = data.choices?.[0]?.delta?.content || data.delta?.text || "";
+              transcribedText += content;
+            } catch {
+              // ignore parse errors for partial chunks
+            }
+          }
+        }
+        
+        // Extraer texto limpio de etiquetas si las hay (como <thinking> u otras)
+        const extractRegex = /<(?:translation|traduccion|interpretacion|output|result|final_translation)>([\s\S]*?)(?:<\/(?:translation|traduccion|interpretacion|output|result|final_translation)>|$)/i;
+        const match = transcribedText.match(extractRegex);
+        if (match) {
+          transcribedText = match[1].replace(/^\s*\n/, "").trim();
+        } else {
+          transcribedText = transcribedText.replace(/<(?:thinking|think)>[\s\S]*?(?:<\/(?:thinking|think)>|$)/gi, "").trim();
         }
       }
       
@@ -167,7 +188,9 @@ CRITICAL RULES:
       return res.status(200).json({ text: transcribedText });
     }
 
-    return res.status(statusCode).json(parsed);
+    let errorData;
+    try { errorData = JSON.parse(raw); } catch { errorData = raw; }
+    return res.status(statusCode).json(errorData);
   } catch (err) {
     console.error("ASR proxy error:", err);
     return res.status(502).json({ error: "An error occurred while processing the request." });

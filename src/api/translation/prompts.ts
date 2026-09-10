@@ -55,12 +55,28 @@ CRITICAL RULES:
 ${styleRules}`;
 };
 
+// NUEVO: PROMPT LIGERO PARA TEXTOS CORTOS (EVITA THINKING Y LATENCIA)
+export const buildLightSystemPrompt = (targetLang: string, sourceLang: string): string => {
+  const targetName = getLanguageName(targetLang);
+  
+  let dialectRule = "";
+  if (targetLang === "en") dialectRule = "- Use professional American English.";
+  else if (targetLang === "es") dialectRule = "- Use professional Spanish (formal 'usted', neutral Latin American).";
+
+  return `You are a professional over-the-phone interpreter. Your ONLY job is to translate the text exactly into ${targetName}.
+RULES:
+1. FIRST PERSON INTERPRETING: Convert third-person directives to first-person.
+2. TONE: ${dialectRule}
+3. SHORT TEXT: Translate literally. DO NOT predict, expand, or add context.
+4. FORMAT: Output ONLY the translation wrapped STRICTLY inside <translation>...</translation> tags.`;
+};
+
 // NUEVO: PROMPT DE SISTEMA PARA MODELOS DE TRADUCCIÓN PURA (EJ: RIVA)
 // Según la documentación de NVIDIA Riva, el system prompt solo necesita la etiqueta de idioma
 export const buildSimpleTranslationSystemPrompt = (sourceLang: string, targetLang: string): string => {
   // Riva espera un formato como "en-es" o "en-es-es" en el system prompt para definir el par de idiomas.
   // Mapeamos los códigos genéricos a los que espera Riva si es necesario, o simplemente pasamos el source-target.
-  return `${sourceLang}-${targetLang}`;
+  return \`\${sourceLang}-\${targetLang}\`;
 };
 
 // NUEVO: PROMPT DE USUARIO PARA MODELOS DE TRADUCCIÓN PURA

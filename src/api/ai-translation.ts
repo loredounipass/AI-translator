@@ -1,6 +1,6 @@
 import { getLanguageName } from "./translation/constants";
 import { translationCache, getCacheKey } from "./translation/cache";
-import { buildSystemPrompt, buildSimpleTranslationSystemPrompt, buildSimpleTranslationUserPrompt } from "./translation/prompts";
+import { buildSystemPrompt, buildSimpleTranslationSystemPrompt, buildSimpleTranslationUserPrompt, buildLightSystemPrompt } from "./translation/prompts";
 import { isTrivialText } from "./translation/filters";
 import { executeTranslationRequest } from "./translation/executor";
 import { translationMemory } from "./translation/translationMemory";
@@ -10,9 +10,6 @@ import { AI_MODELS, AIModel } from "../utils/constants";
 const resolveModelConfig = (modelId: string) => {
   const entry = Object.values(AI_MODELS).find((m) => m.id === modelId);
   return {
-    // temperature: entry?.temperature ?? 0.1,
-    // topP: entry?.topP ?? undefined,
-    // maxOutputTokensCap: entry?.maxOutputTokensCap,
     modelType: entry?.modelType ?? "chat",
   };
 };
@@ -50,13 +47,19 @@ export const translate = async (
   const sourceName = getLanguageName(sourceLang);
   const targetName = getLanguageName(targetLang);
 
+  const isShortText = cleanedText.length <= 50;
+
   const systemPrompt = isTranslationOnly
     ? buildSimpleTranslationSystemPrompt(sourceLang, targetLang)
-    : buildSystemPrompt(targetLang, sourceLang, modelId, cleanedText);
+    : (isShortText
+        ? buildLightSystemPrompt(targetLang, sourceLang)
+        : buildSystemPrompt(targetLang, sourceLang, modelId, cleanedText));
 
   const userPrompt = isTranslationOnly
     ? buildSimpleTranslationUserPrompt(cleanedText)
-    : `Interpret the following text from ${sourceName} to ${targetName}. Apply first-person interpreting rules. If you need to reason or think step-by-step, you MUST wrap your reasoning entirely inside <thinking>...</thinking> tags. Your final raw interpreted text MUST be wrapped strictly inside <translation>...</translation> tags.\n\nText to interpret:\n${cleanedText}`;
+    : (isShortText
+        ? `Interpret the following text from ${sourceName} to ${targetName}. Apply first-person interpreting rules. Your final raw interpreted text MUST be wrapped strictly inside <translation>...</translation> tags.\n\nText to interpret:\n${cleanedText}`
+        : `Interpret the following text from ${sourceName} to ${targetName}. Apply first-person interpreting rules. If you need to reason or think step-by-step, you MUST wrap your reasoning entirely inside <thinking>...</thinking> tags. Your final raw interpreted text MUST be wrapped strictly inside <translation>...</translation> tags.\n\nText to interpret:\n${cleanedText}`);
 
   let memoryLimit = 10;
   // if (modelConfig.maxOutputTokensCap && modelConfig.maxOutputTokensCap <= 2048) {

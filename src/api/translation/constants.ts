@@ -23,7 +23,9 @@ export const getAdaptiveTimeout = (textLength: number): number => {
  */
 export const getAdaptiveMaxTokens = (textLength: number, maxOutputTokensCap?: number): number => {
   let tokens: number;
-  if (textLength > 4000) tokens = 4096;
+  if (textLength <= 50) tokens = 256;
+  else if (textLength <= 200) tokens = 512;
+  else if (textLength > 4000) tokens = 4096;
   else if (textLength > 1000) tokens = 3072;
   else tokens = 2048; // Aumentado para dar espacio suficiente a los modelos de razonamiento (Chain of Thought)
 

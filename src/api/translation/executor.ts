@@ -18,11 +18,16 @@ export interface TranslationExecutorOptions {
 
 export const executeTranslationRequest = async (options: TranslationExecutorOptions): Promise<string> => {
   let lastError: Error | null = null;
+  const isReasoning = options.modelId.includes("nemotron") || options.modelId.includes("reasoning") || options.modelId.includes("think");
+  const maxRetries = isReasoning ? 2 : MAX_RETRIES;
 
-  for (let attempt = 0; attempt <= MAX_RETRIES; attempt++) {
+  for (let attempt = 0; attempt <= maxRetries; attempt++) {
     if (options?.signal?.aborted) throw new DOMException("Aborted", "AbortError");
     if (attempt > 0) {
-      const delay = BASE_DELAY * Math.pow(2, attempt - 1) + Math.random() * 1000;
+      let delay = BASE_DELAY * Math.pow(2, attempt - 1) + Math.random() * 1000;
+      if (lastError && axios.isAxiosError(lastError) && lastError.response?.status === 429) {
+        delay = 500 + Math.random() * 500;
+      }
       await wait(delay);
       if (options?.signal?.aborted) throw new DOMException("Aborted", "AbortError");
     }
@@ -61,6 +66,5 @@ export const executeTranslationRequest = async (options: TranslationExecutorOpti
     }
   }
 
-  throw new Error(`Error en traducción AI (after ${MAX_RETRIES} retries): ${(lastError as Error).message}`);
+  throw new Error(`Error en traducción AI (after ${maxRetries} retries): ${(lastError as Error).message}`);
 };
-
