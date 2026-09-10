@@ -34,6 +34,14 @@ export const AI_MODELS: Record<string, AIModel> = {
     // topP: 0.95,
     // maxOutputTokensCap: 4096,
   },
+  "nvidia-nemotron-omni": {
+    id: "nvidia/nemotron-3-nano-omni-30b-a3b-reasoning",
+    name: "Nemotron Omni 30B",
+    provider: "NVIDIA",
+    apiProvider: "nvidia",
+    free: true,
+    modelType: "chat",
+  },
 
   "nvidia-riva": {
     id: "nvidia/riva-translate-4b-instruct-v1.1",
