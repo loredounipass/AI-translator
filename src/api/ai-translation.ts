@@ -57,9 +57,7 @@ export const translate = async (
 
   const userPrompt = isTranslationOnly
     ? buildSimpleTranslationUserPrompt(cleanedText)
-    : (isShortText
-        ? `Interpret the following text from ${sourceName} to ${targetName}. Apply first-person interpreting rules. Your final raw interpreted text MUST be wrapped strictly inside <translation>...</translation> tags.\n\nText to interpret:\n${cleanedText}`
-        : `Interpret the following text from ${sourceName} to ${targetName}. Apply first-person interpreting rules. If you need to reason or think step-by-step, you MUST wrap your reasoning entirely inside <thinking>...</thinking> tags. Your final raw interpreted text MUST be wrapped strictly inside <translation>...</translation> tags.\n\nText to interpret:\n${cleanedText}`);
+    : `Interpret the following text from ${sourceName} to ${targetName}. Apply first-person interpreting rules. Return ONLY the final interpretation without any formatting, reasoning, or tags.\n\nText to interpret:\n${cleanedText}`;
 
   let memoryLimit = 10;
   // if (modelConfig.maxOutputTokensCap && modelConfig.maxOutputTokensCap <= 2048) {

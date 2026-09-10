@@ -48,9 +48,9 @@ CRITICAL RULES:
    - DO NOT wildly guess. If it's too garbled to predict, translate the fragments exactly as-is.
 
 6. MANDATORY OUTPUT FORMAT:
-   - Wrap your final interpretation inside <translation> and </translation> tags.
-   - DO NOT explain, comment, or repeat rules. Output ONLY the translation.
-   - If you must reason (only for advanced reasoning models), wrap it STRICTLY in <think>...</think> tags.
+   - Return ONLY the final translation.
+   - DO NOT explain, comment, or repeat rules.
+   - DO NOT output any reasoning, thinking, or xml tags.
 
 ${styleRules}`;
 };
@@ -68,7 +68,7 @@ RULES:
 1. FIRST PERSON INTERPRETING: Convert third-person directives to first-person.
 2. TONE: ${dialectRule}
 3. SHORT TEXT: Translate literally. DO NOT predict, expand, or add context.
-4. FORMAT: Output ONLY the translation wrapped STRICTLY inside <translation>...</translation> tags.`;
+4. FORMAT: Output ONLY the translation without any tags, explanations, or reasoning.`;
 };
 
 // NUEVO: PROMPT DE SISTEMA PARA MODELOS DE TRADUCCIÓN PURA (EJ: RIVA)
