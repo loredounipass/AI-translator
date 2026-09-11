@@ -1,0 +1,81 @@
+const DEFAULT_QWEN_URL = "https://improved-meme-9744w4gr5qjvc7655-8000.app.github.dev/v1/chat/completions";
+
+export const getApiUrl = (provider?: string): string => {
+  const isLocal = provider === "qwen_local" || provider === "local";
+  if (isLocal) {
+    return (
+      process.env.REACT_APP_QWEN_API_URL ||
+      process.env.REACT_APP_API_URL ||
+      DEFAULT_QWEN_URL
+    );
+  }
+
+  return (
+    process.env.REACT_APP_COMPLETIONS_URL ||
+    process.env.REACT_APP_API_URL ||
+    "/api/completions"
+  );
+};
+
+export const NVIDIA_API_URL = getApiUrl();
+export const MAX_RETRIES = 3;
+export const BASE_DELAY = 1000;
+export const CACHE_TTL = 3 * 60 * 1000;
+
+export const wait = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
+
+/**
+ * Calculate an adaptive timeout (ms) based on the length of the source text.
+ * Longer texts require more generation time from the LLM.
+ */
+export const getAdaptiveTimeout = (textLength: number, isLocal?: boolean): number => {
+  if (isLocal) return 120_000;
+  if (textLength > 5000) return 120_000;
+  if (textLength > 2000) return 90_000;
+  if (textLength > 500) return 60_000;
+  return 30_000;
+};
+
+/**
+ * Calculate adaptive max_tokens based on the length of the source text.
+ * Short inputs need fewer output tokens; long inputs may need up to 4096.
+ * An optional cap limits output for models with small context windows.
+ */
+export const getAdaptiveMaxTokens = (textLength: number, maxOutputTokensCap?: number): number => {
+  let tokens: number;
+  if (textLength <= 50) tokens = 256;
+  else if (textLength <= 200) tokens = 512;
+  else if (textLength > 4000) tokens = 4096;
+  else if (textLength > 1000) tokens = 3072;
+  else tokens = 2048; // Aumentado para dar espacio suficiente a los modelos de razonamiento (Chain of Thought)
+
+  return maxOutputTokensCap ? Math.min(tokens, maxOutputTokensCap) : tokens;
+};
+
+export const LANGUAGE_NAMES: Record<string, string> = {
+  ar: "Arabic",
+  da: "Danish",
+  de: "German",
+  en: "English",
+  es: "Spanish",
+  fr: "French",
+  hi: "Hindi",
+  it: "Italian",
+  id: "Indonesian",
+  ja: "Japanese",
+  ko: "Korean",
+  nl: "Dutch",
+  pl: "Polish",
+  pt: "Portuguese",
+  ru: "Russian",
+  sv: "Swedish",
+  th: "Thai",
+  tr: "Turkish",
+  vi: "Vietnamese",
+  zh: "Chinese",
+};
+
+export const getLanguageName = (code: string): string => {
+  if (code === "auto" || code === "auto-detect") return "the source language";
+  return LANGUAGE_NAMES[code] || code;
+};
