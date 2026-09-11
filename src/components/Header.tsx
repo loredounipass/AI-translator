@@ -45,14 +45,16 @@ const Header = ({
     }
     const modelConfig = AI_MODELS[value as keyof typeof AI_MODELS];
     const provider = modelConfig?.apiProvider || "nvidia";
-    if (!user) {
-      openAuth();
-      return;
-    }
-    const hasKey = getKey(provider);
-    if (!hasKey) {
-      onApiKeyNeeded(provider);
-      return;
+    if (provider !== "local") {
+      if (!user) {
+        openAuth();
+        return;
+      }
+      const hasKey = getKey(provider);
+      if (!hasKey) {
+        onApiKeyNeeded(provider);
+        return;
+      }
     }
     const newParams = new URLSearchParams(searchParams);
     newParams.set("model", value);
@@ -108,6 +110,8 @@ const Header = ({
                   newParams.set("model", "openai-gpt-4o-mini");
                 } else if (newProvider === "anthropic") {
                   newParams.set("model", "anthropic-claude-haiku-3-5");
+                } else if (newProvider === "local") {
+                  newParams.set("model", "local-qwen");
                 } else {
                   newParams.delete("model");
                 }
@@ -119,6 +123,7 @@ const Header = ({
               <option value="openai">OpenAI</option>
               <option value="anthropic">Anthropic</option>
               <option value="google">Google</option>
+              <option value="local">Local</option>
             </select>
 
             <select

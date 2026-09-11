@@ -117,12 +117,35 @@ export const executeStreamRequest = async (options: StreamRequestOptions): Promi
             }
           } catch {
           }
+        } else if (trimmedLine.startsWith("{") && trimmedLine.endsWith("}")) {
+          try {
+            const data = JSON.parse(trimmedLine);
+            const content = data.choices?.[0]?.message?.content || data.choices?.[0]?.delta?.content || data.content?.[0]?.text || "";
+            if (content) {
+              accumulatedRawText += content;
+              const cleaned = stripXmlWrapper(accumulatedRawText);
+              if (cleaned) {
+                options.onData(cleaned);
+              }
+            }
+          } catch {
+          }
         }
       }
     }
     const remaining = decoder.decode();
     if (remaining) {
-      accumulatedRawText += remaining;
+      buffer += remaining;
+    }
+    if (buffer.trim() && !accumulatedRawText) {
+      try {
+        const data = JSON.parse(buffer.trim());
+        const content = data.choices?.[0]?.message?.content || data.choices?.[0]?.delta?.content || data.content?.[0]?.text || "";
+        if (content) {
+          accumulatedRawText = content;
+        }
+      } catch {
+      }
     }
 
     if (!accumulatedRawText.trim()) {

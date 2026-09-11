@@ -151,6 +151,14 @@ export const AI_MODELS: Record<string, AIModel> = {
     // temperature: 0.1,
     // topP: null,
   },
+  "local-qwen": {
+    id: "qwen",
+    name: "Qwen (Local)",
+    provider: "Local",
+    apiProvider: "local",
+    free: true,
+    modelType: "chat",
+  },
 };
 
 

@@ -31,6 +31,18 @@ const PROVIDERS = {
     authHeader: (key) => `Bearer ${key}`,
     authHeaderName: "Authorization",
   },
+  qwen_local: {
+    hostname: "improved-meme-9744w4gr5qjvc7655-8000.app.github.dev",
+    path: "/v1/chat/completions",
+    authHeader: (key) => `Bearer ${key || "dummy-key"}`,
+    authHeaderName: "Authorization",
+  },
+  local: {
+    hostname: "improved-meme-9744w4gr5qjvc7655-8000.app.github.dev",
+    path: "/v1/chat/completions",
+    authHeader: (key) => `Bearer ${key || "dummy-key"}`,
+    authHeaderName: "Authorization",
+  },
 };
 
 const MAX_ASR_BODY = 15 * 1024 * 1024;   // 15MB

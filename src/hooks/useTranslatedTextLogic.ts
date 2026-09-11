@@ -236,7 +236,9 @@ export const useTranslatedTextLogic = () => {
 
     if (authLoading) return;
 
-    if (!userRef.current) {
+    const isLocal = apiProvider === "local" || apiProvider === "qwen_local";
+
+    if (!userRef.current && !isLocal) {
       if (!authNotifiedRef.current) {
         authNotifiedRef.current = true;
         showAuthRequiredNotification();
@@ -248,18 +250,20 @@ export const useTranslatedTextLogic = () => {
 
     authNotifiedRef.current = false;
 
-    if (keysLoading || !keysLoaded) return;
+    if (!isLocal) {
+      if (keysLoading || !keysLoaded) return;
 
-    if (user && keysForUserId !== user.id) return;
+      if (user && keysForUserId !== user.id) return;
 
-    if (!apiKey) {
-      if (!apiKeyNotifiedRef.current) {
-        apiKeyNotifiedRef.current = true;
-        showApiKeyRequiredNotification();
+      if (!apiKey) {
+        if (!apiKeyNotifiedRef.current) {
+          apiKeyNotifiedRef.current = true;
+          showApiKeyRequiredNotification();
+        }
+        setTranslatedText([]);
+        setIsStale(false);
+        return;
       }
-      setTranslatedText([]);
-      setIsStale(false);
-      return;
     }
 
     apiKeyNotifiedRef.current = false;

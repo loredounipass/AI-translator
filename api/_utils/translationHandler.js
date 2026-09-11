@@ -9,13 +9,14 @@ module.exports = async (req, res, contentLength) => {
   const apiKey = (req.body && req.body.apiKey) || "";
   const provider = (req.body && req.body.provider) || "nvidia";
 
-  if (!apiKey) {
-    return res.status(401).json({ error: `API key requerida para ${provider}` });
-  }
-
   const providerConfig = PROVIDERS[provider];
   if (!providerConfig) {
     return res.status(400).json({ error: `Provider desconocido: ${provider}` });
+  }
+
+  const isLocalProvider = provider === "local" || provider === "qwen_local";
+  if (!apiKey && !isLocalProvider) {
+    return res.status(401).json({ error: `API key requerida para ${provider}` });
   }
 
   const cleanBody = { ...req.body };
