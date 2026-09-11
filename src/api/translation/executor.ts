@@ -18,8 +18,9 @@ export interface TranslationExecutorOptions {
 
 export const executeTranslationRequest = async (options: TranslationExecutorOptions): Promise<string> => {
   let lastError: Error | null = null;
+  const isLocal = options.provider === "local" || options.provider === "qwen_local";
   const isReasoning = options.modelId.includes("nemotron") || options.modelId.includes("reasoning") || options.modelId.includes("think");
-  const maxRetries = isReasoning ? 2 : MAX_RETRIES;
+  const maxRetries = isLocal ? 1 : (isReasoning ? 2 : MAX_RETRIES);
 
   for (let attempt = 0; attempt <= maxRetries; attempt++) {
     if (options?.signal?.aborted) throw new DOMException("Aborted", "AbortError");

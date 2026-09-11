@@ -124,7 +124,6 @@ export const useTranslatedTextLogic = () => {
 
       if (translated) {
         const cleaned = cleanText(translated) || String(translated).trim();
-        console.log("[AI Translator] Final cleaned translation:", cleaned);
         setTranslatedText(cleaned ? [cleaned] : []);
 
         if (cleaned && value.trim() && userRef.current) {
@@ -138,12 +137,19 @@ export const useTranslatedTextLogic = () => {
         }
       }
     } catch (error) {
+      const isCanceled =
+        axios.isCancel(error) ||
+        (error instanceof DOMException && error.name === "AbortError") ||
+        (error as any)?.name === "CanceledError" ||
+        (error as any)?.code === "ERR_CANCELED";
+
+      if (isCanceled) {
+        return;
+      }
+
       console.error("[AI Translator] Translation error:", error);
-      if (axios.isCancel(error)) return;
-      if (!(error instanceof DOMException)) {
-        if (currentRequestId === requestIdRef.current) {
-          setTranslatedText([]);
-        }
+      if (currentRequestId === requestIdRef.current) {
+        setTranslatedText([]);
       }
     } finally {
       if (currentRequestId === requestIdRef.current) {
