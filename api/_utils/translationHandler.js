@@ -119,7 +119,7 @@ module.exports = async (req, res, contentLength) => {
           }
           resolve({ statusCode: proxyRes.statusCode, data });
         } catch {
-          reject(new Error("Parse error"));
+          resolve({ statusCode: 502, data: { error: "Invalid provider response" } });
         }
       });
     });
