@@ -48,7 +48,7 @@
         },
         {
           "key": "Content-Security-Policy",
-          "value": "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' https://www.gravatar.com data:; connect-src 'self' https://*.app.github.dev http://localhost:* https://ymlkixfdxilrdwlgmhsr.supabase.co https://integrate.api.nvidia.com wss://ymlkixfdxilrdwlgmhsr.supabase.co;"
+          "value": "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' https://www.gravatar.com data: https:; connect-src 'self' https://*.app.github.dev http://localhost:* https://*.supabase.co wss://*.supabase.co https://integrate.api.nvidia.com https://api.openai.com https://api.anthropic.com https://generativelanguage.googleapis.com;"
         }
       ]
     }
