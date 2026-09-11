@@ -31,7 +31,8 @@ export const wait = (ms: number) => new Promise(resolve => setTimeout(resolve, m
  * Calculate an adaptive timeout (ms) based on the length of the source text.
  * Longer texts require more generation time from the LLM.
  */
-export const getAdaptiveTimeout = (textLength: number): number => {
+export const getAdaptiveTimeout = (textLength: number, isLocal?: boolean): number => {
+  if (isLocal) return 120_000;
   if (textLength > 5000) return 120_000;
   if (textLength > 2000) return 90_000;
   if (textLength > 500) return 60_000;

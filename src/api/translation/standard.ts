@@ -56,21 +56,19 @@ export const executeStandardRequest = async (options: StandardRequestOptions): P
     {
       headers: { "Content-Type": "application/json" },
       signal: options.signal,
-      timeout: getAdaptiveTimeout(textLen),
+      timeout: getAdaptiveTimeout(textLen, isLocal),
     }
   );
 
   const rawContent = response.data?.choices?.[0]?.message?.content || response.data?.content?.[0]?.text;
   if (!rawContent) throw new Error("No se recibió traducción del modelo");
 
-  let translated = stripXmlWrapper(rawContent);
+  let translated = stripXmlWrapper(rawContent) || String(rawContent).trim();
 
   const isLeaking = translated.includes("CONTEXT ABOUT THE USER") || translated.includes("CRITICAL RULES") || translated.includes("MANDATORY");
   if (isLeaking) {
     throw new Error("Prompt Leakage detectado y bloqueado por seguridad.");
   }
-
-  if (!translated) throw new Error("Fallo al extraer la traducción de las etiquetas XML");
 
   return translated;
 };

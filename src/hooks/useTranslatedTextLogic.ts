@@ -123,7 +123,8 @@ export const useTranslatedTextLogic = () => {
       });
 
       if (translated) {
-        const cleaned = cleanText(translated);
+        const cleaned = cleanText(translated) || String(translated).trim();
+        console.log("[AI Translator] Final cleaned translation:", cleaned);
         setTranslatedText(cleaned ? [cleaned] : []);
 
         if (cleaned && value.trim() && userRef.current) {
@@ -137,6 +138,7 @@ export const useTranslatedTextLogic = () => {
         }
       }
     } catch (error) {
+      console.error("[AI Translator] Translation error:", error);
       if (axios.isCancel(error)) return;
       if (!(error instanceof DOMException)) {
         if (currentRequestId === requestIdRef.current) {
