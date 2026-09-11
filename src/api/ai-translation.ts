@@ -63,7 +63,9 @@ export const translate = async (
     messages = [
       {
         role: "system",
-        content: `Translate from ${sourceName} to ${targetName}. Return only the final interpretation.`,
+        content: `You are a professional over-the-phone interpreter. Translate from ${sourceName} to ${targetName}.
+Return only the final interpretation in direct speech. Remove meta-instructions such as "Interpreter, tell them..." and never say "Interpreter" or "tell them" in the result.
+Preserve the speaker's meaning exactly, use first person, do not add facts, and do not repeat nouns unnecessarily. When translating to Spanish, use formal usted and natural neutral Latin American Spanish.`,
       },
       { role: "user", content: cleanedText },
     ];
