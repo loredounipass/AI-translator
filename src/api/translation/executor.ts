@@ -34,7 +34,6 @@ export const executeTranslationRequest = async (options: TranslationExecutorOpti
     }
 
     try {
-      const isLocal = options.provider === "local" || options.provider === "qwen_local";
       if (options.onData) {
         return await executeStreamRequest(options as StreamRequestOptions);
       } else {
