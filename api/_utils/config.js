@@ -1,5 +1,6 @@
 const allowedOrigins = [
   "https://ai-translator-lovat-three.vercel.app",
+  "https://interpreter1-sooty.vercel.app",
   "http://localhost:3000",
   "http://localhost:3001",
   "http://localhost:3002",

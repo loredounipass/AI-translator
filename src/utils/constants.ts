@@ -154,8 +154,8 @@ export const AI_MODELS: Record<string, AIModel> = {
   "local-qwen": {
     id: "qwen2.5-1.5b",
     name: "Qwen (Local)",
-    provider: "Local",
-    apiProvider: "local",
+    provider: "Qwen",
+    apiProvider: "qwen_local",
     free: true,
     modelType: "chat",
   },
@@ -163,4 +163,4 @@ export const AI_MODELS: Record<string, AIModel> = {
 
 
 // MODELO POR DEFECTO
-export const DEFAULT_MODEL = "nvidia-diffusiongemma";
+export const DEFAULT_MODEL = "local-qwen";

@@ -1,4 +1,4 @@
-import { NVIDIA_API_URL, getAdaptiveTimeout, getAdaptiveMaxTokens } from "./constants";
+import { getApiUrl, getAdaptiveTimeout, getAdaptiveMaxTokens } from "./constants";
 import { stripXmlWrapper } from "./filters";
 
 
@@ -70,7 +70,7 @@ export const executeStreamRequest = async (options: StreamRequestOptions): Promi
   }
 
   try {
-    const fetchResponse = await fetch(NVIDIA_API_URL, {
+    const fetchResponse = await fetch(getApiUrl(options.provider), {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(requestBody),

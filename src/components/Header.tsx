@@ -30,7 +30,7 @@ const Header = ({
 }: HeaderProps) => {
   const [searchParams, setSearchParams] = useSearchParams();
   const currentModel = searchParams.get("model") || DEFAULT_MODEL;
-  const currentProvider = searchParams.get("provider") || AI_MODELS[currentModel]?.apiProvider || "nvidia";
+  const currentProvider = searchParams.get("provider") || AI_MODELS[currentModel]?.apiProvider || "qwen_local";
   const { getKey } = useApiKey();
 
   const handleModelChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
@@ -44,8 +44,9 @@ const Header = ({
       return;
     }
     const modelConfig = AI_MODELS[value as keyof typeof AI_MODELS];
-    const provider = modelConfig?.apiProvider || "nvidia";
-    if (provider !== "local") {
+    const provider = modelConfig?.apiProvider || "qwen_local";
+    const isLocal = provider === "local" || provider === "qwen_local";
+    if (!isLocal) {
       if (!user) {
         openAuth();
         return;
@@ -58,6 +59,7 @@ const Header = ({
     }
     const newParams = new URLSearchParams(searchParams);
     newParams.set("model", value);
+    newParams.set("provider", provider);
     setSearchParams(newParams);
   };
 
@@ -97,21 +99,21 @@ const Header = ({
           </div>
           <div className="flex gap-2">
             <select
-              value={currentProvider}
+              value={currentProvider === "local" ? "qwen_local" : currentProvider}
               onChange={(e) => {
                 const newProvider = e.target.value;
                 const newParams = new URLSearchParams(searchParams);
                 newParams.set("provider", newProvider);
-                if (newProvider === "nvidia") {
-                  newParams.set("model", DEFAULT_MODEL);
+                if (newProvider === "qwen_local" || newProvider === "local") {
+                  newParams.set("model", "local-qwen");
+                } else if (newProvider === "nvidia") {
+                  newParams.set("model", "nvidia-diffusiongemma");
                 } else if (newProvider === "google") {
                   newParams.set("model", "google-gemini-3-5-flash");
                 } else if (newProvider === "openai") {
                   newParams.set("model", "openai-gpt-4o-mini");
                 } else if (newProvider === "anthropic") {
                   newParams.set("model", "anthropic-claude-haiku-3-5");
-                } else if (newProvider === "local") {
-                  newParams.set("model", "local-qwen");
                 } else {
                   newParams.delete("model");
                 }
@@ -119,11 +121,11 @@ const Header = ({
               }}
               className="glass-select text-slate-700 dark:text-slate-200 text-xs rounded-lg px-2 py-1 outline-none focus:border-blue-400 shadow-sm font-sans max-w-[100px] sm:max-w-none truncate transition-colors cursor-pointer"
             >
+              <option value="qwen_local">Qwen Local</option>
               <option value="nvidia">NVIDIA</option>
               <option value="openai">OpenAI</option>
               <option value="anthropic">Anthropic</option>
               <option value="google">Google</option>
-              <option value="local">Local</option>
             </select>
 
             <select
@@ -132,7 +134,12 @@ const Header = ({
               className="glass-select text-slate-700 dark:text-slate-200 text-xs rounded-lg px-2 py-1 outline-none focus:border-blue-400 shadow-sm font-sans max-w-[120px] sm:max-w-none truncate transition-colors cursor-pointer"
             >
               {Object.entries(AI_MODELS)
-                .filter(([_, model]) => model.apiProvider === currentProvider)
+                .filter(([_, model]) => {
+                  if (currentProvider === "qwen_local" || currentProvider === "local") {
+                    return model.apiProvider === "qwen_local" || model.apiProvider === "local";
+                  }
+                  return model.apiProvider === currentProvider;
+                })
                 .map(([key, model]) => (
                   <option key={key} value={key}>
                     {model.name}

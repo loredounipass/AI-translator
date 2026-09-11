@@ -1,5 +1,5 @@
 import axios from "axios";
-import { NVIDIA_API_URL, getAdaptiveTimeout, getAdaptiveMaxTokens } from "./constants";
+import { getApiUrl, getAdaptiveTimeout, getAdaptiveMaxTokens } from "./constants";
 import { stripXmlWrapper } from "./filters";
 
 
@@ -19,21 +19,26 @@ export interface StandardRequestOptions {
 // EJECUTAR PETICIÓN DE TRADUCCIÓN ESTÁNDAR
 export const executeStandardRequest = async (options: StandardRequestOptions): Promise<string> => {
   const textLen = options.textLength || 0;
+  const isLocal = options.provider === "local" || options.provider === "qwen_local";
+  const targetUrl = getApiUrl(options.provider);
 
   const requestBody: any = {
-    model: options.modelId,
+    model: options.modelId || "qwen2.5-1.5b",
     messages: options.messages,
     max_tokens: getAdaptiveMaxTokens(textLen, options.maxOutputTokensCap),
-    stream: false,
-    apiKey: options.apiKey,
-    provider: options.provider,
   };
+
+  if (!isLocal) {
+    requestBody.stream = false;
+    if (options.apiKey) requestBody.apiKey = options.apiKey;
+    if (options.provider) requestBody.provider = options.provider;
+  }
 
   if (options.temperature !== null && options.temperature !== undefined) {
     requestBody.temperature = options.temperature;
   }
 
-  if (options.topP !== null && options.topP !== undefined) {
+  if (options.topP !== null && options.topP !== undefined && !isLocal) {
     requestBody.top_p = options.topP;
   }
 
@@ -46,7 +51,7 @@ export const executeStandardRequest = async (options: StandardRequestOptions): P
   }
 
   const response = await axios.post(
-    NVIDIA_API_URL,
+    targetUrl,
     requestBody,
     {
       headers: { "Content-Type": "application/json" },

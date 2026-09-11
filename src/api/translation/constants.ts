@@ -1,4 +1,26 @@
-export const NVIDIA_API_URL = "/api/completions";
+export const DEFAULT_QWEN_URL =
+  process.env.REACT_APP_QWEN_API_URL ||
+  process.env.REACT_APP_API_URL ||
+  "https://improved-meme-9744w4gr5qjvc7655-8000.app.github.dev/v1/chat/completions";
+
+export const getApiUrl = (provider?: string): string => {
+  const isLocal = provider === "qwen_local" || provider === "local";
+  if (isLocal) {
+    return (
+      process.env.REACT_APP_QWEN_API_URL ||
+      process.env.REACT_APP_API_URL ||
+      DEFAULT_QWEN_URL
+    );
+  }
+
+  return (
+    process.env.REACT_APP_COMPLETIONS_URL ||
+    process.env.REACT_APP_API_URL ||
+    "/api/completions"
+  );
+};
+
+export const NVIDIA_API_URL = getApiUrl();
 export const MAX_RETRIES = 3;
 export const BASE_DELAY = 1000;
 export const CACHE_TTL = 3 * 60 * 1000;

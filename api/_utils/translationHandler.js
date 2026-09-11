@@ -7,7 +7,14 @@ let requestCounter = 0;
 
 module.exports = async (req, res, contentLength) => {
   const apiKey = (req.body && req.body.apiKey) || "";
-  const provider = (req.body && req.body.provider) || "nvidia";
+  let provider = (req.body && req.body.provider) || "";
+  if (!provider) {
+    if (req.body && (req.body.model === "qwen2.5-1.5b" || req.body.model === "local-qwen" || req.body.model === "qwen")) {
+      provider = "qwen_local";
+    } else {
+      provider = apiKey ? "nvidia" : "qwen_local";
+    }
+  }
 
   const providerConfig = PROVIDERS[provider];
   if (!providerConfig) {

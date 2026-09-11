@@ -48,6 +48,7 @@ export const translate = async (
     options?.provider === "local" ||
     options?.provider === "qwen_local" ||
     modelConfig.apiProvider === "local" ||
+    modelConfig.apiProvider === "qwen_local" ||
     modelId === "local-qwen" ||
     modelId === "qwen" ||
     modelId === "qwen2.5-1.5b";
@@ -81,13 +82,15 @@ export const translate = async (
     ];
   }
 
+  const effectiveProvider = options?.provider || modelConfig.apiProvider || (isLocal ? "qwen_local" : "nvidia");
+
   const translated = await executeTranslationRequest({
     modelId,
     messages,
     // temperature: modelConfig.temperature,
     // topP: modelConfig.topP,
     apiKey: options?.apiKey,
-    provider: options?.provider,
+    provider: effectiveProvider,
     signal: options?.signal,
     onData: options?.onData,
     textLength: cleanedText.length,
