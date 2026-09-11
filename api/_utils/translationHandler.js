@@ -1,9 +1,6 @@
 const https = require("https");
 const { PROVIDERS, MAX_TRANSLATE_BODY } = require("./config");
-const { cache, pendingRequests, generateCacheKey, cleanupCache, CACHE_TTL } = require("./cache");
-const { checkRateLimit } = require("./rateLimiter");
-
-let requestCounter = 0;
+const { checkRateLimit, cleanupRateLimiter } = require("./rateLimiter");
 
 module.exports = async (req, res, contentLength) => {
   const apiKey = (req.body && req.body.apiKey) || "";
@@ -34,6 +31,7 @@ module.exports = async (req, res, contentLength) => {
     return res.status(413).json({ error: "Payload too large" });
   }
 
+  cleanupRateLimiter(Date.now());
   if (!checkRateLimit(req)) {
     return res.status(429).json({ error: "Too Many Requests" });
   }
@@ -90,28 +88,7 @@ module.exports = async (req, res, contentLength) => {
     return;
   }
 
-  const cacheKey = generateCacheKey(cleanBody, apiKey);
-
-  requestCounter++;
-  if (requestCounter % 50 === 0) {
-    cleanupCache();
-  }
-
-  if (cache.has(cacheKey)) {
-    const cached = cache.get(cacheKey);
-    return res.status(cached.statusCode).json(cached.data);
-  }
-
-  if (pendingRequests.has(cacheKey)) {
-    try {
-      const response = await pendingRequests.get(cacheKey);
-      return res.status(response.statusCode).json(response.data);
-    } catch {
-      return res.status(500).json({ error: "Coalesced request failed" });
-    }
-  }
-
-  const requestPromise = new Promise((resolve, reject) => {
+  return new Promise((resolve) => {
     const bodyStr = JSON.stringify(cleanBody);
     const headers = {
       host: providerConfig.hostname,
@@ -137,7 +114,6 @@ module.exports = async (req, res, contentLength) => {
           let data;
           if (proxyRes.statusCode === 200) {
             data = JSON.parse(proxyBody.toString());
-            cache.set(cacheKey, { statusCode: proxyRes.statusCode, data, expiry: Date.now() + CACHE_TTL });
           } else {
             try { data = JSON.parse(proxyBody.toString()); } catch { data = proxyBody.toString(); }
           }
@@ -147,18 +123,11 @@ module.exports = async (req, res, contentLength) => {
         }
       });
     });
-    proxyReq.on("error", reject);
-    proxyReq.setTimeout(timeoutMs, () => { proxyReq.destroy(); reject(new Error("Translation request timed out")); });
+    proxyReq.on("error", () => resolve({ statusCode: 500, data: { error: "Proxy error" } }));
+    proxyReq.setTimeout(timeoutMs, () => {
+      proxyReq.destroy();
+      resolve({ statusCode: 504, data: { error: "Translation request timed out" } });
+    });
     proxyReq.end(bodyStr);
   });
-
-  pendingRequests.set(cacheKey, requestPromise);
-  try {
-    const response = await requestPromise;
-    pendingRequests.delete(cacheKey);
-    return res.status(response.statusCode).json(response.data);
-  } catch {
-    pendingRequests.delete(cacheKey);
-    return res.status(500).json({ error: "Proxy error" });
-  }
 };
