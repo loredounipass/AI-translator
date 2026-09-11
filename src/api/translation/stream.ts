@@ -45,7 +45,7 @@ export const executeStreamRequest = async (options: StreamRequestOptions): Promi
     }
   }
 
-  const timeoutMs = getAdaptiveTimeout(textLen);
+  const timeoutMs = getAdaptiveTimeout(textLen, options.provider === "local" || options.provider === "qwen_local");
   const timeoutController = new AbortController();
   const timeoutId = setTimeout(() => timeoutController.abort(), timeoutMs);
 
@@ -56,7 +56,7 @@ export const executeStreamRequest = async (options: StreamRequestOptions): Promi
       clearTimeout(timeoutId);
     };
     options.signal.addEventListener("abort", onUserAbort, { once: true });
-    
+
     combinedSignal = options.signal.aborted ? options.signal : timeoutController.signal;
     if (!options.signal.aborted) {
       if (typeof AbortSignal.any === "function") {
@@ -109,7 +109,7 @@ export const executeStreamRequest = async (options: StreamRequestOptions): Promi
             const content = data.choices?.[0]?.delta?.content || data.delta?.text || "";
             if (content) {
               accumulatedRawText += content;
-              
+
               const cleaned = stripXmlWrapper(accumulatedRawText);
               if (cleaned) {
                 options.onData(cleaned);
