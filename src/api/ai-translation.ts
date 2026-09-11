@@ -56,9 +56,15 @@ export const translate = async (
   let messages: { role: string; content: string }[];
 
   if (isLocal) {
-    // Para el modelo local, las instrucciones o prompt viven en el servidor donde corre el modelo.
-    // Solo enviamos el mensaje con el texto a traducir para máxima velocidad y evitar latencia.
+    const sourceName = getLanguageName(sourceLang);
+    const targetName = getLanguageName(targetLang);
+
+    // Qwen necesita el par de idiomas explícito porque recibe solo el texto a interpretar.
     messages = [
+      {
+        role: "system",
+        content: `Translate from ${sourceName} to ${targetName}. Return only the final interpretation.`,
+      },
       { role: "user", content: cleanedText },
     ];
   } else {
@@ -69,8 +75,8 @@ export const translate = async (
     const systemPrompt = isTranslationOnly
       ? buildSimpleTranslationSystemPrompt(sourceLang, targetLang)
       : (isShortText
-          ? buildLightSystemPrompt(targetLang, sourceLang)
-          : buildSystemPrompt(targetLang, sourceLang, modelId, cleanedText));
+        ? buildLightSystemPrompt(targetLang, sourceLang)
+        : buildSystemPrompt(targetLang, sourceLang, modelId, cleanedText));
 
     const userPrompt = isTranslationOnly
       ? buildSimpleTranslationUserPrompt(cleanedText)
