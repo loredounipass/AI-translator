@@ -152,7 +152,7 @@ export const AI_MODELS: Record<string, AIModel> = {
     // topP: null,
   },
   "local-qwen": {
-    id: "qwen",
+    id: "qwen2.5-1.5b",
     name: "Qwen (Local)",
     provider: "Local",
     apiProvider: "local",

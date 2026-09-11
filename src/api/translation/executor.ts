@@ -33,10 +33,15 @@ export const executeTranslationRequest = async (options: TranslationExecutorOpti
     }
 
     try {
-      if (options.onData) {
+      const isLocal = options.provider === "local" || options.provider === "qwen_local";
+      if (options.onData && !isLocal) {
         return await executeStreamRequest(options as StreamRequestOptions);
       } else {
-        return await executeStandardRequest(options as StandardRequestOptions);
+        const result = await executeStandardRequest(options as StandardRequestOptions);
+        if (options.onData) {
+          options.onData(result);
+        }
+        return result;
       }
     } catch (error) {
       if (axios.isCancel(error)) throw error;

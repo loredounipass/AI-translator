@@ -49,7 +49,8 @@ export const translate = async (
     options?.provider === "qwen_local" ||
     modelConfig.apiProvider === "local" ||
     modelId === "local-qwen" ||
-    modelId === "qwen";
+    modelId === "qwen" ||
+    modelId === "qwen2.5-1.5b";
 
   let messages: { role: string; content: string }[];
 
