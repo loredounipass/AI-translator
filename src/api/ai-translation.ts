@@ -59,15 +59,7 @@ export const translate = async (
     ? buildSimpleTranslationUserPrompt(cleanedText)
     : `Interpret the following text from ${sourceName} to ${targetName}. Apply first-person interpreting rules. Return ONLY the final interpretation without any formatting, reasoning, or tags.\n\nText to interpret:\n${cleanedText}`;
 
-  let memoryLimit = 10;
-  // if (modelConfig.maxOutputTokensCap && modelConfig.maxOutputTokensCap <= 2048) {
-  //   memoryLimit = 2; // Strict limit for models with tiny context windows
-  // } else if (modelId.includes("3b") || modelId.includes("4b") || modelId.includes("mini") || modelId.includes("nano")) {
-  if (modelId.includes("3b") || modelId.includes("4b") || modelId.includes("mini") || modelId.includes("nano")) {
-    memoryLimit = 2; // Strict limit for small parameter models
-  } else if (modelId.includes("8b")) {
-    memoryLimit = 5; // Moderate limit for medium models
-  }
+  const memoryLimit = 10;
 
   const memoryMessages = isTranslationOnly
     ? []
