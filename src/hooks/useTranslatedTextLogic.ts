@@ -121,6 +121,8 @@ export const useTranslatedTextLogic = () => {
       });
 
       if (translated) {
+        if (currentRequestId !== requestIdRef.current) return;
+
         const cleaned = cleanText(translated) || String(translated).trim();
         setTranslatedText(cleaned ? [cleaned] : []);
 
