@@ -39,9 +39,6 @@ export const executeTranslationRequest = async (options: TranslationExecutorOpti
         return await executeStreamRequest(options as StreamRequestOptions);
       } else {
         const result = await executeStandardRequest(options as StandardRequestOptions);
-        if (options.onData) {
-          options.onData(result);
-        }
         return result;
       }
     } catch (error) {
