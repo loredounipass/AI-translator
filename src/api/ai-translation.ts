@@ -59,15 +59,8 @@ export const translate = async (
     ? buildSimpleTranslationUserPrompt(cleanedText)
     : `Interpret the following text from ${sourceName} to ${targetName}. Apply first-person interpreting rules. Return ONLY the final interpretation without any formatting, reasoning, or tags.\n\nText to interpret:\n${cleanedText}`;
 
-  const memoryLimit = 10;
-
-  const memoryMessages = isTranslationOnly
-    ? []
-    : translationMemory.buildMemoryMessages(sourceLang, targetLang, cleanedText, memoryLimit);
-
   const messages = [
     { role: "system", content: systemPrompt },
-    ...memoryMessages,
     { role: "user", content: userPrompt },
   ];
 
