@@ -11,17 +11,36 @@ export interface TranslationPair {
 const MAX_MEMORY_ITEMS = 50;
 const MAX_PAIRS_PER_REQUEST = 10;
 
+// O(N) buffer — used to build few-shot context messages for the model
 const memoryBuffer: TranslationPair[] = [];
 
+// O(1) Map — used for instant exact-match cache lookups
+const cacheMap = new Map<string, string>();
 
-// MEMORIA DE TRADUCCIÓN — BUFFER EN MEMORIA
+const getCacheKey = (source: string, sourceLang: string, targetLang: string): string =>
+  `${sourceLang}:${targetLang}:${source.trim()}`;
+
+
+// MEMORIA DE TRADUCCIÓN — BUFFER EN MEMORIA + CACHE O(1)
 export const translationMemory = {
 
-  // AÑADIR UN NUEVO PAR DE TRADUCCIÓN AL BUFFER DE MEMORIA
+  // OBTENER TRADUCCIÓN EXACTA EN O(1)
+  get(source: string, sourceLang: string, targetLang: string): string | undefined {
+    const key = getCacheKey(source, sourceLang, targetLang);
+    return cacheMap.get(key);
+  },
+
+
+  // AÑADIR UN NUEVO PAR DE TRADUCCIÓN AL BUFFER DE MEMORIA Y AL CACHE O(1)
   add(source: string, translated: string, sourceLang: string, targetLang: string): void {
     if (!source.trim() || !translated.trim()) return;
     if (isTrivialText(source, sourceLang, targetLang)) return;
 
+    // Update O(1) cache
+    const key = getCacheKey(source, sourceLang, targetLang);
+    cacheMap.set(key, translated.trim());
+
+    // Update O(N) context buffer
     const existingIndex = memoryBuffer.findIndex(
       (p) => p.source === source.trim() && p.sourceLang === sourceLang && p.targetLang === targetLang
     );
@@ -38,7 +57,11 @@ export const translationMemory = {
     });
 
     while (memoryBuffer.length > MAX_MEMORY_ITEMS) {
-      memoryBuffer.shift();
+      const removed = memoryBuffer.shift();
+      if (removed) {
+        const removedKey = getCacheKey(removed.source, removed.sourceLang, removed.targetLang);
+        cacheMap.delete(removedKey);
+      }
     }
   },
 
@@ -120,15 +143,18 @@ export const translationMemory = {
         targetLang === undefined ||
         (pair.sourceLang === sourceLang && pair.targetLang === targetLang);
       if (pair.source === trimmed && langsMatch) {
-        memoryBuffer.splice(i, 1);
+        const removed = memoryBuffer.splice(i, 1)[0];
+        const removedKey = getCacheKey(removed.source, removed.sourceLang, removed.targetLang);
+        cacheMap.delete(removedKey);
       }
     }
   },
 
 
-  // LIMPIAR TODO EL BUFFER DE MEMORIA (REINICIO)
+  // LIMPIAR TODO EL BUFFER DE MEMORIA Y EL CACHE (REINICIO)
   clear(): void {
     memoryBuffer.length = 0;
+    cacheMap.clear();
   },
 
 
