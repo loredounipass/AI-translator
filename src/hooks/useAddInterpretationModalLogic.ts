@@ -7,16 +7,9 @@ import { languagePrefsService } from "utils/languagePrefsService";
 import {
     DEFAULT_SOURCE_LANGUAGE,
     DEFAULT_TARGET_LANGUAGE,
-    DEFAULT_MODEL,
-    AI_MODELS,
 } from "utils/constants";
 import { AVAILABLE_LANGUAGES } from "utils/constants";
 import { translationMemory } from "api/translation/translationMemory";
-import {
-    translationCache,
-    getCacheKey,
-    removeFromCacheByPair,
-} from "api/translation/cache";
 import { showErrorToast } from "components/AppNotifications";
 
 interface UseAddInterpretationModalLogicProps {
@@ -195,25 +188,9 @@ export const useAddInterpretationModalLogic = ({
                         editingItem.source_lang,
                         editingItem.target_lang
                     );
-                    removeFromCacheByPair(
-                        editingItem.source_text,
-                        editingItem.target_lang,
-                        editingItem.source_lang
-                    );
                 }
 
                 translationMemory.add(src, trg, srcLang, trgLang);
-                const modelKey =
-                    searchParams.get("model") ||
-                    DEFAULT_MODEL;
-                const model =
-                    AI_MODELS[modelKey as keyof typeof AI_MODELS] ||
-                    AI_MODELS[DEFAULT_MODEL as keyof typeof AI_MODELS];
-                translationCache.set(
-                    getCacheKey(src, trgLang, srcLang, model.id),
-                    trg
-                );
-
                 setSourceText("");
                 setTargetText("");
                 onInterpretationAdded();

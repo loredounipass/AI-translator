@@ -4,7 +4,6 @@ import { useAuth } from "contexts/AuthContext";
 import { historyService } from "utils/historyService";
 import type { HistoryItem } from "utils/historyService";
 import { translationMemory } from "api/translation/translationMemory";
-import { clearTranslationCache, removeFromCacheByPair } from "api/translation/cache";
 import { showHistoryLimitNotification } from "./AppNotifications";
 import AddInterpretationModal from "./AddInterpretationModal";
 import { Virtuoso } from "react-virtuoso";
@@ -33,14 +32,14 @@ const HistoryPanel = ({ isOpen, onClose }: HistoryPanelProps) => {
     }
     // Si no estamos forzando (force=false), ya cargamos, y hay historial, evitamos el refetch.
     if (!force && historyLoadedRef.current) return;
-    
+
     const data = await historyService.getAll(user.id);
-    
+
     // Check limit
     if (data.length >= 300) {
       showHistoryLimitNotification();
     }
-    
+
     setHistory(data);
     historyLoadedRef.current = true;
   }, [user]);
@@ -56,9 +55,9 @@ const HistoryPanel = ({ isOpen, onClose }: HistoryPanelProps) => {
     }
     // Only load if it's not already loaded
     loadHistory(false);
-    
+
     // Use debounce to prevent spamming the server when multiple updates occur quickly
-    const handleHistoryUpdate = debounce(() => loadHistory(true), 1000); 
+    const handleHistoryUpdate = debounce(() => loadHistory(true), 1000);
     window.addEventListener("historyUpdated", handleHistoryUpdate);
     return () => {
       handleHistoryUpdate.cancel();
@@ -73,9 +72,8 @@ const HistoryPanel = ({ isOpen, onClose }: HistoryPanelProps) => {
     setShowClearConfirm(false);
     historyLoadedRef.current = false; // Reset ref
 
-    // Fresh start: clear all in-memory translation layers
+    // Fresh start: clear in-memory translation memory
     translationMemory.clear();
-    clearTranslationCache();
   };
 
   const deleteItem = async (id: string) => {
@@ -83,21 +81,16 @@ const HistoryPanel = ({ isOpen, onClose }: HistoryPanelProps) => {
 
     // Find the item before removing so we can clean memory/cache
     const item = history.find((h) => h.id === id);
-    
+
     await historyService.delete(id, user.id);
     setHistory((prev) => prev.filter((item) => item.id !== id));
 
-    // Remove from in-memory translation layers (exact language pair only)
+    // Remove from in-memory translation memory (exact language pair only)
     if (item) {
       translationMemory.remove(
         item.source_text,
         item.source_lang,
         item.target_lang
-      );
-      removeFromCacheByPair(
-        item.source_text,
-        item.target_lang,
-        item.source_lang
       );
     }
   };

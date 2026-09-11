@@ -1,5 +1,4 @@
 import { getLanguageName } from "./translation/constants";
-import { translationCache, getCacheKey } from "./translation/cache";
 import { buildSystemPrompt, buildSimpleTranslationSystemPrompt, buildSimpleTranslationUserPrompt, buildLightSystemPrompt } from "./translation/prompts";
 import { isTrivialText } from "./translation/filters";
 import { executeTranslationRequest } from "./translation/executor";
@@ -21,25 +20,13 @@ export const translate = async (
   sourceLang: string,
   text: string,
   modelId: string,
-  options?: { signal?: AbortSignal; onData?: (text: string) => void; apiKey?: string; provider?: string; bypassCache?: boolean }
+  options?: { signal?: AbortSignal; onData?: (text: string) => void; apiKey?: string; provider?: string }
 ): Promise<string> => {
   const cleanedText = text.trim();
   if (!cleanedText) throw new Error("El texto a traducir no puede estar vacío.");
 
   if (isTrivialText(cleanedText, sourceLang, targetLang)) {
     return text.trim();
-  }
-
-  const cacheKey = getCacheKey(cleanedText, targetLang, sourceLang, modelId);
-
-  if (!options?.bypassCache) {
-    const cached = translationCache.get(cacheKey);
-    if (cached) {
-      if (options?.onData) {
-        options.onData(cached);
-      }
-      return cached;
-    }
   }
 
   const modelConfig = resolveModelConfig(modelId);
@@ -78,8 +65,8 @@ Return only the final interpretation in direct speech. Remove meta-instructions 
     const systemPrompt = isTranslationOnly
       ? buildSimpleTranslationSystemPrompt(sourceLang, targetLang)
       : (isShortText
-        ? buildLightSystemPrompt(targetLang, sourceLang)
-        : buildSystemPrompt(targetLang, sourceLang, modelId, cleanedText));
+          ? buildLightSystemPrompt(targetLang, sourceLang)
+          : buildSystemPrompt(targetLang, sourceLang, modelId, cleanedText));
 
     const userPrompt = isTranslationOnly
       ? buildSimpleTranslationUserPrompt(cleanedText)
@@ -106,7 +93,6 @@ Return only the final interpretation in direct speech. Remove meta-instructions 
     // maxOutputTokensCap: modelConfig.maxOutputTokensCap,
   });
 
-  translationCache.set(cacheKey, translated);
   translationMemory.add(cleanedText, translated, sourceLang, targetLang);
 
   return translated;
