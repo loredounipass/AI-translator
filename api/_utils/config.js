@@ -33,13 +33,13 @@ const PROVIDERS = {
     authHeaderName: "Authorization",
   },
   qwen_local: {
-    hostname: "improved-meme-9744w4gr5qjvc7655-8000.app.github.dev",
+    hostname: "improved-meme-9744w4gr5qjvc7655-8001.app.github.dev",
     path: "/v1/chat/completions",
     authHeader: (key) => `Bearer ${key || "dummy-key"}`,
     authHeaderName: "Authorization",
   },
   local: {
-    hostname: "improved-meme-9744w4gr5qjvc7655-8000.app.github.dev",
+    hostname: "improved-meme-9744w4gr5qjvc7655-8001.app.github.dev",
     path: "/v1/chat/completions",
     authHeader: (key) => `Bearer ${key || "dummy-key"}`,
     authHeaderName: "Authorization",
