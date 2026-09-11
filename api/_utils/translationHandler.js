@@ -45,12 +45,13 @@ module.exports = async (req, res, contentLength) => {
     const lastMsg = cleanBody.messages[cleanBody.messages.length - 1];
     textLength = lastMsg.content ? lastMsg.content.length : 0;
   }
-  
+
   let timeoutMs = 30000;
+  if (isLocalProvider) timeoutMs = 120000;
   if (textLength > 5000) timeoutMs = 120000;
   else if (textLength > 2000) timeoutMs = 90000;
   else if (textLength > 500) timeoutMs = 60000;
-  
+
   const clientTimeout = req.headers['x-request-timeout'];
   if (clientTimeout && !isNaN(parseInt(clientTimeout))) {
     timeoutMs = Math.max(timeoutMs, parseInt(clientTimeout));
@@ -90,7 +91,7 @@ module.exports = async (req, res, contentLength) => {
   }
 
   const cacheKey = generateCacheKey(cleanBody, apiKey);
-  
+
   requestCounter++;
   if (requestCounter % 50 === 0) {
     cleanupCache();

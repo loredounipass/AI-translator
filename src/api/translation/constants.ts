@@ -9,7 +9,7 @@ export const getApiUrl = (provider?: string): string => {
     return (
       process.env.REACT_APP_QWEN_API_URL ||
       process.env.REACT_APP_API_URL ||
-      DEFAULT_QWEN_URL
+      "/api/completions"
     );
   }
 
