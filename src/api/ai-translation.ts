@@ -42,41 +42,24 @@ export const translate = async (
 
   let messages: { role: string; content: string }[];
 
-  if (isLocal) {
-    const sourceName = getLanguageName(sourceLang);
-    const targetName = getLanguageName(targetLang);
+  const sourceName = getLanguageName(sourceLang);
+  const targetName = getLanguageName(targetLang);
+  const isShortText = cleanedText.length <= 50;
 
-    // Qwen necesita el par de idiomas explícito porque recibe solo el texto a interpretar.
-    messages = [
-      {
-        role: "system",
-        content: `You are a professional over-the-phone interpreter, not a conversational assistant. Translate from ${sourceName} to ${targetName}.
-      Never answer the user, greet them, offer help, or continue a conversation. Always translate the user's message and output only that translation.
-Return only the final interpretation in direct speech. Remove meta-instructions such as "Interpreter, tell them..." and never say "Interpreter" or "tell them" in the result.
-      Preserve the speaker's meaning exactly, use first person, do not add facts, and do not repeat nouns unnecessarily. "How are you?" must be translated, never answered. When translating to Spanish, use formal usted and natural neutral Latin American Spanish.`,
-      },
-      { role: "user", content: cleanedText },
-    ];
-  } else {
-    const sourceName = getLanguageName(sourceLang);
-    const targetName = getLanguageName(targetLang);
-    const isShortText = cleanedText.length <= 50;
+  const systemPrompt = isTranslationOnly
+    ? buildSimpleTranslationSystemPrompt(sourceLang, targetLang)
+    : (isShortText
+        ? buildLightSystemPrompt(targetLang, sourceLang)
+        : buildSystemPrompt(targetLang, sourceLang, modelId, cleanedText));
 
-    const systemPrompt = isTranslationOnly
-      ? buildSimpleTranslationSystemPrompt(sourceLang, targetLang)
-      : (isShortText
-          ? buildLightSystemPrompt(targetLang, sourceLang)
-          : buildSystemPrompt(targetLang, sourceLang, modelId, cleanedText));
+  const userPrompt = isTranslationOnly
+    ? buildSimpleTranslationUserPrompt(cleanedText)
+    : `Interpret the following text from ${sourceName} to ${targetName}. Apply first-person interpreting rules. Return ONLY the final interpretation without any formatting, reasoning, or tags.\n\nText to interpret:\n${cleanedText}`;
 
-    const userPrompt = isTranslationOnly
-      ? buildSimpleTranslationUserPrompt(cleanedText)
-      : `Interpret the following text from ${sourceName} to ${targetName}. Apply first-person interpreting rules. Return ONLY the final interpretation without any formatting, reasoning, or tags.\n\nText to interpret:\n${cleanedText}`;
-
-    messages = [
-      { role: "system", content: systemPrompt },
-      { role: "user", content: userPrompt },
-    ];
-  }
+  messages = [
+    { role: "system", content: systemPrompt },
+    { role: "user", content: userPrompt },
+  ];
 
   const effectiveProvider = options?.provider || modelConfig.apiProvider || (isLocal ? "qwen_local" : "nvidia");
 
