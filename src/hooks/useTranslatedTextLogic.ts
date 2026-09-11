@@ -7,7 +7,6 @@ import { useAuth } from "contexts/AuthContext";
 import { useApiKey } from "../contexts/ApiKeyContext";
 import { historyService } from "utils/historyService";
 import { showAuthRequiredNotification, showApiKeyRequiredNotification, showErrorToast } from "components/AppNotifications";
-import { invalidateCacheForLanguagePair, invalidateCacheForModel } from "api/translation/cache";
 import { translationMemory } from "api/translation/translationMemory";
 import React from "react";
 
@@ -15,7 +14,7 @@ import React from "react";
 // CLEAN TRANSLATED TEXT FROM INCOMPLETE XML TAGS
 const cleanText = (rawText: string) => {
   if (!rawText) return "";
-  
+
   return rawText.replace(/<\/?[a-z]*\s*$/i, "");
 };
 
@@ -87,7 +86,7 @@ export const useTranslatedTextLogic = () => {
 
 
   // HANDLE TRANSLATION REQUEST AND MANAGE STREAMING RESPONSE
-  const translateHandler = React.useCallback(async (value: string, targetLang: string, sourceLang: string, mId: string, bypassCache: boolean = false) => {
+  const translateHandler = React.useCallback(async (value: string, targetLang: string, sourceLang: string, mId: string) => {
     if (!value) {
       setTranslatedText([]);
       setIsTranslating(false);
@@ -108,7 +107,6 @@ export const useTranslatedTextLogic = () => {
         signal: abortControllerRef.current.signal,
         apiKey: apiKeyRef.current || undefined,
         provider: apiProviderRef.current,
-        bypassCache,
         onData: (text) => {
           const cleaned = cleanText(text);
           if (cleaned) {
@@ -190,8 +188,8 @@ export const useTranslatedTextLogic = () => {
   // DEBOUNCE TRANSLATE HANDLER FOR PERFORMANCE
   const debouncedTranslateHandler = React.useMemo(
     () =>
-      debounce((text: string, targetLang: string, sourceLang: string, mId: string, bypassCache: boolean = false) => {
-        translateHandler(text, targetLang, sourceLang, mId, bypassCache);
+      debounce((text: string, targetLang: string, sourceLang: string, mId: string) => {
+        translateHandler(text, targetLang, sourceLang, mId);
       }, 400),
     [translateHandler]
   );
@@ -202,17 +200,10 @@ export const useTranslatedTextLogic = () => {
     currentTextRef.current = text;
 
     const modelChanged = prevModelKeyRef.current !== modelId || prevProviderRef.current !== apiProvider;
-    if (modelChanged) {
-      invalidateCacheForModel(prevModelKeyRef.current);
-    }
     prevModelKeyRef.current = modelId;
     prevProviderRef.current = apiProvider;
 
     const langChanged = prevSlRef.current !== sl || prevTlRef.current !== tl;
-    if (langChanged) {
-      invalidateCacheForLanguagePair(prevSlRef.current, prevTlRef.current);
-      invalidateCacheForLanguagePair(sl, tl);
-    }
     prevSlRef.current = sl;
     prevTlRef.current = tl;
 
@@ -276,7 +267,7 @@ export const useTranslatedTextLogic = () => {
 
     apiKeyNotifiedRef.current = false;
 
-    debouncedTranslateHandler(text, tl, sl, modelId, langChanged);
+    debouncedTranslateHandler(text, tl, sl, modelId);
 
     return () => {
       debouncedTranslateHandler.cancel();
