@@ -45,7 +45,7 @@ export const executeStreamRequest = async (options: StreamRequestOptions): Promi
     }
   }
 
-  const timeoutMs = getAdaptiveTimeout(textLen, options.provider === "local" || options.provider === "qwen_local");
+  const timeoutMs = getAdaptiveTimeout(textLen, options.provider === "local" || options.provider === "qwen_local" || options.provider === "mistral_local");
   const timeoutController = new AbortController();
   const timeoutId = setTimeout(() => timeoutController.abort(), timeoutMs);
 

@@ -19,7 +19,7 @@ export interface StandardRequestOptions {
 // EJECUTAR PETICIÓN DE TRADUCCIÓN ESTÁNDAR
 export const executeStandardRequest = async (options: StandardRequestOptions): Promise<string> => {
   const textLen = options.textLength || 0;
-  const isLocal = options.provider === "local" || options.provider === "qwen_local";
+  const isLocal = options.provider === "local" || options.provider === "qwen_local" || options.provider === "mistral_local";
   const targetUrl = getApiUrl(options.provider);
 
   const requestBody: any = {

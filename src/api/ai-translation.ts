@@ -38,11 +38,15 @@ export const translate = async (
   const isLocal =
     options?.provider === "local" ||
     options?.provider === "qwen_local" ||
+    options?.provider === "mistral_local" ||
     modelConfig.apiProvider === "local" ||
     modelConfig.apiProvider === "qwen_local" ||
+    modelConfig.apiProvider === "mistral_local" ||
     modelId === "local-qwen" ||
     modelId === "qwen" ||
-    modelId === "qwen2.5-1.5b";
+    modelId === "qwen2.5-1.5b" ||
+    modelId === "local-mistral" ||
+    modelId === "mistral-7b";
 
   // CACHE HIT O(1): Retorna la traducción instantáneamente sin llamar al modelo.
   const cached = translationMemory.get(cleanedText, sourceLang, targetLang);
@@ -94,7 +98,10 @@ Rules:
     ];
   }
 
-  const effectiveProvider = options?.provider || modelConfig.apiProvider || (isLocal ? "qwen_local" : "nvidia");
+  const effectiveProvider =
+    options?.provider && options.provider !== "local"
+      ? options.provider
+      : modelConfig.apiProvider || (modelId === "local-mistral" || modelId === "mistral-7b" ? "mistral_local" : isLocal ? "qwen_local" : "nvidia");
 
   const requestPromise = executeTranslationRequest({
     modelId,

@@ -1,6 +1,13 @@
 const DEFAULT_QWEN_URL = "https://improved-meme-9744w4gr5qjvc7655-8000.app.github.dev/v1/chat/completions";
 
 export const getApiUrl = (provider?: string): string => {
+  if (provider === "mistral_local") {
+    return (
+      process.env.REACT_APP_MISTRAL_API_URL ||
+      "http://localhost:8001/v1/chat/completions"
+    );
+  }
+
   const isLocal = provider === "qwen_local" || provider === "local";
   if (isLocal) {
     return (

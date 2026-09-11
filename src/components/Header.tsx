@@ -45,7 +45,7 @@ const Header = ({
     }
     const modelConfig = AI_MODELS[value as keyof typeof AI_MODELS];
     const provider = modelConfig?.apiProvider || "qwen_local";
-    const isLocal = provider === "local" || provider === "qwen_local";
+    const isLocal = provider === "local" || provider === "qwen_local" || provider === "mistral_local";
     if (!isLocal) {
       if (!user) {
         openAuth();
@@ -99,7 +99,7 @@ const Header = ({
           </div>
           <div className="flex gap-2">
             <select
-              value={currentProvider === "local" ? "qwen_local" : currentProvider}
+              value={currentProvider === "local" || currentProvider === "mistral_local" ? "qwen_local" : currentProvider}
               onChange={(e) => {
                 const newProvider = e.target.value;
                 const newParams = new URLSearchParams(searchParams);
@@ -121,7 +121,7 @@ const Header = ({
               }}
               className="glass-select text-slate-700 dark:text-slate-200 text-xs rounded-lg px-2 py-1 outline-none focus:border-blue-400 shadow-sm font-sans max-w-[100px] sm:max-w-none truncate transition-colors cursor-pointer"
             >
-              <option value="qwen_local">Qwen Local</option>
+              <option value="qwen_local">Local AI</option>
               <option value="nvidia">NVIDIA</option>
               <option value="openai">OpenAI</option>
               <option value="anthropic">Anthropic</option>
@@ -135,8 +135,8 @@ const Header = ({
             >
               {Object.entries(AI_MODELS)
                 .filter(([_, model]) => {
-                  if (currentProvider === "qwen_local" || currentProvider === "local") {
-                    return model.apiProvider === "qwen_local" || model.apiProvider === "local";
+                  if (currentProvider === "qwen_local" || currentProvider === "local" || currentProvider === "mistral_local") {
+                    return model.apiProvider === "qwen_local" || model.apiProvider === "local" || model.apiProvider === "mistral_local";
                   }
                   return model.apiProvider === currentProvider;
                 })

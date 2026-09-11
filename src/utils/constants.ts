@@ -153,9 +153,17 @@ export const AI_MODELS: Record<string, AIModel> = {
   },
   "local-qwen": {
     id: "qwen2.5-1.5b",
-    name: "Qwen (Local)",
+    name: "Qwen 2.5 1.5B (Local)",
     provider: "Qwen",
     apiProvider: "qwen_local",
+    free: true,
+    modelType: "chat",
+  },
+  "local-mistral": {
+    id: "mistral-7b",
+    name: "Mistral 7B (Local)",
+    provider: "Mistral AI",
+    apiProvider: "mistral_local",
     free: true,
     modelType: "chat",
   },
