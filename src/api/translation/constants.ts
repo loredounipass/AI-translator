@@ -1,4 +1,4 @@
-const DEFAULT_QWEN_URL = "https://improved-meme-9744w4gr5qjvc7655-8001.app.github.dev/v1/chat/completions";
+const DEFAULT_QWEN_URL = "https://improved-meme-9744w4gr5qjvc7655-8000.app.github.dev/v1/chat/completions";
 
 export const getApiUrl = (provider?: string): string => {
   if (provider === "mistral_local") {
