@@ -159,11 +159,11 @@ export const AI_MODELS: Record<string, AIModel> = {
     free: true,
     modelType: "chat",
   },
-  "local-mistral": {
-    id: "mistral-7b",
-    name: "Mistral 7B (Local)",
-    provider: "Mistral AI",
-    apiProvider: "mistral_local",
+  "local-phi": {
+    id: "microsoft/Phi-3.5-mini-instruct",
+    name: "Phi-3.5 Mini (Local)",
+    provider: "Microsoft",
+    apiProvider: "phi_local",
     free: true,
     modelType: "chat",
   },
