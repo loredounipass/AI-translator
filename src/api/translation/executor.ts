@@ -18,7 +18,7 @@ export interface TranslationExecutorOptions {
 
 export const executeTranslationRequest = async (options: TranslationExecutorOptions): Promise<string> => {
   let lastError: Error | null = null;
-  const isLocal = options.provider === "local" || options.provider === "qwen_local" || options.provider === "phi_local" || options.provider === "mistral_local";
+  const isLocal = options.provider === "local" || options.provider === "qwen_local" || options.provider === "phi_local";
   const isReasoning = options.modelId.includes("nemotron") || options.modelId.includes("reasoning") || options.modelId.includes("think");
   const maxRetries = isLocal ? 1 : (isReasoning ? 2 : MAX_RETRIES);
 

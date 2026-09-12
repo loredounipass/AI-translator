@@ -44,12 +44,6 @@ const PROVIDERS = {
     authHeader: (key) => `Bearer ${key || "dummy-key"}`,
     authHeaderName: "Authorization",
   },
-  mistral_local: {
-    hostname: "cuddly-winner-pjqq9q54wrv6f7q7w-8001.app.github.dev",
-    path: "/v1/chat/completions",
-    authHeader: (key) => `Bearer ${key || "dummy-key"}`,
-    authHeaderName: "Authorization",
-  },
   local: {
     hostname: "cuddly-winner-pjqq9q54wrv6f7q7w-8000.app.github.dev",
     path: "/v1/chat/completions",

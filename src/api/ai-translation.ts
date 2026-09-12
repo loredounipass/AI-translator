@@ -39,19 +39,15 @@ export const translate = async (
     options?.provider === "local" ||
     options?.provider === "qwen_local" ||
     options?.provider === "phi_local" ||
-    options?.provider === "mistral_local" ||
     modelConfig.apiProvider === "local" ||
     modelConfig.apiProvider === "qwen_local" ||
     modelConfig.apiProvider === "phi_local" ||
-    modelConfig.apiProvider === "mistral_local" ||
     modelId === "local-qwen" ||
     modelId === "qwen" ||
     modelId === "qwen2.5-1.5b" ||
     modelId === "local-phi" ||
     modelId === "phi-3.5-mini" ||
-    modelId === "microsoft/Phi-3.5-mini-instruct" ||
-    modelId === "local-mistral" ||
-    modelId === "mistral-7b";
+    modelId === "microsoft/Phi-3.5-mini-instruct";
 
   // CACHE HIT O(1): Retorna la traducción instantáneamente sin llamar al modelo.
   const cached = translationMemory.get(cleanedText, sourceLang, targetLang);
@@ -106,7 +102,7 @@ Rules:
   const effectiveProvider =
     options?.provider && options.provider !== "local"
       ? options.provider
-      : modelConfig.apiProvider || (modelId === "local-phi" || modelId === "phi-3.5-mini" || modelId === "microsoft/Phi-3.5-mini-instruct" ? "phi_local" : modelId === "local-mistral" || modelId === "mistral-7b" ? "mistral_local" : isLocal ? "qwen_local" : "nvidia");
+      : modelConfig.apiProvider || (modelId === "local-phi" || modelId === "phi-3.5-mini" || modelId === "microsoft/Phi-3.5-mini-instruct" ? "phi_local" : isLocal ? "qwen_local" : "nvidia");
 
   const requestPromise = executeTranslationRequest({
     modelId,

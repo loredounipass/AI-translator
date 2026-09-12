@@ -2,10 +2,9 @@ const DEFAULT_QWEN_URL = "https://cuddly-winner-pjqq9q54wrv6f7q7w-8000.app.githu
 const DEFAULT_PHI_URL  = "https://cuddly-winner-pjqq9q54wrv6f7q7w-8001.app.github.dev/v1/chat/completions";
 
 export const getApiUrl = (provider?: string): string => {
-  if (provider === "phi_local" || provider === "mistral_local") {
+  if (provider === "phi_local") {
     return (
       process.env.REACT_APP_PHI_API_URL ||
-      process.env.REACT_APP_MISTRAL_API_URL ||
       DEFAULT_PHI_URL
     );
   }
