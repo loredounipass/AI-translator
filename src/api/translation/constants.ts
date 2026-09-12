@@ -1,5 +1,5 @@
-const DEFAULT_QWEN_URL = "https://improved-meme-9744w4gr5qjvc7655-8000.app.github.dev/v1/chat/completions";
-const DEFAULT_PHI_URL  = "https://improved-meme-9744w4gr5qjvc7655-8001.app.github.dev/v1/chat/completions";
+const DEFAULT_QWEN_URL = "https://cuddly-winner-pjqq9q54wrv6f7q7w-8000.app.github.dev/v1/chat/completions";
+const DEFAULT_PHI_URL  = "https://cuddly-winner-pjqq9q54wrv6f7q7w-8001.app.github.dev/v1/chat/completions";
 
 export const getApiUrl = (provider?: string): string => {
   if (provider === "phi_local" || provider === "mistral_local") {

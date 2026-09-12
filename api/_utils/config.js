@@ -33,13 +33,25 @@ const PROVIDERS = {
     authHeaderName: "Authorization",
   },
   qwen_local: {
-    hostname: "improved-meme-9744w4gr5qjvc7655-8000.app.github.dev",
+    hostname: "cuddly-winner-pjqq9q54wrv6f7q7w-8000.app.github.dev",
+    path: "/v1/chat/completions",
+    authHeader: (key) => `Bearer ${key || "dummy-key"}`,
+    authHeaderName: "Authorization",
+  },
+  phi_local: {
+    hostname: "cuddly-winner-pjqq9q54wrv6f7q7w-8001.app.github.dev",
+    path: "/v1/chat/completions",
+    authHeader: (key) => `Bearer ${key || "dummy-key"}`,
+    authHeaderName: "Authorization",
+  },
+  mistral_local: {
+    hostname: "cuddly-winner-pjqq9q54wrv6f7q7w-8001.app.github.dev",
     path: "/v1/chat/completions",
     authHeader: (key) => `Bearer ${key || "dummy-key"}`,
     authHeaderName: "Authorization",
   },
   local: {
-    hostname: "improved-meme-9744w4gr5qjvc7655-8001.app.github.dev",
+    hostname: "cuddly-winner-pjqq9q54wrv6f7q7w-8000.app.github.dev",
     path: "/v1/chat/completions",
     authHeader: (key) => `Bearer ${key || "dummy-key"}`,
     authHeaderName: "Authorization",

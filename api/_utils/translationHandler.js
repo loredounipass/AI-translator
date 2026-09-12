@@ -18,7 +18,7 @@ module.exports = async (req, res, contentLength) => {
     return res.status(400).json({ error: `Provider desconocido: ${provider}` });
   }
 
-  const isLocalProvider = provider === "local" || provider === "qwen_local";
+  const isLocalProvider = provider === "local" || provider === "qwen_local" || provider === "phi_local" || provider === "mistral_local";
   if (!apiKey && !isLocalProvider) {
     return res.status(401).json({ error: `API key requerida para ${provider}` });
   }
