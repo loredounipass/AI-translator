@@ -237,7 +237,7 @@ export const useTranslatedTextLogic = () => {
 
     if (authLoading) return;
 
-    const isLocal = apiProvider === "local" || apiProvider === "qwen_local" || apiProvider === "phi_local";
+    const isLocal = apiProvider === "local" || apiProvider === "qwen_local" || apiProvider === "phi_local" || apiProvider === "mistral_local";
 
     if (!userRef.current && !isLocal) {
       if (!authNotifiedRef.current) {

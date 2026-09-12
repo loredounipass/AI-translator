@@ -45,7 +45,7 @@ const Header = ({
     }
     const modelConfig = AI_MODELS[value as keyof typeof AI_MODELS];
     const provider = modelConfig?.apiProvider || "qwen_local";
-    const isLocal = provider === "local" || provider === "qwen_local" || provider === "phi_local";
+    const isLocal = provider === "local" || provider === "qwen_local" || provider === "phi_local" || provider === "mistral_local";
     if (!isLocal) {
       if (!user) {
         openAuth();
@@ -99,7 +99,7 @@ const Header = ({
           </div>
           <div className="flex gap-2">
             <select
-              value={currentProvider === "local" || currentProvider === "phi_local" ? "qwen_local" : currentProvider}
+              value={currentProvider === "local" || currentProvider === "phi_local" || currentProvider === "mistral_local" ? "qwen_local" : currentProvider}
               onChange={(e) => {
                 const newProvider = e.target.value;
                 const newParams = new URLSearchParams(searchParams);
@@ -135,7 +135,7 @@ const Header = ({
             >
               {Object.entries(AI_MODELS)
                 .filter(([_, model]) => {
-                  if (currentProvider === "qwen_local" || currentProvider === "local" || currentProvider === "phi_local") {
+                  if (currentProvider === "qwen_local" || currentProvider === "local" || currentProvider === "phi_local" || currentProvider === "mistral_local") {
                     return model.apiProvider === "qwen_local" || model.apiProvider === "local" || model.apiProvider === "phi_local";
                   }
                   return model.apiProvider === currentProvider;
