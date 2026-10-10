@@ -132,7 +132,7 @@ export const AI_MODELS: Record<string, AIModel> = {
     // topP: 1.0,
   },
   "anthropic-sonnet-5-5": {
-    id: "sonnet-5.5",
+    id: "claude-3-5-sonnet-20241022",
     name: "Sonnet 5.5",
     provider: "Anthropic",
     apiProvider: "anthropic",
@@ -140,7 +140,7 @@ export const AI_MODELS: Record<string, AIModel> = {
     modelType: "chat",
   },
   "anthropic-haiku-4-5": {
-    id: "haiku-4.5",
+    id: "claude-3-5-haiku-20241022",
     name: "Haiku 4.5",
     provider: "Anthropic",
     apiProvider: "anthropic",
