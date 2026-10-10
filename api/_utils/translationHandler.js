@@ -73,7 +73,7 @@ module.exports = async (req, res, contentLength) => {
 
     const proxyReq = https.request(options, (proxyRes) => {
       const safeHeaders = {};
-      const allowedHeaders = ['content-type', 'cache-control', 'transfer-encoding', 'content-encoding'];
+      const allowedHeaders = ['content-type', 'cache-control', 'transfer-encoding', 'content-encoding', 'content-length'];
       for (const key of allowedHeaders) {
         if (proxyRes.headers[key]) safeHeaders[key] = proxyRes.headers[key];
       }
