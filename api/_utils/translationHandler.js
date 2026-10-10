@@ -3,7 +3,7 @@ const { PROVIDERS, MAX_TRANSLATE_BODY } = require("./config");
 const { checkRateLimit, cleanupRateLimiter } = require("./rateLimiter");
 
 module.exports = async (req, res, contentLength) => {
-  const apiKey = (req.body && req.body.apiKey) || "";
+  const apiKey = typeof req.body?.apiKey === 'string' ? req.body.apiKey.trim() : (req.body?.apiKey || "");
   let provider = (req.body && req.body.provider) || "";
   if (!provider) {
     if (req.body && (req.body.model === "qwen2.5-1.5b" || req.body.model === "local-qwen" || req.body.model === "qwen")) {
