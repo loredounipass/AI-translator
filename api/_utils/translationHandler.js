@@ -55,37 +55,44 @@ module.exports = async (req, res, contentLength) => {
     timeoutMs = Math.max(timeoutMs, parseInt(clientTimeout));
   }
   if (isStreaming) {
-    const bodyStr = JSON.stringify(cleanBody);
-    const headers = {
-      host: providerConfig.hostname,
-      [providerConfig.authHeaderName]: providerConfig.authHeader(apiKey),
-      "Content-Type": "application/json",
-      "Content-Length": Buffer.byteLength(bodyStr),
-      ...(providerConfig.extraHeaders || {}),
-    };
+    return new Promise((resolve) => {
+      const bodyStr = JSON.stringify(cleanBody);
+      const headers = {
+        host: providerConfig.hostname,
+        [providerConfig.authHeaderName]: providerConfig.authHeader(apiKey),
+        "Content-Type": "application/json",
+        "Content-Length": Buffer.byteLength(bodyStr),
+        ...(providerConfig.extraHeaders || {}),
+      };
 
-    const options = {
-      hostname: providerConfig.hostname,
-      path: providerConfig.path,
-      method: "POST",
-      headers,
-    };
+      const options = {
+        hostname: providerConfig.hostname,
+        path: providerConfig.path,
+        method: "POST",
+        headers,
+      };
 
-    const proxyReq = https.request(options, (proxyRes) => {
-      const safeHeaders = {};
-      const allowedHeaders = ['content-type', 'cache-control', 'transfer-encoding', 'content-encoding', 'content-length'];
-      for (const key of allowedHeaders) {
-        if (proxyRes.headers[key]) safeHeaders[key] = proxyRes.headers[key];
-      }
-      res.writeHead(proxyRes.statusCode, safeHeaders);
-      proxyRes.pipe(res);
+      const proxyReq = https.request(options, (proxyRes) => {
+        const safeHeaders = {};
+        // Strip transfer-encoding and content-length to let Node.js automatically manage them safely
+        const allowedHeaders = ['content-type', 'cache-control', 'content-encoding'];
+        for (const key of allowedHeaders) {
+          if (proxyRes.headers[key]) safeHeaders[key] = proxyRes.headers[key];
+        }
+        res.writeHead(proxyRes.statusCode, safeHeaders);
+        proxyRes.pipe(res);
+        proxyRes.on('end', () => resolve());
+      });
+      proxyReq.on("error", (err) => {
+        if (!res.headersSent) res.status(502).json({ error: "Proxy stream error" });
+        resolve();
+      });
+      proxyReq.setTimeout(timeoutMs, () => { 
+        proxyReq.destroy(); 
+        resolve();
+      });
+      proxyReq.end(bodyStr);
     });
-    proxyReq.on("error", (err) => {
-      if (!res.headersSent) res.status(502).json({ error: "Proxy stream error" });
-    });
-    proxyReq.setTimeout(timeoutMs, () => { proxyReq.destroy(); });
-    proxyReq.end(bodyStr);
-    return;
   }
 
   return new Promise((resolve) => {
@@ -117,16 +124,22 @@ module.exports = async (req, res, contentLength) => {
           } else {
             try { data = JSON.parse(proxyBody.toString()); } catch { data = proxyBody.toString(); }
           }
-          resolve({ statusCode: proxyRes.statusCode, data });
+          res.status(proxyRes.statusCode).json(data);
+          resolve();
         } catch {
-          resolve({ statusCode: 502, data: { error: "Invalid provider response" } });
+          res.status(502).json({ error: "Invalid provider response" });
+          resolve();
         }
       });
     });
-    proxyReq.on("error", () => resolve({ statusCode: 500, data: { error: "Proxy error" } }));
+    proxyReq.on("error", () => {
+      if (!res.headersSent) res.status(500).json({ error: "Proxy error" });
+      resolve();
+    });
     proxyReq.setTimeout(timeoutMs, () => {
       proxyReq.destroy();
-      resolve({ statusCode: 504, data: { error: "Translation request timed out" } });
+      if (!res.headersSent) res.status(504).json({ error: "Translation request timed out" });
+      resolve();
     });
     proxyReq.end(bodyStr);
   });
