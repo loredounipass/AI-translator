@@ -139,22 +139,6 @@ export const AI_MODELS: Record<string, AIModel> = {
     free: false,
     modelType: "chat",
   },
-  "anthropic-sonnet-5": {
-    id: "sonnet-5",
-    name: "Sonnet 5",
-    provider: "Anthropic",
-    apiProvider: "anthropic",
-    free: false,
-    modelType: "chat",
-  },
-  "anthropic-sonnet-4-6": {
-    id: "sonnet-4.6",
-    name: "Sonnet 4.6",
-    provider: "Anthropic",
-    apiProvider: "anthropic",
-    free: false,
-    modelType: "chat",
-  },
   "anthropic-haiku-4-5": {
     id: "haiku-4.5",
     name: "Haiku 4.5",
