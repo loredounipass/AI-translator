@@ -6,11 +6,7 @@ module.exports = async (req, res, contentLength) => {
   const apiKey = typeof req.body?.apiKey === 'string' ? req.body.apiKey.trim() : (req.body?.apiKey || "");
   let provider = (req.body && req.body.provider) || "";
   if (!provider) {
-    if (req.body && (req.body.model === "qwen2.5-1.5b" || req.body.model === "local-qwen" || req.body.model === "qwen")) {
-      provider = "qwen_local";
-    } else {
-      provider = apiKey ? "nvidia" : "qwen_local";
-    }
+    provider = "nvidia";
   }
 
   const providerConfig = PROVIDERS[provider];
@@ -18,8 +14,7 @@ module.exports = async (req, res, contentLength) => {
     return res.status(400).json({ error: `Provider desconocido: ${provider}` });
   }
 
-  const isLocalProvider = provider === "local" || provider === "qwen_local" || provider === "phi_local";
-  if (!apiKey && !isLocalProvider) {
+  if (!apiKey) {
     return res.status(401).json({ error: `API key requerida para ${provider}` });
   }
 
@@ -44,11 +39,18 @@ module.exports = async (req, res, contentLength) => {
     textLength = lastMsg.content ? lastMsg.content.length : 0;
   }
 
+  // Modelos de razonamiento (Nemotron Omni, etc.) pueden tardar mucho en su
+  // "thinking" oculto incluso con texto corto; se les da un piso de timeout mayor
+  // para evitar abort prematuro (504). Coherente con getAdaptiveTimeout en el cliente.
+  const modelId = typeof cleanBody.model === "string" ? cleanBody.model.toLowerCase() : "";
+  const isReasoning =
+    modelId.includes("nemotron") || modelId.includes("reasoning") || modelId.includes("think");
+
   let timeoutMs = 30000;
-  if (isLocalProvider) timeoutMs = 120000;
-  if (textLength > 5000) timeoutMs = 120000;
-  else if (textLength > 2000) timeoutMs = 90000;
-  else if (textLength > 500) timeoutMs = 60000;
+  if (isReasoning) timeoutMs = textLength > 2000 ? 180000 : 120000;
+  if (textLength > 5000) timeoutMs = Math.max(timeoutMs, 120000);
+  else if (textLength > 2000) timeoutMs = Math.max(timeoutMs, 90000);
+  else if (textLength > 500) timeoutMs = Math.max(timeoutMs, 60000);
 
   const clientTimeout = req.headers['x-request-timeout'];
   if (clientTimeout && !isNaN(parseInt(clientTimeout))) {

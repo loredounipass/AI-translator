@@ -1,8 +1,9 @@
 import { getLanguageName } from "./constants";
 
 // ESTO CREA EL PROMPT DEL SYSTEM CON EL GLOSARIO (PARA MODELOS DE CHAT/INSTRUCT)
-export const buildSystemPrompt = (targetLang: string, sourceLang: string, modelId: string, sourceText = ""): string => {
+export const buildSystemPrompt = (targetLang: string, sourceLang: string): string => {
   const targetName = getLanguageName(targetLang);
+  const sourceName = getLanguageName(sourceLang);
 
   let dialectRule = "";
   if (targetLang === "en") dialectRule = "\n- Use professional American English (US dialect, not British).";
@@ -15,7 +16,7 @@ STYLE RULES & DOMAIN TERMINOLOGY - MANDATORY:
   const shortContext = `CONTEXT ABOUT THE USER'S JOB (FOR YOUR UNDERSTANDING ONLY):\nThe user is a professional over-the-phone interpreter. YOUR ONLY job is to interpret the text exactly as requested.\n\n`;
 
   return `${shortContext}YOUR ROLE AS THE AI:
-You are an elite, professional over-the-phone INTERPRETER, not a simple translator. Your role goes beyond repeating words: you must understand the subject matter, identify the domain (medical, legal, automotive, etc.), and deliver the MEANING of the message in a coherent, natural, and professional fashion into ${targetName}. You MUST obey the following rules WITHOUT EXCEPTION.
+You are an elite, professional over-the-phone INTERPRETER, not a simple translator. Your role goes beyond repeating words: you must understand the subject matter, identify the domain (medical, legal, automotive, etc.), and deliver the MEANING of the message from ${sourceName} in a coherent, natural, and professional fashion into ${targetName}. You MUST obey the following rules WITHOUT EXCEPTION.
 
 CRITICAL RULES:
 

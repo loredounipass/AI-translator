@@ -32,28 +32,13 @@ const PROVIDERS = {
     authHeader: (key) => `Bearer ${key}`,
     authHeaderName: "Authorization",
   },
-  qwen_local: {
-    hostname: "cuddly-winner-pjqq9q54wrv6f7q7w-8000.app.github.dev",
-    path: "/v1/chat/completions",
-    authHeader: (key) => `Bearer ${key || "dummy-key"}`,
-    authHeaderName: "Authorization",
-  },
-  phi_local: {
-    hostname: "cuddly-winner-pjqq9q54wrv6f7q7w-8001.app.github.dev",
-    path: "/v1/chat/completions",
-    authHeader: (key) => `Bearer ${key || "dummy-key"}`,
-    authHeaderName: "Authorization",
-  },
-  local: {
-    hostname: "cuddly-winner-pjqq9q54wrv6f7q7w-8000.app.github.dev",
-    path: "/v1/chat/completions",
-    authHeader: (key) => `Bearer ${key || "dummy-key"}`,
-    authHeaderName: "Authorization",
-  },
 };
 
 const MAX_ASR_BODY = 15 * 1024 * 1024;   // 15MB
-const MAX_TRANSLATE_BODY = 100 * 1024;    // 100KB
+// Debe ser coherente con max_input_tokens (32000) + memoria few-shot inyectada.
+// 32k tokens de entrada ~ 100+ KB de texto; con mensajes/prompt/memoria el body crece,
+// así que se fija un techo amplio para no responder 413 antes de llegar al proveedor.
+const MAX_TRANSLATE_BODY = 2 * 1024 * 1024; // 2MB
 
 module.exports = {
   allowedOrigins,

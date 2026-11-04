@@ -15,6 +15,14 @@ const resolveModelConfig = (modelId: string) => {
   return {
     modelType: entry?.modelType ?? "chat",
     apiProvider: entry?.apiProvider,
+    // Muestreo y límites salen del registro; si un modelo no define temperature/topP,
+    // se deja undefined para usar el default del proveedor (no se inventa un valor).
+    temperature: entry?.temperature,
+    topP: entry?.topP,
+    maxInputTokens: entry?.maxInputTokens,
+    maxOutputTokens: entry?.maxOutputTokens,
+    maxOutputTokensCap: entry?.maxOutputTokensCap,
+    stream: entry?.stream ?? true,
   };
 };
 
@@ -35,22 +43,9 @@ export const translate = async (
 
   const modelConfig = resolveModelConfig(modelId);
   const isTranslationOnly = modelConfig.modelType === "translation-only";
-  const isLocal =
-    options?.provider === "local" ||
-    options?.provider === "qwen_local" ||
-    options?.provider === "phi_local" ||
-    modelConfig.apiProvider === "local" ||
-    modelConfig.apiProvider === "qwen_local" ||
-    modelConfig.apiProvider === "phi_local" ||
-    modelId === "local-qwen" ||
-    modelId === "qwen" ||
-    modelId === "qwen2.5-1.5b" ||
-    modelId === "local-phi" ||
-    modelId === "phi-3.5-mini" ||
-    modelId === "microsoft/Phi-3.5-mini-instruct";
 
   // CACHE HIT O(1): Retorna la traducción instantáneamente sin llamar al modelo.
-  const cached = translationMemory.get(cleanedText, sourceLang, targetLang);
+  const cached = translationMemory.get(cleanedText, sourceLang, targetLang, modelId);
   if (cached) return cached;
 
   // DEDUPLICACIÓN O(1): Clave única por texto + idiomas + modelo.
@@ -63,46 +58,33 @@ export const translate = async (
 
   let messages: { role: string; content: string }[];
 
-  if (isLocal) {
-    // PROMPT MINIMALISTA PARA MODELO LOCAL (solo Reglas 2 y 3):
-    // Un modelo pequeño como Qwen 1.5B se sobrecarga con prompts extensos y omite
-    // el inicio del texto. Enviamos solo las reglas esenciales y el texto crudo.
-    let dialectRule = "";
-    if (targetLang === "en") dialectRule = "Use native-sounding US American English.";
-    else if (targetLang === "es") dialectRule = "Use formal 'usted', neutral Latin American Spanish.";
+  const isShortText = cleanedText.length <= 50;
+  const systemPrompt = isTranslationOnly
+    ? buildSimpleTranslationSystemPrompt(sourceLang, targetLang)
+    : (isShortText
+        ? buildLightSystemPrompt(targetLang, sourceLang)
+        : buildSystemPrompt(targetLang, sourceLang));
 
-    const localSystemPrompt = `You are a professional over-the-phone interpreter. Translate from ${sourceName} to ${targetName}.
-Rules:
-- FIRST PERSON: Strip third-person directives ("Tell him...", "Dígale que..."). Output in first person.
-- TONE: ${dialectRule}
-- OUTPUT: Return ONLY the final translation. No explanations, no tags, no reasoning.`;
+  const userPrompt = isTranslationOnly
+    ? buildSimpleTranslationUserPrompt(cleanedText)
+    : `Interpret the following text from ${sourceName} to ${targetName}. Apply first-person interpreting rules. Return ONLY the final interpretation without any formatting, reasoning, or tags.\n\nText to interpret:\n${cleanedText}`;
 
-    messages = [
-      { role: "system", content: localSystemPrompt },
-      { role: "user", content: cleanedText },
-    ];
-  } else {
-    const isShortText = cleanedText.length <= 50;
-    const systemPrompt = isTranslationOnly
-      ? buildSimpleTranslationSystemPrompt(sourceLang, targetLang)
-      : (isShortText
-          ? buildLightSystemPrompt(targetLang, sourceLang)
-          : buildSystemPrompt(targetLang, sourceLang, modelId, cleanedText));
+  // MEMORIA FEW-SHOT: inyecta pares previos relevantes (regla 6 de terminología
+  // consistente). Solo para modelos chat; Riva (translation-only) no la recibe.
+  const memoryMessages = isTranslationOnly
+    ? []
+    : translationMemory.buildMemoryMessages(sourceLang, targetLang, cleanedText);
 
-    const userPrompt = isTranslationOnly
-      ? buildSimpleTranslationUserPrompt(cleanedText)
-      : `Interpret the following text from ${sourceName} to ${targetName}. Apply first-person interpreting rules. Return ONLY the final interpretation without any formatting, reasoning, or tags.\n\nText to interpret:\n${cleanedText}`;
-
-    messages = [
-      { role: "system", content: systemPrompt },
-      { role: "user", content: userPrompt },
-    ];
-  }
+  messages = [
+    { role: "system", content: systemPrompt },
+    ...memoryMessages,
+    { role: "user", content: userPrompt },
+  ];
 
   const effectiveProvider =
-    options?.provider && options.provider !== "local"
+    options?.provider
       ? options.provider
-      : modelConfig.apiProvider || (modelId === "local-phi" || modelId === "phi-3.5-mini" || modelId === "microsoft/Phi-3.5-mini-instruct" ? "phi_local" : isLocal ? "qwen_local" : "nvidia");
+      : modelConfig.apiProvider || "nvidia";
 
   const requestPromise = executeTranslationRequest({
     modelId,
@@ -112,11 +94,14 @@ Rules:
     signal: options?.signal,
     onData: options?.onData,
     textLength: cleanedText.length,
-    temperature: Object.values(AI_MODELS).find((m) => m.id === modelId)?.temperature ?? 0.2,
-    topP: Object.values(AI_MODELS).find((m) => m.id === modelId)?.topP ?? 1,
-    maxOutputTokensCap: Object.values(AI_MODELS).find((m) => m.id === modelId)?.maxOutputTokensCap ?? 42000,
+    temperature: modelConfig.temperature,
+    topP: modelConfig.topP,
+    maxInputTokens: modelConfig.maxInputTokens,
+    maxOutputTokens: modelConfig.maxOutputTokens,
+    maxOutputTokensCap: modelConfig.maxOutputTokensCap,
+    stream: modelConfig.stream,
   }).then((translated) => {
-    translationMemory.add(cleanedText, translated, sourceLang, targetLang);
+    translationMemory.add(cleanedText, translated, sourceLang, targetLang, modelId);
     activeRequests.delete(requestKey);
     return translated;
   }).catch((err) => {
@@ -133,7 +118,8 @@ export const translateMultiple = async (
   texts: string[],
   targetLang: string,
   sourceLang: string,
-  modelId: string
+  modelId: string,
+  options?: { signal?: AbortSignal; onData?: (text: string) => void; apiKey?: string; provider?: string }
 ): Promise<string[]> => {
-  return Promise.all(texts.map((text) => translate(targetLang, sourceLang, text, modelId)));
+  return Promise.all(texts.map((text) => translate(targetLang, sourceLang, text, modelId, options)));
 };

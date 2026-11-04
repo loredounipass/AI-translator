@@ -1,4 +1,4 @@
-import { getApiUrl, getAdaptiveTimeout, getAdaptiveMaxTokens } from "./constants";
+import { getApiUrl, getAdaptiveTimeout, getAdaptiveMaxTokens, isReasoningModel } from "./constants";
 import { stripXmlWrapper } from "./filters";
 
 
@@ -12,6 +12,8 @@ export interface StreamRequestOptions {
   signal?: AbortSignal;
   onData: (text: string) => void;
   textLength?: number;
+  maxInputTokens?: number;
+  maxOutputTokens?: number;
   maxOutputTokensCap?: number;
 }
 
@@ -19,25 +21,45 @@ export interface StreamRequestOptions {
 // EJECUTAR PETICIÓN DE TRADUCCIÓN MEDIANTE STREAMING
 export const executeStreamRequest = async (options: StreamRequestOptions): Promise<string> => {
   const textLen = options.textLength || 0;
-  const maxOutputLimit = options.maxOutputTokensCap ?? 42000;
-  const maxInputLimit = 32000;
+  // Los límites de tokens NO se hardcodean aquí: provienen del registro de modelos
+  // (src/utils/constants.ts) y llegan vía options. maxOutputTokensCap es opcional y,
+  // si falta, usa maxOutputTokens como techo del presupuesto adaptativo.
+  const maxInputLimit = options.maxInputTokens;
+  const maxOutputLimit = options.maxOutputTokens;
+  const outputBudgetCap = options.maxOutputTokensCap ?? maxOutputLimit;
+  const isReasoning = isReasoningModel(options.modelId);
+  // Solo los verdaderos modelos de razonamiento (reasoning/think) rechazan el
+  // muestreo personalizado. Nemotron Lightning/Ultra mantienen sus parámetros.
+  const omitsSampling = options.modelId.includes("reasoning") || options.modelId.includes("think");
+  const isNvidia = options.provider === "nvidia";
+  const adaptiveTokens = getAdaptiveMaxTokens(textLen, outputBudgetCap, isReasoning);
 
   const requestBody: any = {
     model: options.modelId,
     messages: options.messages,
-    max_tokens: Math.min(getAdaptiveMaxTokens(textLen, maxOutputLimit), maxOutputLimit),
-    max_input_tokens: maxInputLimit,
-    max_output_tokens: maxOutputLimit,
+    max_tokens: maxOutputLimit ? Math.min(adaptiveTokens, maxOutputLimit) : adaptiveTokens,
     stream: true,
-    apiKey: options.apiKey,
-    provider: options.provider,
   };
 
-  if (options.temperature !== null && options.temperature !== undefined) {
+  // apiKey/provider van al proxy (Vercel), que los usa para elegir el proveedor real.
+  requestBody.apiKey = options.apiKey;
+  requestBody.provider = options.provider;
+
+  // max_input_tokens / max_output_tokens son campos PRIVATIVOS de la API de
+  // integración de NVIDIA. OpenAI/Anthropic/Google rechazan argumentos desconocidos
+  // con HTTP 400, así que solo se envían cuando el proveedor es NVIDIA.
+  if (isNvidia) {
+    requestBody.max_input_tokens = maxInputLimit;
+    requestBody.max_output_tokens = maxOutputLimit;
+  }
+
+  // Los modelos de razonamiento suelen rechazar o ignorar parámetros de muestreo
+  // personalizados; no se envían para evitar 4xx del proveedor.
+  if (!omitsSampling && options.temperature !== null && options.temperature !== undefined) {
     requestBody.temperature = options.temperature;
   }
 
-  if (options.topP !== null && options.topP !== undefined) {
+  if (!omitsSampling && options.topP !== null && options.topP !== undefined) {
     requestBody.top_p = options.topP;
   }
 
@@ -49,7 +71,7 @@ export const executeStreamRequest = async (options: StreamRequestOptions): Promi
     }
   }
 
-  const timeoutMs = getAdaptiveTimeout(textLen, options.provider === "local" || options.provider === "qwen_local" || options.provider === "phi_local");
+  const timeoutMs = getAdaptiveTimeout(textLen, isReasoning);
   const timeoutController = new AbortController();
   const timeoutId = setTimeout(() => timeoutController.abort(), timeoutMs);
 
@@ -92,6 +114,7 @@ export const executeStreamRequest = async (options: StreamRequestOptions): Promi
 
     const decoder = new TextDecoder("utf-8");
     let accumulatedRawText = "";
+    let accumulatedReasoning = "";
     let buffer = "";
 
     while (true) {
@@ -110,6 +133,13 @@ export const executeStreamRequest = async (options: StreamRequestOptions): Promi
         if (trimmedLine.startsWith("data: ")) {
           try {
             const data = JSON.parse(trimmedLine.substring(6));
+            // Los modelos de razonamiento (Nemotron Omni) emiten el "thinking" en
+            // delta.reasoning_content y solo al final la traducción en delta.content.
+            // Capturamos el razonamiento por separado SIN mostrarlo como traducción.
+            const reasoning = data.choices?.[0]?.delta?.reasoning_content;
+            if (reasoning) {
+              accumulatedReasoning += reasoning;
+            }
             const content = data.choices?.[0]?.delta?.content || data.delta?.text || "";
             if (content) {
               accumulatedRawText += content;
@@ -153,6 +183,11 @@ export const executeStreamRequest = async (options: StreamRequestOptions): Promi
     }
 
     if (!accumulatedRawText.trim()) {
+      if (isReasoning && accumulatedReasoning.trim()) {
+        // El modelo razonó pero no alcanzó a emitir la respuesta visible (budget agotado
+        // durante el thinking). Damos un error accionable en lugar del genérico.
+        throw new Error("El modelo de razonamiento agotó el presupuesto en el thinking sin emitir la traducción");
+      }
       throw new Error("No se recibió contenido del modelo durante el streaming");
     }
 

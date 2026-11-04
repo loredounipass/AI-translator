@@ -198,34 +198,8 @@ export const AI_MODELS: Record<string, AIModel> = {
     maxOutputTokens: 42000,
     stream: true,
   },
-  "local-qwen": {
-    id: "qwen2.5-1.5b",
-    name: "Qwen 2.5 1.5B (Local)",
-    provider: "Qwen",
-    apiProvider: "qwen_local",
-    free: true,
-    modelType: "chat",
-    temperature: 0.7,
-    topP: 0.9,
-    maxInputTokens: 32000,
-    maxOutputTokens: 42000,
-    stream: true,
-  },
-  "local-phi": {
-    id: "microsoft/Phi-3.5-mini-instruct",
-    name: "Phi-3.5 Mini (Local)",
-    provider: "Microsoft",
-    apiProvider: "phi_local",
-    free: true,
-    modelType: "chat",
-    temperature: 0.7,
-    topP: 0.9,
-    maxInputTokens: 32000,
-    maxOutputTokens: 42000,
-    stream: true,
-  },
 };
 
 
 // MODELO POR DEFECTO
-export const DEFAULT_MODEL = "local-qwen";
+export const DEFAULT_MODEL = "nvidia-diffusiongemma";

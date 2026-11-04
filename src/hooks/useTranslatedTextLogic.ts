@@ -73,7 +73,8 @@ export const useTranslatedTextLogic = () => {
             item.source_text.trim(),
             item.translated_text.trim(),
             item.source_lang,
-            item.target_lang
+            item.target_lang,
+            modelId
           );
         }
       } catch (err) {
@@ -237,9 +238,7 @@ export const useTranslatedTextLogic = () => {
 
     if (authLoading) return;
 
-    const isLocal = apiProvider === "local" || apiProvider === "qwen_local" || apiProvider === "phi_local";
-
-    if (!userRef.current && !isLocal) {
+    if (!userRef.current) {
       if (!authNotifiedRef.current) {
         authNotifiedRef.current = true;
         showAuthRequiredNotification();
@@ -251,20 +250,18 @@ export const useTranslatedTextLogic = () => {
 
     authNotifiedRef.current = false;
 
-    if (!isLocal) {
-      if (keysLoading || !keysLoaded) return;
+    if (keysLoading || !keysLoaded) return;
 
-      if (user && keysForUserId !== user.id) return;
+    if (user && keysForUserId !== user.id) return;
 
-      if (!apiKey) {
-        if (!apiKeyNotifiedRef.current) {
-          apiKeyNotifiedRef.current = true;
-          showApiKeyRequiredNotification();
-        }
-        setTranslatedText([]);
-        setIsStale(false);
-        return;
+    if (!apiKey) {
+      if (!apiKeyNotifiedRef.current) {
+        apiKeyNotifiedRef.current = true;
+        showApiKeyRequiredNotification();
       }
+      setTranslatedText([]);
+      setIsStale(false);
+      return;
     }
 
     apiKeyNotifiedRef.current = false;

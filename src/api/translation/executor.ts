@@ -1,5 +1,5 @@
 import axios from "axios";
-import { MAX_RETRIES, BASE_DELAY, wait } from "./constants";
+import { MAX_RETRIES, BASE_DELAY, wait, isReasoningModel } from "./constants";
 import { executeStreamRequest, StreamRequestOptions } from "./stream";
 import { executeStandardRequest, StandardRequestOptions } from "./standard";
 
@@ -13,14 +13,18 @@ export interface TranslationExecutorOptions {
   signal?: AbortSignal;
   onData?: (text: string) => void;
   textLength?: number;
+  maxInputTokens?: number;
+  maxOutputTokens?: number;
   maxOutputTokensCap?: number;
+  // Preferencia de streaming declarada por el modelo en el registro.
+  // Si es false, se fuerza la ruta estándar aunque llegue onData (ej: Riva).
+  stream?: boolean;
 }
 
 export const executeTranslationRequest = async (options: TranslationExecutorOptions): Promise<string> => {
   let lastError: Error | null = null;
-  const isLocal = options.provider === "local" || options.provider === "qwen_local" || options.provider === "phi_local";
-  const isReasoning = options.modelId.includes("nemotron") || options.modelId.includes("reasoning") || options.modelId.includes("think");
-  const maxRetries = isLocal ? 1 : (isReasoning ? 2 : MAX_RETRIES);
+  const isReasoning = isReasoningModel(options.modelId);
+  const maxRetries = isReasoning ? 2 : MAX_RETRIES;
 
   for (let attempt = 0; attempt <= maxRetries; attempt++) {
     if (options?.signal?.aborted) throw new DOMException("Aborted", "AbortError");
@@ -34,7 +38,9 @@ export const executeTranslationRequest = async (options: TranslationExecutorOpti
     }
 
     try {
-      if (options.onData) {
+      // Se usa streaming solo si el modelo lo permite (options.stream !== false)
+      // y el llamante pidió callbacks (onData). Riva (stream:false) va a estándar.
+      if (options.onData && options.stream !== false) {
         return await executeStreamRequest(options as StreamRequestOptions);
       } else {
         const result = await executeStandardRequest(options as StandardRequestOptions);

@@ -5,6 +5,7 @@ export interface TranslationPair {
   translated: string;
   sourceLang: string;
   targetLang: string;
+  modelId: string;
   timestamp: number;
 }
 
@@ -14,33 +15,37 @@ const MAX_PAIRS_PER_REQUEST = 10;
 // O(N) buffer — used to build few-shot context messages for the model
 const memoryBuffer: TranslationPair[] = [];
 
-// O(1) Map — used for instant exact-match cache lookups
+// O(1) Map — used for instant exact-match cache lookups (keyed PER MODEL so that
+// switching models forces a fresh translation instead of reusing another model's result)
 const cacheMap = new Map<string, string>();
 
-const getCacheKey = (source: string, sourceLang: string, targetLang: string): string =>
-  `${sourceLang}:${targetLang}:${source.trim()}`;
+const getCacheKey = (source: string, sourceLang: string, targetLang: string, modelId: string): string =>
+  `${modelId}|${sourceLang}:${targetLang}:${source.trim()}`;
 
 
 // MEMORIA DE TRADUCCIÓN — BUFFER EN MEMORIA + CACHE O(1)
 export const translationMemory = {
 
-  // OBTENER TRADUCCIÓN EXACTA EN O(1)
-  get(source: string, sourceLang: string, targetLang: string): string | undefined {
-    const key = getCacheKey(source, sourceLang, targetLang);
-    return cacheMap.get(key);
+  // OBTENER TRADUCCIÓN EXACTA EN O(1). Primero el modelo activo; si no hay, cae en
+  // un par global "*" (interpretaciones agregadas manualmente, válidas para todo modelo).
+  get(source: string, sourceLang: string, targetLang: string, modelId: string): string | undefined {
+    return (
+      cacheMap.get(getCacheKey(source, sourceLang, targetLang, modelId)) ??
+      cacheMap.get(getCacheKey(source, sourceLang, targetLang, "*"))
+    );
   },
 
 
   // AÑADIR UN NUEVO PAR DE TRADUCCIÓN AL BUFFER DE MEMORIA Y AL CACHE O(1)
-  add(source: string, translated: string, sourceLang: string, targetLang: string): void {
+  add(source: string, translated: string, sourceLang: string, targetLang: string, modelId: string): void {
     if (!source.trim() || !translated.trim()) return;
     if (isTrivialText(source, sourceLang, targetLang)) return;
 
-    // Update O(1) cache
-    const key = getCacheKey(source, sourceLang, targetLang);
+    // Update O(1) cache (model-scoped)
+    const key = getCacheKey(source, sourceLang, targetLang, modelId);
     cacheMap.set(key, translated.trim());
 
-    // Update O(N) context buffer
+    // Update O(N) context buffer (shared across models for terminology consistency)
     const existingIndex = memoryBuffer.findIndex(
       (p) => p.source === source.trim() && p.sourceLang === sourceLang && p.targetLang === targetLang
     );
@@ -53,13 +58,14 @@ export const translationMemory = {
       translated: translated.trim(),
       sourceLang,
       targetLang,
+      modelId,
       timestamp: Date.now(),
     });
 
     while (memoryBuffer.length > MAX_MEMORY_ITEMS) {
       const removed = memoryBuffer.shift();
       if (removed) {
-        const removedKey = getCacheKey(removed.source, removed.sourceLang, removed.targetLang);
+        const removedKey = getCacheKey(removed.source, removed.sourceLang, removed.targetLang, removed.modelId);
         cacheMap.delete(removedKey);
       }
     }
@@ -105,6 +111,7 @@ export const translationMemory = {
           translated: p.source,
           sourceLang,
           targetLang,
+          modelId: p.modelId,
           timestamp: p.timestamp,
         });
       }
@@ -144,7 +151,7 @@ export const translationMemory = {
         (pair.sourceLang === sourceLang && pair.targetLang === targetLang);
       if (pair.source === trimmed && langsMatch) {
         const removed = memoryBuffer.splice(i, 1)[0];
-        const removedKey = getCacheKey(removed.source, removed.sourceLang, removed.targetLang);
+        const removedKey = getCacheKey(removed.source, removed.sourceLang, removed.targetLang, removed.modelId);
         cacheMap.delete(removedKey);
       }
     }

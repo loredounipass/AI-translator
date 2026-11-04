@@ -1,5 +1,5 @@
 import axios from "axios";
-import { getApiUrl, getAdaptiveTimeout, getAdaptiveMaxTokens } from "./constants";
+import { getApiUrl, getAdaptiveTimeout, getAdaptiveMaxTokens, isReasoningModel } from "./constants";
 import { stripXmlWrapper } from "./filters";
 
 
@@ -12,6 +12,8 @@ export interface StandardRequestOptions {
   provider?: string;
   signal?: AbortSignal;
   textLength?: number;
+  maxInputTokens?: number;
+  maxOutputTokens?: number;
   maxOutputTokensCap?: number;
 }
 
@@ -19,30 +21,40 @@ export interface StandardRequestOptions {
 // EJECUTAR PETICIÓN DE TRADUCCIÓN ESTÁNDAR
 export const executeStandardRequest = async (options: StandardRequestOptions): Promise<string> => {
   const textLen = options.textLength || 0;
-  const isLocal = options.provider === "local" || options.provider === "qwen_local" || options.provider === "phi_local";
   const targetUrl = getApiUrl(options.provider);
-  const maxOutputLimit = options.maxOutputTokensCap ?? 42000;
-  const maxInputLimit = 32000;
+  // Los límites de tokens provienen del registro de modelos (src/utils/constants.ts),
+  // no se hardcodean aquí. maxOutputTokensCap es opcional y cae en maxOutputTokens.
+  const maxInputLimit = options.maxInputTokens;
+  const maxOutputLimit = options.maxOutputTokens;
+  const outputBudgetCap = options.maxOutputTokensCap ?? maxOutputLimit;
+  const isReasoning = isReasoningModel(options.modelId);
+  const omitsSampling = options.modelId.includes("reasoning") || options.modelId.includes("think");
+  const isNvidia = options.provider === "nvidia";
+  const adaptiveTokens = getAdaptiveMaxTokens(textLen, outputBudgetCap, isReasoning);
 
   const requestBody: any = {
-    model: options.modelId || "qwen2.5-1.5b",
+    model: options.modelId,
     messages: options.messages,
-    max_tokens: Math.min(getAdaptiveMaxTokens(textLen, maxOutputLimit), maxOutputLimit),
-    max_input_tokens: maxInputLimit,
-    max_output_tokens: maxOutputLimit,
+    max_tokens: maxOutputLimit ? Math.min(adaptiveTokens, maxOutputLimit) : adaptiveTokens,
   };
 
-  if (!isLocal) {
-    requestBody.stream = false;
-    if (options.apiKey) requestBody.apiKey = options.apiKey;
-    if (options.provider) requestBody.provider = options.provider;
+  // max_input_tokens / max_output_tokens son privativos de NVIDIA; el resto de
+  // proveedores rechaza argumentos desconocidos (HTTP 400).
+  if (isNvidia) {
+    requestBody.max_input_tokens = maxInputLimit;
+    requestBody.max_output_tokens = maxOutputLimit;
   }
 
-  if (options.temperature !== null && options.temperature !== undefined) {
+  requestBody.stream = false;
+  if (options.apiKey) requestBody.apiKey = options.apiKey;
+  if (options.provider) requestBody.provider = options.provider;
+
+  // No enviar parámetros de muestreo a modelos de razonamiento (suelen rechazarlos).
+  if (!omitsSampling && options.temperature !== null && options.temperature !== undefined) {
     requestBody.temperature = options.temperature;
   }
 
-  if (options.topP !== null && options.topP !== undefined && !isLocal) {
+  if (!omitsSampling && options.topP !== null && options.topP !== undefined) {
     requestBody.top_p = options.topP;
   }
 
@@ -60,7 +72,7 @@ export const executeStandardRequest = async (options: StandardRequestOptions): P
     {
       headers: { "Content-Type": "application/json" },
       signal: options.signal,
-      timeout: getAdaptiveTimeout(textLen, isLocal),
+      timeout: getAdaptiveTimeout(textLen, isReasoning),
     }
   );
 

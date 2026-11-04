@@ -31,6 +31,9 @@ export const isTrivialText = (text: string, sourceLang?: string, targetLang?: st
 };
 
 export const stripXmlWrapper = (text: string): string => {
+  // CONTRATO DE SALIDA: el prompt pide salida PLANA (sin tags). La extracción por
+  // etiquetas es solo un FALLA DEFENSIVO para modelos que desobedecen y emiten
+  // <translation>...</translation>. Si no hay tags, se pasa al branch de limpieza.
   // 1. Try to extract content specifically from inside translation/output tags
   const extractRegex = /<(?:translation|traduccion|interpretacion|output|result|final_translation)>([\s\S]*?)(?:<\/(?:translation|traduccion|interpretacion|output|result|final_translation)>|$)/i;
   const match = text.match(extractRegex);

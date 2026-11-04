@@ -1,23 +1,8 @@
-const DEFAULT_QWEN_URL = "https://cuddly-winner-pjqq9q54wrv6f7q7w-8000.app.github.dev/v1/chat/completions";
-const DEFAULT_PHI_URL  = "https://cuddly-winner-pjqq9q54wrv6f7q7w-8001.app.github.dev/v1/chat/completions";
+import languages from "../../lib/languages.json";
 
-export const getApiUrl = (provider?: string): string => {
-  if (provider === "phi_local") {
-    return (
-      process.env.REACT_APP_PHI_API_URL ||
-      DEFAULT_PHI_URL
-    );
-  }
-
-  const isLocal = provider === "qwen_local" || provider === "local";
-  if (isLocal) {
-    return (
-      process.env.REACT_APP_QWEN_API_URL ||
-      process.env.REACT_APP_API_URL ||
-      DEFAULT_QWEN_URL
-    );
-  }
-
+// Todos los proveedores van ahora por el proxy (Vercel /api/completions); ya no hay
+// ruta directa a un codespace local. El parámetro se conserva por compatibilidad de llamadas.
+export const getApiUrl = (_provider?: string): string => {
   return (
     process.env.REACT_APP_COMPLETIONS_URL ||
     process.env.REACT_APP_API_URL ||
@@ -34,10 +19,13 @@ export const wait = (ms: number) => new Promise((resolve) => setTimeout(resolve,
 
 /**
  * Calculate an adaptive timeout (ms) based on the length of the source text.
- * Longer texts require more generation time from the LLM.
+ * Longer texts require more generation time from the LLM. Reasoning models
+ * (Nemotron Omni, etc.) may spend a long time in their hidden thinking trace
+ * even on short inputs, so they get a much larger floor to avoid premature aborts.
  */
-export const getAdaptiveTimeout = (textLength: number, isLocal?: boolean): number => {
-  if (isLocal) return 120_000;
+export const getAdaptiveTimeout = (textLength: number, isReasoning?: boolean): number => {
+  // Reasoning: el "thinking" oculto puede tardar mucho aunque el texto sea corto.
+  if (isReasoning) return textLength > 2000 ? 180_000 : 120_000;
   if (textLength > 5000) return 120_000;
   if (textLength > 2000) return 90_000;
   if (textLength > 500) return 60_000;
@@ -45,43 +33,40 @@ export const getAdaptiveTimeout = (textLength: number, isLocal?: boolean): numbe
 };
 
 /**
- * Calculate adaptive max_tokens based on the length of the source text.
- * Short inputs need fewer output tokens; long inputs may need up to 4096.
- * An optional cap limits output for models with small context windows.
+ * Detecta si un modelo es de razonamiento (Chain of Thought).
+ * Estos modelos consumen tokens en una "cadena de pensamiento" oculta
+ * (delta.reasoning_content) antes de emitir la respuesta visible, por lo que
+ * necesitan un presupuesto de tokens mínimo mayor que los modelos instruct.
  */
-export const getAdaptiveMaxTokens = (textLength: number, maxOutputTokensCap?: number): number => {
-  let tokens: number;
-  if (textLength <= 50) tokens = 256;
-  else if (textLength <= 200) tokens = 512;
-  else if (textLength > 4000) tokens = 4096;
-  else if (textLength > 1000) tokens = 3072;
-  else tokens = 2048; // Aumentado para dar espacio suficiente a los modelos de razonamiento (Chain of Thought)
+export const isReasoningModel = (modelId: string): boolean =>
+  typeof modelId === "string" &&
+  (modelId.includes("nemotron") || modelId.includes("reasoning") || modelId.includes("think"));
 
-  return maxOutputTokensCap ? Math.min(tokens, maxOutputTokensCap) : tokens;
+/**
+ * Devuelve el presupuesto de max_tokens del modelo, tal como está declarado en el
+ * registro (src/utils/constants.ts). No se aplican techos pequeños: se usa el valor
+ * del modelo como piso amplio, para que los modelos de razonamiento (Nemotron Omni)
+ * tengan espacio de sobra para su "thinking" oculto más la traducción.
+ * textLength / isReasoning se conservan en la firma por compatibilidad de llamadas.
+ */
+export const getAdaptiveMaxTokens = (textLength: number, maxOutputTokensCap?: number, isReasoning?: boolean): number => {
+  // El presupuesto lo define SIEMPRE el registro de modelos (src/utils/constants.ts).
+  // No se inventa un valor: si falta, es un error de configuración del modelo.
+  if (!maxOutputTokensCap) {
+    throw new Error("getAdaptiveMaxTokens: falta maxOutputTokens/maxOutputTokensCap en el registro de modelos");
+  }
+  return maxOutputTokensCap;
 };
 
-export const LANGUAGE_NAMES: Record<string, string> = {
-  ar: "Arabic",
-  da: "Danish",
-  de: "German",
-  en: "English",
-  es: "Spanish",
-  fr: "French",
-  hi: "Hindi",
-  it: "Italian",
-  id: "Indonesian",
-  ja: "Japanese",
-  ko: "Korean",
-  nl: "Dutch",
-  pl: "Polish",
-  pt: "Portuguese",
-  ru: "Russian",
-  sv: "Swedish",
-  th: "Thai",
-  tr: "Turkish",
-  vi: "Vietnamese",
-  zh: "Chinese",
-};
+// Única fuente de verdad: los nombres se derivan de languages.json (AVAILABLE_LANGUAGES),
+// evitando divergencias entre dos listas separadas.
+export const LANGUAGE_NAMES: Record<string, string> = languages.data.reduce(
+  (acc: Record<string, string>, lang: { code: string; name: string }) => {
+    acc[lang.code] = lang.name;
+    return acc;
+  },
+  {}
+);
 
 export const getLanguageName = (code: string): string => {
   if (code === "auto" || code === "auto-detect") return "the source language";

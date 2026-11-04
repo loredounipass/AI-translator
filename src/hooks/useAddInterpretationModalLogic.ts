@@ -190,7 +190,8 @@ export const useAddInterpretationModalLogic = ({
                     );
                 }
 
-                translationMemory.add(src, trg, srcLang, trgLang);
+                // Par manual: modelId "*" para que aplique a cualquier modelo.
+                translationMemory.add(src, trg, srcLang, trgLang, "*");
                 setSourceText("");
                 setTargetText("");
                 onInterpretationAdded();
