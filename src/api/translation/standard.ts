@@ -21,11 +21,15 @@ export const executeStandardRequest = async (options: StandardRequestOptions): P
   const textLen = options.textLength || 0;
   const isLocal = options.provider === "local" || options.provider === "qwen_local" || options.provider === "phi_local";
   const targetUrl = getApiUrl(options.provider);
+  const maxOutputLimit = options.maxOutputTokensCap ?? 42000;
+  const maxInputLimit = 32000;
 
   const requestBody: any = {
     model: options.modelId || "qwen2.5-1.5b",
     messages: options.messages,
-    max_tokens: getAdaptiveMaxTokens(textLen, options.maxOutputTokensCap),
+    max_tokens: Math.min(getAdaptiveMaxTokens(textLen, maxOutputLimit), maxOutputLimit),
+    max_input_tokens: maxInputLimit,
+    max_output_tokens: maxOutputLimit,
   };
 
   if (!isLocal) {

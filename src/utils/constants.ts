@@ -36,7 +36,7 @@ export const AI_MODELS: Record<string, AIModel> = {
     topP: 0.95,
     maxInputTokens: 32000,
     maxOutputTokens: 42000,
-    maxOutputTokensCap: 4096,
+    maxOutputTokensCap: 42000,
     stream: true,
   },
   "nvidia-nemotron-3-5-lightning": {
@@ -90,7 +90,7 @@ export const AI_MODELS: Record<string, AIModel> = {
     topP: 0.9,
     maxInputTokens: 32000,
     maxOutputTokens: 42000,
-    maxOutputTokensCap: 1024,
+    maxOutputTokensCap: 42000,
     stream: false,
   },
   "nvidia-riva-v2": {
@@ -104,7 +104,7 @@ export const AI_MODELS: Record<string, AIModel> = {
     topP: 0.9,
     maxInputTokens: 32000,
     maxOutputTokens: 42000,
-    maxOutputTokensCap: 1024,
+    maxOutputTokensCap: 42000,
     stream: false,
   },
   "google-gemini-3-5-flash": {

@@ -19,11 +19,15 @@ export interface StreamRequestOptions {
 // EJECUTAR PETICIÓN DE TRADUCCIÓN MEDIANTE STREAMING
 export const executeStreamRequest = async (options: StreamRequestOptions): Promise<string> => {
   const textLen = options.textLength || 0;
+  const maxOutputLimit = options.maxOutputTokensCap ?? 42000;
+  const maxInputLimit = 32000;
 
   const requestBody: any = {
     model: options.modelId,
     messages: options.messages,
-    max_tokens: getAdaptiveMaxTokens(textLen, options.maxOutputTokensCap),
+    max_tokens: Math.min(getAdaptiveMaxTokens(textLen, maxOutputLimit), maxOutputLimit),
+    max_input_tokens: maxInputLimit,
+    max_output_tokens: maxOutputLimit,
     stream: true,
     apiKey: options.apiKey,
     provider: options.provider,

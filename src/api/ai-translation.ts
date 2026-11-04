@@ -112,6 +112,9 @@ Rules:
     signal: options?.signal,
     onData: options?.onData,
     textLength: cleanedText.length,
+    temperature: Object.values(AI_MODELS).find((m) => m.id === modelId)?.temperature ?? 0.2,
+    topP: Object.values(AI_MODELS).find((m) => m.id === modelId)?.topP ?? 1,
+    maxOutputTokensCap: Object.values(AI_MODELS).find((m) => m.id === modelId)?.maxOutputTokensCap ?? 42000,
   }).then((translated) => {
     translationMemory.add(cleanedText, translated, sourceLang, targetLang);
     activeRequests.delete(requestKey);
