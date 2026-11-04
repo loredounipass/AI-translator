@@ -24,12 +24,10 @@ export const executeStandardRequest = async (options: StandardRequestOptions): P
   const targetUrl = getApiUrl(options.provider);
   // Los límites de tokens provienen del registro de modelos (src/utils/constants.ts),
   // no se hardcodean aquí. maxOutputTokensCap es opcional y cae en maxOutputTokens.
-  const maxInputLimit = options.maxInputTokens;
   const maxOutputLimit = options.maxOutputTokens;
   const outputBudgetCap = options.maxOutputTokensCap ?? maxOutputLimit;
   const isReasoning = isReasoningModel(options.modelId);
   const omitsSampling = options.modelId.includes("reasoning") || options.modelId.includes("think");
-  const isNvidia = options.provider === "nvidia";
   const adaptiveTokens = getAdaptiveMaxTokens(textLen, outputBudgetCap, isReasoning);
 
   const requestBody: any = {
@@ -38,12 +36,9 @@ export const executeStandardRequest = async (options: StandardRequestOptions): P
     max_tokens: maxOutputLimit ? Math.min(adaptiveTokens, maxOutputLimit) : adaptiveTokens,
   };
 
-  // max_input_tokens / max_output_tokens son privativos de NVIDIA; el resto de
-  // proveedores rechaza argumentos desconocidos (HTTP 400).
-  if (isNvidia) {
-    requestBody.max_input_tokens = maxInputLimit;
-    requestBody.max_output_tokens = maxOutputLimit;
-  }
+  // NOTA: NO se envían max_input_tokens / max_output_tokens. La API de integración
+  // de NVIDIA (/v1/chat/completions) los rechaza con HTTP 400 ("Unsupported parameter(s)").
+  // El límite de salida ya lo controla max_tokens.
 
   requestBody.stream = false;
   if (options.apiKey) requestBody.apiKey = options.apiKey;

@@ -24,14 +24,12 @@ export const executeStreamRequest = async (options: StreamRequestOptions): Promi
   // Los límites de tokens NO se hardcodean aquí: provienen del registro de modelos
   // (src/utils/constants.ts) y llegan vía options. maxOutputTokensCap es opcional y,
   // si falta, usa maxOutputTokens como techo del presupuesto adaptativo.
-  const maxInputLimit = options.maxInputTokens;
   const maxOutputLimit = options.maxOutputTokens;
   const outputBudgetCap = options.maxOutputTokensCap ?? maxOutputLimit;
   const isReasoning = isReasoningModel(options.modelId);
   // Solo los verdaderos modelos de razonamiento (reasoning/think) rechazan el
   // muestreo personalizado. Nemotron Lightning/Ultra mantienen sus parámetros.
   const omitsSampling = options.modelId.includes("reasoning") || options.modelId.includes("think");
-  const isNvidia = options.provider === "nvidia";
   const adaptiveTokens = getAdaptiveMaxTokens(textLen, outputBudgetCap, isReasoning);
 
   const requestBody: any = {
@@ -45,13 +43,9 @@ export const executeStreamRequest = async (options: StreamRequestOptions): Promi
   requestBody.apiKey = options.apiKey;
   requestBody.provider = options.provider;
 
-  // max_input_tokens / max_output_tokens son campos PRIVATIVOS de la API de
-  // integración de NVIDIA. OpenAI/Anthropic/Google rechazan argumentos desconocidos
-  // con HTTP 400, así que solo se envían cuando el proveedor es NVIDIA.
-  if (isNvidia) {
-    requestBody.max_input_tokens = maxInputLimit;
-    requestBody.max_output_tokens = maxOutputLimit;
-  }
+  // NOTA: NO se envían max_input_tokens / max_output_tokens. La API de integración
+  // de NVIDIA (/v1/chat/completions) los rechaza con HTTP 400 ("Unsupported parameter(s)"),
+  // igual que el resto de proveedores. El límite de salida ya lo controla max_tokens.
 
   // Los modelos de razonamiento suelen rechazar o ignorar parámetros de muestreo
   // personalizados; no se envían para evitar 4xx del proveedor.

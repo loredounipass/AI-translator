@@ -79,20 +79,6 @@ export const AI_MODELS: Record<string, AIModel> = {
     stream: true,
   },
 
-  "nvidia-riva": {
-    id: "nvidia/riva-translate-4b-instruct-v1.1",
-    name: "Riva Translate 4B v1.1",
-    provider: "NVIDIA",
-    apiProvider: "nvidia",
-    free: false,
-    modelType: "translation-only",
-    temperature: 0.0,
-    topP: 0.9,
-    maxInputTokens: 32000,
-    maxOutputTokens: 42000,
-    maxOutputTokensCap: 42000,
-    stream: false,
-  },
   "nvidia-riva-v2": {
     id: "nvidia/riva-translate-4b-instruct-v2",
     name: "Riva Translate 4B v2",
@@ -102,9 +88,11 @@ export const AI_MODELS: Record<string, AIModel> = {
     modelType: "translation-only",
     temperature: 0.0,
     topP: 0.9,
-    maxInputTokens: 32000,
-    maxOutputTokens: 42000,
-    maxOutputTokensCap: 42000,
+    // Riva tiene ventana TOTAL de 8192 tokens: max_tokens debe ser menor que el total
+    // (probado: con 42000 -> HTTP 400 "cannot be greater than max_total_tokens=8192").
+    maxInputTokens: 8192,
+    maxOutputTokens: 4096,
+    maxOutputTokensCap: 4096,
     stream: false,
   },
   "google-gemini-3-5-flash": {
