@@ -44,7 +44,8 @@ module.exports = async (req, res, contentLength) => {
   // para evitar abort prematuro (504). Coherente con getAdaptiveTimeout en el cliente.
   const modelId = typeof cleanBody.model === "string" ? cleanBody.model.toLowerCase() : "";
   const isReasoning =
-    modelId.includes("nemotron") || modelId.includes("reasoning") || modelId.includes("think");
+    modelId.includes("nemotron") || modelId.includes("reasoning") || modelId.includes("think") ||
+    modelId.includes("glimmer");
 
   let timeoutMs = 30000;
   if (isReasoning) timeoutMs = textLength > 2000 ? 180000 : 120000;

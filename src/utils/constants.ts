@@ -95,6 +95,24 @@ export const AI_MODELS: Record<string, AIModel> = {
     maxOutputTokensCap: 4096,
     stream: false,
   },
+  // Servido a traves de NVIDIA integrate (namespace de id "meta/"), igual que
+  // DiffusionGemma usa "google/". apiProvider es "nvidia" porque el proxy solo
+  // conoce nvidia/openai/anthropic/google. Se omiten top_k y timeout del spec
+  // original: la app no envia top_k y el timeout es adaptativo (getAdaptiveTimeout).
+  "meta-muse": {
+    id: "meta/muse-glimmer-30b",
+    name: "Muse Glimmer 30B",
+    provider: "Meta",
+    apiProvider: "nvidia",
+    free: true,
+    modelType: "chat",
+    temperature: 1.0,
+    topP: 0.95,
+    maxInputTokens: 32000,
+    maxOutputTokens: 49152,
+    maxOutputTokensCap: 49152,
+    stream: true,
+  },
   "google-gemini-3-5-flash": {
     id: "gemini-3.5-flash",
     name: "Gemini 3.5 Flash",

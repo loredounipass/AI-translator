@@ -40,7 +40,11 @@ export const getAdaptiveTimeout = (textLength: number, isReasoning?: boolean): n
  */
 export const isReasoningModel = (modelId: string): boolean =>
   typeof modelId === "string" &&
-  (modelId.includes("nemotron") || modelId.includes("reasoning") || modelId.includes("think"));
+  (modelId.includes("nemotron") || modelId.includes("reasoning") || modelId.includes("think") ||
+   // Meta "muse-glimmer" razona en delta.reasoning_content antes de la traducción
+   // (verificado en runtime), pero SÍ acepta temperature/top_p, así que solo se le
+   // da el presupuesto/timeout de razonador, no se le quita el muestreo.
+   modelId.includes("glimmer"));
 
 /**
  * Devuelve el presupuesto de max_tokens del modelo, tal como está declarado en el
