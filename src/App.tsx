@@ -9,6 +9,8 @@ import AuthModal from "./components/AuthModal";
 import ApiKeyModal from "./components/ApiKeyModal";
 import ApiSettingsModal from "./components/ApiSettingsModal";
 import FeedbackModal from "./components/FeedbackModal";
+import DisclaimerModal from "./components/DisclaimerModal";
+import { useDisclaimerModalLogic } from "./hooks/useDisclaimerModalLogic";
 import UserAvatar from "./components/UserAvatar";
 import { AI_MODELS, DEFAULT_MODEL } from "utils/constants";
 import { Analytics } from "@vercel/analytics/react";
@@ -36,6 +38,7 @@ function App() {
   const [isApiSettingsOpen, setIsApiSettingsOpen] = useState(false);
   const [isFeedbackOpen, setIsFeedbackOpen] = useState(false);
   const { user, loading: authLoading } = useAuth();
+  const disclaimerLogic = useDisclaimerModalLogic();
 
   const prevUserRef = React.useRef(user);
   useEffect(() => {
@@ -81,6 +84,11 @@ function App() {
         />
         <HistoryPanel isOpen={isHistoryOpen} onClose={() => setIsHistoryOpen(false)} />
         <AuthModal isOpen={isAuthOpen} onClose={() => setIsAuthOpen(false)} />
+        <DisclaimerModal
+          isOpen={disclaimerLogic.isOpen}
+          accepting={disclaimerLogic.accepting}
+          onAccept={disclaimerLogic.handleAccept}
+        />
         {user && (
           <ApiKeyModal
             isOpen={isApiKeyOpen}
