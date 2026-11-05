@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import React from "react";
 import LanguagesBar from "./components/LanguagesBar";
 import TranslationTextField from "./components/TranslationTextField";
-import { BrowserRouter as Router, Route, Routes, useSearchParams } from "react-router-dom";
+import { BrowserRouter as Router, Route, Routes } from "react-router-dom";
 import TranslatedText from "components/TranslatedText";
 import HistoryPanel from "./components/HistoryPanel";
 import AuthModal from "./components/AuthModal";
@@ -11,12 +11,8 @@ import ApiSettingsModal from "./components/ApiSettingsModal";
 import FeedbackModal from "./components/FeedbackModal";
 import DisclaimerModal from "./components/DisclaimerModal";
 import { useDisclaimerModalLogic } from "./hooks/useDisclaimerModalLogic";
-import UserAvatar from "./components/UserAvatar";
-import { AI_MODELS, DEFAULT_MODEL } from "utils/constants";
 import { Analytics } from "@vercel/analytics/react";
-import { useAuth, AuthProvider } from "contexts/AuthContext";
-import type { User } from "@supabase/supabase-js";
-import { message } from "antd";
+import { useAuth } from "contexts/AuthContext";
 import { syncRegionsFromSupabase } from "./utils/mapeoLocales";
 import { AppNotificationListener } from "./components/AppNotifications";
 
@@ -37,7 +33,7 @@ function App() {
   const [pendingProvider, setPendingProvider] = useState("nvidia");
   const [isApiSettingsOpen, setIsApiSettingsOpen] = useState(false);
   const [isFeedbackOpen, setIsFeedbackOpen] = useState(false);
-  const { user, loading: authLoading } = useAuth();
+  const { user } = useAuth();
   const disclaimerLogic = useDisclaimerModalLogic();
 
   const prevUserRef = React.useRef(user);
