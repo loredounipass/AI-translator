@@ -2,6 +2,7 @@ import React from "react";
 import { useSearchParams } from "react-router-dom";
 import type { User } from "@supabase/supabase-js";
 import { AI_MODELS, DEFAULT_MODEL } from "utils/constants";
+import { isReasoningModel } from "api/translation/constants";
 import { useApiKey } from "contexts/ApiKeyContext";
 import UserAvatar from "./UserAvatar";
 
@@ -32,6 +33,12 @@ const Header = ({
   const currentModel = searchParams.get("model") || DEFAULT_MODEL;
   const currentProvider = searchParams.get("provider") || AI_MODELS[currentModel]?.apiProvider || "nvidia";
   const { getKey } = useApiKey();
+
+  // Badge thinker/instantanea del modelo actual (fuente: campo reasoning del registro).
+  const currentModelInfo = AI_MODELS[currentModel];
+  const isThinker = currentModelInfo
+    ? currentModelInfo.reasoning ?? isReasoningModel(currentModelInfo.id)
+    : false;
 
   const handleModelChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
     const value = e.target.value;
@@ -129,13 +136,30 @@ const Header = ({
             >
               {Object.entries(AI_MODELS)
                 .filter(([_, model]) => model.apiProvider === currentProvider)
-                .map(([key, model]) => (
-                  <option key={key} value={key}>
-                    {model.name}
-                  </option>
-                ))}
+                .map(([key, model]) => {
+                  const thinker = model.reasoning ?? isReasoningModel(model.id);
+                  return (
+                    <option key={key} value={key}>
+                      {/* Marcador minimo: 🧠 pensador (CoT oculto), ⚡ instantaneo */}
+                      {thinker ? "\u{1F9E0}" : "\u26A1"} {model.name}
+                    </option>
+                  );
+                })}
               <option value="__settings__">── API Keys ──</option>
             </select>
+
+            {currentModelInfo && (
+              <span
+                title={isThinker ? "Razona en cadena de pensamiento oculta (más latencia)" : "Responden al instante, sin thinking (menos latencia)"}
+                className={`text-[10px] font-semibold px-1.5 py-0.5 rounded-full leading-none whitespace-nowrap ring-1 ${
+                  isThinker
+                    ? "bg-violet-500/10 text-violet-600 dark:text-violet-300 ring-violet-500/30"
+                    : "bg-emerald-500/10 text-emerald-600 dark:text-emerald-300 ring-emerald-500/30"
+                }`}
+              >
+                {isThinker ? "thinker" : "instant"}
+              </span>
+            )}
           </div>
 
           <div className="relative group">

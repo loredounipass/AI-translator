@@ -14,6 +14,10 @@ export interface AIModel {
   apiProvider: string;
   free: boolean;
   modelType: "chat" | "translation-only";
+  // Pensador (thinker) o instruct instantaneo. Fuente de verdad para el badge de la UI
+  // y para isReasoningModel (presupuesto/timeout/retries). Explicito por modelo porque
+  // la heuristica del id falla con Nemotron Bolt (instruct pese a llevar "nemotron").
+  reasoning?: boolean;
   temperature?: number | null;
   topP?: number | null;
   maxInputTokens?: number;
@@ -36,6 +40,7 @@ export const AI_MODELS: Record<string, AIModel> = {
     apiProvider: "nvidia",
     free: true,
     modelType: "chat",
+    reasoning: false,
     temperature: 1,
     topP: 0.95,
     maxInputTokens: 32000,
@@ -50,12 +55,31 @@ export const AI_MODELS: Record<string, AIModel> = {
     apiProvider: "nvidia",
     free: true,
     modelType: "chat",
+    reasoning: true,
     temperature: 0.7,
     topP: 0.9,
     maxInputTokens: 32000,
     maxOutputTokens: 42000,
     // Verificado: low reduce el thinking ~2.2x (high=880 -> low=394 tokens) y se honra.
     reasoningEffort: "low",
+    stream: true,
+  },
+  // Nemotron Bolt: instruct instantaneo (reasoning:false en el spec original), no hace
+  // thinking oculto. Se omiten el timeout (180 s) del spec: aqui es adaptativo
+  // (getAdaptiveTimeout) segun largo del texto. max_tokens 32768 -> maxOutputTokens.
+  "nvidia-nemotron-bolt": {
+    id: "nvidia/nemotron-3.5-bolt-e4b",
+    name: "Nemotron 3.5 Bolt E4B",
+    provider: "NVIDIA",
+    apiProvider: "nvidia",
+    free: true,
+    modelType: "chat",
+    reasoning: false,
+    temperature: 1.0,
+    topP: 0.95,
+    maxInputTokens: 32000,
+    maxOutputTokens: 32768,
+    maxOutputTokensCap: 32768,
     stream: true,
   },
   "nvidia-nemotron-omni": {
@@ -65,6 +89,7 @@ export const AI_MODELS: Record<string, AIModel> = {
     apiProvider: "nvidia",
     free: true,
     modelType: "chat",
+    reasoning: true,
     temperature: 0.6,
     topP: 0.9,
     maxInputTokens: 32000,
@@ -81,6 +106,7 @@ export const AI_MODELS: Record<string, AIModel> = {
     apiProvider: "nvidia",
     free: true,
     modelType: "chat",
+    reasoning: true,
     temperature: 0.5,
     topP: 0.9,
     maxInputTokens: 32000,
@@ -95,6 +121,7 @@ export const AI_MODELS: Record<string, AIModel> = {
     apiProvider: "nvidia",
     free: true,
     modelType: "translation-only",
+    reasoning: false,
     temperature: 0.0,
     topP: 0.9,
     // Riva tiene ventana TOTAL de 8192 tokens: max_tokens debe ser menor que el total
@@ -115,6 +142,7 @@ export const AI_MODELS: Record<string, AIModel> = {
     apiProvider: "nvidia",
     free: true,
     modelType: "chat",
+    reasoning: true,
     temperature: 1.0,
     topP: 0.95,
     maxInputTokens: 32000,
@@ -132,6 +160,7 @@ export const AI_MODELS: Record<string, AIModel> = {
     apiProvider: "google",
     free: true,
     modelType: "chat",
+    reasoning: false,
     temperature: 0.2,
     topP: 1,
     maxInputTokens: 32000,
@@ -145,6 +174,7 @@ export const AI_MODELS: Record<string, AIModel> = {
     apiProvider: "google",
     free: false,
     modelType: "chat",
+    reasoning: false,
     temperature: 0.2,
     topP: 1,
     maxInputTokens: 32000,
@@ -158,6 +188,7 @@ export const AI_MODELS: Record<string, AIModel> = {
     apiProvider: "google",
     free: true,
     modelType: "chat",
+    reasoning: false,
     temperature: 0.2,
     topP: 1,
     maxInputTokens: 32000,
@@ -171,6 +202,7 @@ export const AI_MODELS: Record<string, AIModel> = {
     apiProvider: "openai",
     free: false,
     modelType: "chat",
+    reasoning: false,
     temperature: 0.0,
     topP: 1.0,
     maxInputTokens: 32000,
@@ -184,6 +216,7 @@ export const AI_MODELS: Record<string, AIModel> = {
     apiProvider: "openai",
     free: false,
     modelType: "chat",
+    reasoning: false,
     temperature: 0.0,
     topP: 1.0,
     maxInputTokens: 32000,
@@ -197,6 +230,7 @@ export const AI_MODELS: Record<string, AIModel> = {
     apiProvider: "anthropic",
     free: false,
     modelType: "chat",
+    reasoning: false,
     temperature: 0.2,
     topP: 1,
     maxInputTokens: 32000,
@@ -210,6 +244,7 @@ export const AI_MODELS: Record<string, AIModel> = {
     apiProvider: "anthropic",
     free: false,
     modelType: "chat",
+    reasoning: false,
     temperature: 0.2,
     topP: 1,
     maxInputTokens: 32000,

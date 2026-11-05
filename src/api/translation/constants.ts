@@ -1,4 +1,5 @@
 import languages from "../../lib/languages.json";
+import { AI_MODELS } from "../../utils/constants";
 
 // Todos los proveedores van ahora por el proxy (Vercel /api/completions); ya no hay
 // ruta directa a un codespace local. El parámetro se conserva por compatibilidad de llamadas.
@@ -37,14 +38,20 @@ export const getAdaptiveTimeout = (textLength: number, isReasoning?: boolean): n
  * Estos modelos consumen tokens en una "cadena de pensamiento" oculta
  * (delta.reasoning_content) antes de emitir la respuesta visible, por lo que
  * necesitan un presupuesto de tokens mínimo mayor que los modelos instruct.
+ * Fuente principal: el campo `reasoning` del registro (src/utils/constants.ts);
+ * la heurística del id es solo fallback para modelos no registrados (evita
+ * clasificar mal a Nemotron Bolt, instruct pese a llevar "nemotron" en el id).
  */
-export const isReasoningModel = (modelId: string): boolean =>
-  typeof modelId === "string" &&
-  (modelId.includes("nemotron") || modelId.includes("reasoning") || modelId.includes("think") ||
-   // Meta "muse-glimmer" razona en delta.reasoning_content antes de la traducción
-   // (verificado en runtime), pero SÍ acepta temperature/top_p, así que solo se le
-   // da el presupuesto/timeout de razonador, no se le quita el muestreo.
-   modelId.includes("glimmer"));
+export const isReasoningModel = (modelId: string): boolean => {
+  if (typeof modelId !== "string") return false;
+  const entry = Object.values(AI_MODELS).find((m) => m.id === modelId);
+  if (entry?.reasoning !== undefined) return entry.reasoning;
+  return modelId.includes("nemotron") || modelId.includes("reasoning") || modelId.includes("think") ||
+    // Meta "muse-glimmer" razona en delta.reasoning_content antes de la traducción
+    // (verificado en runtime), pero SÍ acepta temperature/top_p, así que solo se le
+    // da el presupuesto/timeout de razonador, no se le quita el muestreo.
+    modelId.includes("glimmer");
+};
 
 /**
  * Devuelve el presupuesto de max_tokens del modelo, tal como está declarado en el

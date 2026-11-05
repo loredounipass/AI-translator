@@ -52,10 +52,13 @@ module.exports = async (req, res, contentLength) => {
   // Modelos de razonamiento (Nemotron Omni, etc.) pueden tardar mucho en su
   // "thinking" oculto incluso con texto corto; se les da un piso de timeout mayor
   // para evitar abort prematuro (504). Coherente con getAdaptiveTimeout en el cliente.
+  // Excepcion: Nemotron Bolt es instruct pese a llevar "nemotron" en el id
+  // (registro: reasoning:false), no necesita el piso de los razonadores.
   const modelId = typeof cleanBody.model === "string" ? cleanBody.model.toLowerCase() : "";
   const isReasoning =
-    modelId.includes("nemotron") || modelId.includes("reasoning") || modelId.includes("think") ||
-    modelId.includes("glimmer");
+    !modelId.includes("bolt") &&
+    (modelId.includes("nemotron") || modelId.includes("reasoning") || modelId.includes("think") ||
+    modelId.includes("glimmer"));
 
   let timeoutMs = 30000;
   if (isReasoning) timeoutMs = textLength > 2000 ? 180000 : 120000;
