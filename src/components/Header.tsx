@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { useSearchParams } from "react-router-dom";
 import type { User } from "@supabase/supabase-js";
 import { AI_MODELS, DEFAULT_MODEL } from "utils/constants";
@@ -6,7 +6,7 @@ import { isReasoningModel } from "api/translation/constants";
 import { useApiKey } from "contexts/ApiKeyContext";
 import UserAvatar from "./UserAvatar";
 
-import { SunIcon, MoonIcon, HistoryIcon, UserIcon } from "./icons";
+import { SunIcon, MoonIcon, HistoryIcon, UserIcon, BrainIcon, ZapIcon, ChevronDownIcon, KeyIcon } from "./icons";
 
 interface HeaderProps {
   isDark: boolean;
@@ -40,16 +40,30 @@ const Header = ({
     ? currentModelInfo.reasoning ?? isReasoningModel(currentModelInfo.id)
     : false;
 
-  const handleModelChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
-    const value = e.target.value;
-    if (value === "__settings__") {
-      onOpenApiSettings();
-      setTimeout(() => {
-        const el = e.target;
-        el.value = currentModel;
-      }, 0);
-      return;
-    }
+  // Dropdown custom de modelos: un <option> nativo no puede renderizar SVG, y los
+  // emojis de marcador rompen la paleta. Panel liquid-glass con icono por clase.
+  const [modelMenuOpen, setModelMenuOpen] = useState(false);
+  const modelMenuRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const onDocDown = (e: MouseEvent) => {
+      if (modelMenuRef.current && !modelMenuRef.current.contains(e.target as Node)) {
+        setModelMenuOpen(false);
+      }
+    };
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") setModelMenuOpen(false);
+    };
+    document.addEventListener("mousedown", onDocDown);
+    document.addEventListener("keydown", onKey);
+    return () => {
+      document.removeEventListener("mousedown", onDocDown);
+      document.removeEventListener("keydown", onKey);
+    };
+  }, []);
+
+  const selectModel = (value: string) => {
+    setModelMenuOpen(false);
     const modelConfig = AI_MODELS[value as keyof typeof AI_MODELS];
     const provider = modelConfig?.apiProvider || "nvidia";
     if (!user) {
@@ -66,6 +80,10 @@ const Header = ({
     newParams.set("provider", provider);
     setSearchParams(newParams);
   };
+
+  const providerModels = Object.entries(AI_MODELS).filter(
+    ([_, model]) => model.apiProvider === currentProvider
+  );
 
   return (
     <>
@@ -129,35 +147,99 @@ const Header = ({
               <option value="google">Google</option>
             </select>
 
-            <select
-              value={currentModel || ""}
-              onChange={handleModelChange}
-              className="glass-select text-slate-700 dark:text-slate-200 text-xs rounded-lg px-2 py-1 outline-none focus:border-blue-400 shadow-sm font-sans max-w-[120px] sm:max-w-none truncate transition-colors cursor-pointer"
-            >
-              {Object.entries(AI_MODELS)
-                .filter(([_, model]) => model.apiProvider === currentProvider)
-                .map(([key, model]) => {
-                  const thinker = model.reasoning ?? isReasoningModel(model.id);
-                  return (
-                    <option key={key} value={key}>
-                      {/* Marcador minimo: 🧠 pensador (CoT oculto), ⚡ instantaneo */}
-                      {thinker ? "\u{1F9E0}" : "\u26A1"} {model.name}
-                    </option>
-                  );
-                })}
-              <option value="__settings__">── API Keys ──</option>
-            </select>
+            <div className="relative" ref={modelMenuRef}>
+              <button
+                type="button"
+                onClick={() => setModelMenuOpen((o) => !o)}
+                aria-haspopup="listbox"
+                aria-expanded={modelMenuOpen}
+                className="glass-select flex items-center gap-1.5 h-[26px] max-w-[190px] text-slate-700 dark:text-slate-200 text-xs rounded-lg px-2 outline-none focus:border-blue-400 shadow-sm font-sans transition-colors cursor-pointer"
+              >
+                <span className={`grid place-items-center w-4 h-4 shrink-0 rounded-full ${isThinker ? "text-indigo-500 dark:text-indigo-400" : "text-sky-500 dark:text-sky-400"}`}>
+                  {isThinker ? <BrainIcon size={11} /> : <ZapIcon size={11} />}
+                </span>
+                <span className="truncate font-medium">{currentModelInfo?.name || "Model"}</span>
+                <span className={`shrink-0 grid place-items-center text-slate-400 transition-transform duration-200 ${modelMenuOpen ? "rotate-180" : ""}`}>
+                  <ChevronDownIcon size={12} />
+                </span>
+              </button>
+
+              {modelMenuOpen && (
+                <div
+                  role="listbox"
+                  className="absolute right-0 top-full mt-2 w-72 p-1.5 rounded-xl glass-panel z-[60] animate-fadeIn flex flex-col gap-0.5"
+                >
+                  {providerModels.map(([key, model]) => {
+                    const thinker = model.reasoning ?? isReasoningModel(model.id);
+                    const active = key === currentModel;
+                    return (
+                      <button
+                        key={key}
+                        role="option"
+                        aria-selected={active}
+                        onClick={() => selectModel(key)}
+                        className={`w-full flex items-center gap-2.5 px-2 py-1.5 rounded-lg text-left transition-colors ${
+                          active
+                            ? "bg-indigo-500/10 dark:bg-sky-400/10"
+                            : "hover:bg-slate-500/10 dark:hover:bg-slate-400/10"
+                        }`}
+                      >
+                        <span
+                          className={`grid place-items-center w-6 h-6 shrink-0 rounded-md ring-1 ${
+                            thinker
+                              ? "bg-indigo-500/10 text-indigo-500 ring-indigo-500/25 dark:text-indigo-400 dark:ring-indigo-400/25"
+                              : "bg-sky-500/10 text-sky-500 ring-sky-500/25 dark:text-sky-400 dark:ring-sky-400/25"
+                          }`}
+                        >
+                          {thinker ? <BrainIcon size={12} /> : <ZapIcon size={12} />}
+                        </span>
+                        <span className="flex-1 min-w-0">
+                          <span
+                            className={`block truncate text-xs ${
+                              active
+                                ? "font-semibold text-slate-800 dark:text-slate-100"
+                                : "font-medium text-slate-700 dark:text-slate-200"
+                            }`}
+                          >
+                            {model.name}
+                          </span>
+                          <span className="block text-[10px] text-slate-500 dark:text-slate-400">
+                            {thinker ? "Thinker · chain of thought" : "Instant · low latency"}
+                          </span>
+                        </span>
+                        {active && (
+                          <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="shrink-0 text-indigo-500 dark:text-sky-400">
+                            <polyline points="20 6 9 17 4 12" />
+                          </svg>
+                        )}
+                      </button>
+                    );
+                  })}
+                  <div className="h-px my-1 bg-slate-500/15 dark:bg-slate-400/15"></div>
+                  <button
+                    onClick={() => {
+                      setModelMenuOpen(false);
+                      onOpenApiSettings();
+                    }}
+                    className="flex items-center gap-2 px-2 py-1.5 rounded-lg text-xs font-medium text-slate-600 dark:text-slate-300 hover:bg-slate-500/10 dark:hover:bg-slate-400/10 transition-colors"
+                  >
+                    <KeyIcon /> API Keys
+                  </button>
+                </div>
+              )}
+            </div>
 
             {currentModelInfo && (
               <span
-                title={isThinker ? "Razona en cadena de pensamiento oculta (más latencia)" : "Responden al instante, sin thinking (menos latencia)"}
-                className={`text-[10px] font-semibold px-1.5 py-0.5 rounded-full leading-none whitespace-nowrap ring-1 ${
+                title={isThinker ? "Razona en cadena de pensamiento oculta (más latencia)" : "Responde al instante, sin thinking (menos latencia)"}
+                className={`inline-flex items-center justify-center gap-1 h-[26px] px-2.5 rounded-full text-[10px] font-semibold uppercase tracking-wider leading-none whitespace-nowrap shrink-0 backdrop-blur-md ring-1 ${
                   isThinker
-                    ? "bg-violet-500/10 text-violet-600 dark:text-violet-300 ring-violet-500/30"
-                    : "bg-emerald-500/10 text-emerald-600 dark:text-emerald-300 ring-emerald-500/30"
+                    ? "bg-indigo-500/10 text-indigo-600 ring-indigo-500/30 dark:bg-indigo-400/10 dark:text-indigo-300 dark:ring-indigo-400/25"
+                    : "bg-sky-500/10 text-sky-600 ring-sky-500/30 dark:bg-sky-400/10 dark:text-sky-300 dark:ring-sky-400/25"
                 }`}
               >
-                {isThinker ? "thinker" : "instant"}
+                {isThinker ? <BrainIcon size={11} /> : <ZapIcon size={11} />}
+                {isThinker ? "Thinker" : "Instant"}
               </span>
             )}
           </div>
