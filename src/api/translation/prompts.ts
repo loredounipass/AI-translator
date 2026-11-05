@@ -28,7 +28,8 @@ CRITICAL RULES:
 
 2. FIRST PERSON INTERPRETING (MANDATORY DIRECT SPEECH): 
    - STRIP all third-person directives (e.g., "Tell him...", "Ask her...", "Dígale que..."). 
-   - PRONOUN SHIFT: Convert the speaker's message to FIRST PERSON. "He/she/him/her" becomes "you/usted". 
+   - PRONOUN SHIFT: Convert the speaker's own statements to FIRST PERSON. "He/she/him/her" becomes "you/usted".
+   - IMPERATIVES STAY IMPERATIVE: a command or instruction aimed at the listener is NOT converted to first person; keep the "usted" imperative. Examples: "Please press or say 7 to verify this call" -> "Presione o diga 7 para verificar esta llamada" (NOT "presiono o digo"), "wait on the line" -> "Espere en línea". 
    - Examples: 
      * "Can you ask him what his name is?" -> "¿Cuál es su nombre?"
      * "Dígale que es Roberto Lara" -> "I am Roberto Lara"
@@ -65,25 +66,7 @@ CRITICAL RULES:
 ${styleRules}`;
 };
 
-// NUEVO: PROMPT LIGERO PARA TEXTOS CORTOS (EVITA THINKING Y LATENCIA)
-export const buildLightSystemPrompt = (targetLang: string, sourceLang: string): string => {
-  const targetName = getLanguageName(targetLang);
-  
-  let dialectRule = "";
-  if (targetLang === "en") dialectRule = "- Use professional American English.";
-  else if (targetLang === "es") dialectRule = "- Use professional Spanish (formal 'usted', neutral Latin American).";
-
-  return `You are a professional over-the-phone interpreter. Your ONLY job is to translate the text exactly into ${targetName}.
-RULES:
-1. NO REASONING: You are a text-to-text machine. DO NOT output "Here's a thinking process" or any preamble. Output the translation as the VERY FIRST character.
-2. FIRST PERSON INTERPRETING: Convert third-person directives to first-person.
-3. TONE: ${dialectRule}
-4. GENDER NEUTRALITY: Do not assume genders if not explicitly specified.
-5. SHORT TEXT: Translate literally. DO NOT predict, expand, or add context.
-6. FORMAT: Output ONLY the translation without any tags, explanations, or reasoning.`;
-};
-
-// NUEVO: PROMPT DE SISTEMA PARA MODELOS DE TRADUCCIÓN PURA (EJ: RIVA)
+// PROMPT DE SISTEMA PARA MODELOS DE TRADUCCIÓN PURA (EJ: RIVA)
 // Según la documentación de NVIDIA Riva, el system prompt solo necesita la etiqueta de idioma
 export const buildSimpleTranslationSystemPrompt = (sourceLang: string, targetLang: string): string => {
   // Riva espera un formato como "en-es" o "en-es-es" en el system prompt para definir el par de idiomas.

@@ -1,5 +1,5 @@
 import { getLanguageName } from "./translation/constants";
-import { buildSystemPrompt, buildSimpleTranslationSystemPrompt, buildSimpleTranslationUserPrompt, buildLightSystemPrompt } from "./translation/prompts";
+import { buildSystemPrompt, buildSimpleTranslationSystemPrompt, buildSimpleTranslationUserPrompt } from "./translation/prompts";
 import { isTrivialText } from "./translation/filters";
 import { executeTranslationRequest } from "./translation/executor";
 import { translationMemory } from "./translation/translationMemory";
@@ -59,12 +59,9 @@ export const translate = async (
 
   let messages: { role: string; content: string }[];
 
-  const isShortText = cleanedText.length <= 50;
   const systemPrompt = isTranslationOnly
     ? buildSimpleTranslationSystemPrompt(sourceLang, targetLang)
-    : (isShortText
-        ? buildLightSystemPrompt(targetLang, sourceLang)
-        : buildSystemPrompt(targetLang, sourceLang));
+    : buildSystemPrompt(targetLang, sourceLang);
 
   const userPrompt = isTranslationOnly
     ? buildSimpleTranslationUserPrompt(cleanedText)
