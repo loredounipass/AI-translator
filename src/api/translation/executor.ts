@@ -16,6 +16,8 @@ export interface TranslationExecutorOptions {
   maxInputTokens?: number;
   maxOutputTokens?: number;
   maxOutputTokensCap?: number;
+  // Esfuerzo de razonamiento (flat reasoning_effort) declarado en el registro.
+  reasoningEffort?: "low" | "medium" | "high";
   // Preferencia de streaming declarada por el modelo en el registro.
   // Si es false, se fuerza la ruta estándar aunque llegue onData (ej: Riva).
   stream?: boolean;
@@ -29,9 +31,14 @@ export const executeTranslationRequest = async (options: TranslationExecutorOpti
   for (let attempt = 0; attempt <= maxRetries; attempt++) {
     if (options?.signal?.aborted) throw new DOMException("Aborted", "AbortError");
     if (attempt > 0) {
-      let delay = BASE_DELAY * Math.pow(2, attempt - 1) + Math.random() * 1000;
+      // Backoff exponencial AGRESIVO para uso interactivo (traduccion en vivo): se
+      // parte de una base corta (BASE_DELAY/4 = 250 ms) con jitter pequeno, asi una
+      // falla transitoria (5xx) se recupera en fracciones de segundo en vez de 1-5 s.
+      const interactiveBase = BASE_DELAY / 4;
+      let delay = interactiveBase * Math.pow(2, attempt - 1) + Math.random() * interactiveBase;
+      // En rate-limit (429) se respeta un poco mas el limite, pero sigue siendo corto.
       if (lastError && axios.isAxiosError(lastError) && lastError.response?.status === 429) {
-        delay = 500 + Math.random() * 500;
+        delay = interactiveBase + Math.random() * interactiveBase;
       }
       await wait(delay);
       if (options?.signal?.aborted) throw new DOMException("Aborted", "AbortError");

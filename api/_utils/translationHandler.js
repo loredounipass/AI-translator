@@ -2,6 +2,16 @@ const https = require("https");
 const { PROVIDERS, MAX_TRANSLATE_BODY } = require("./config");
 const { checkRateLimit, cleanupRateLimiter } = require("./rateLimiter");
 
+// Agente HTTPS compartido con keepAlive. Se declara a nivel de modulo para que
+// persista entre invocaciones dentro de la misma instancia (warm) del serverless:
+// asi la conexion TLS ya establecida se reutiliza en peticiones sucesivas al mismo
+// hostname del proveedor, ahorrando el handshake (~100-300 ms) de cada request.
+const KEEPALIVE_AGENT = new https.Agent({
+  keepAlive: true,
+  maxSockets: 128,
+  keepAliveMsecs: 60000,
+});
+
 module.exports = async (req, res, contentLength) => {
   const apiKey = typeof req.body?.apiKey === 'string' ? req.body.apiKey.trim() : (req.body?.apiKey || "");
   let provider = (req.body && req.body.provider) || "";
@@ -73,6 +83,7 @@ module.exports = async (req, res, contentLength) => {
         path: providerConfig.path,
         method: "POST",
         headers,
+        agent: KEEPALIVE_AGENT,
       };
 
       const proxyReq = https.request(options, (proxyRes) => {
@@ -113,6 +124,7 @@ module.exports = async (req, res, contentLength) => {
       path: providerConfig.path,
       method: "POST",
       headers,
+      agent: KEEPALIVE_AGENT,
     };
 
     const proxyReq = https.request(options, (proxyRes) => {

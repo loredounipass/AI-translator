@@ -15,6 +15,7 @@ export interface StandardRequestOptions {
   maxInputTokens?: number;
   maxOutputTokens?: number;
   maxOutputTokensCap?: number;
+  reasoningEffort?: "low" | "medium" | "high";
 }
 
 
@@ -43,6 +44,12 @@ export const executeStandardRequest = async (options: StandardRequestOptions): P
   requestBody.stream = false;
   if (options.apiKey) requestBody.apiKey = options.apiKey;
   if (options.provider) requestBody.provider = options.provider;
+
+  // Esfuerzo de razonamiento: solo modelos que lo declaran en el registro (opt-in).
+  // Flat param de NVIDIA integrate ("reasoning_effort"); recorta el thinking -> mas rapido.
+  if (options.reasoningEffort) {
+    requestBody.reasoning_effort = options.reasoningEffort;
+  }
 
   // No enviar parámetros de muestreo a modelos de razonamiento (suelen rechazarlos).
   if (!omitsSampling && options.temperature !== null && options.temperature !== undefined) {

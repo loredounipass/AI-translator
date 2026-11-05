@@ -15,6 +15,7 @@ export interface StreamRequestOptions {
   maxInputTokens?: number;
   maxOutputTokens?: number;
   maxOutputTokensCap?: number;
+  reasoningEffort?: "low" | "medium" | "high";
 }
 
 
@@ -42,6 +43,13 @@ export const executeStreamRequest = async (options: StreamRequestOptions): Promi
   // apiKey/provider van al proxy (Vercel), que los usa para elegir el proveedor real.
   requestBody.apiKey = options.apiKey;
   requestBody.provider = options.provider;
+
+  // Esfuerzo de razonamiento: solo modelos que lo declaran en el registro (opt-in).
+  // Es un flat param de NVIDIA integrate ("reasoning_effort"); la forma anidada
+  // "reasoning: {effort}" es rechazada con 400. Recorta el thinking -> mas rapido.
+  if (options.reasoningEffort) {
+    requestBody.reasoning_effort = options.reasoningEffort;
+  }
 
   // NOTA: NO se envían max_input_tokens / max_output_tokens. La API de integración
   // de NVIDIA (/v1/chat/completions) los rechaza con HTTP 400 ("Unsupported parameter(s)"),

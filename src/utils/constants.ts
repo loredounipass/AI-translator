@@ -19,6 +19,10 @@ export interface AIModel {
   maxInputTokens?: number;
   maxOutputTokens?: number;
   maxOutputTokensCap?: number;
+  // Esfuerzo de razonamiento para modelos que razonan (flat param reasoning_effort).
+  // Opt-in: solo se envia a la API si el modelo lo declara. Verificado en muse-glimmer:
+  // "low" recorta el thinking ~2.3x (340->150 tokens) manteniendo el razonamiento.
+  reasoningEffort?: "low" | "medium" | "high";
   stream?: boolean;
 }
 
@@ -50,6 +54,8 @@ export const AI_MODELS: Record<string, AIModel> = {
     topP: 0.9,
     maxInputTokens: 32000,
     maxOutputTokens: 42000,
+    // Verificado: low reduce el thinking ~2.2x (high=880 -> low=394 tokens) y se honra.
+    reasoningEffort: "low",
     stream: true,
   },
   "nvidia-nemotron-omni": {
@@ -63,6 +69,9 @@ export const AI_MODELS: Record<string, AIModel> = {
     topP: 0.9,
     maxInputTokens: 32000,
     maxOutputTokens: 42000,
+    // Omni es el de mayor latencia (40-98 s) por su thinking largo. "low" es aceptado
+    // (HTTP 200) y acota la cadena de razonamiento en textos largos (intent de latencia).
+    reasoningEffort: "low",
     stream: true,
   },
   "nvidia-nemotron-3-ultra": {
@@ -111,6 +120,9 @@ export const AI_MODELS: Record<string, AIModel> = {
     maxInputTokens: 32000,
     maxOutputTokens: 49152,
     maxOutputTokensCap: 49152,
+    // Reduce la longitud del thinking (verificado: low < medium < high en tokens de
+    // salida). El modelo sigue razonando, solo piensa menos -> respuesta mas rapida.
+    reasoningEffort: "low",
     stream: true,
   },
   "google-gemini-3-5-flash": {

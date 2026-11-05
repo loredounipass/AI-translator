@@ -22,6 +22,7 @@ const resolveModelConfig = (modelId: string) => {
     maxInputTokens: entry?.maxInputTokens,
     maxOutputTokens: entry?.maxOutputTokens,
     maxOutputTokensCap: entry?.maxOutputTokensCap,
+    reasoningEffort: entry?.reasoningEffort,
     stream: entry?.stream ?? true,
   };
 };
@@ -99,6 +100,7 @@ export const translate = async (
     maxInputTokens: modelConfig.maxInputTokens,
     maxOutputTokens: modelConfig.maxOutputTokens,
     maxOutputTokensCap: modelConfig.maxOutputTokensCap,
+    reasoningEffort: modelConfig.reasoningEffort,
     stream: modelConfig.stream,
   }).then((translated) => {
     translationMemory.add(cleanedText, translated, sourceLang, targetLang, modelId);
