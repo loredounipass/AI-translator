@@ -45,14 +45,32 @@ const Header = ({
   const [modelMenuOpen, setModelMenuOpen] = useState(false);
   const modelMenuRef = useRef<HTMLDivElement>(null);
 
+  // Dropdown custom de proveedores: mismo estilo liquid-glass que el de modelos;
+  // el popup nativo de <select> no sigue la paleta.
+  const PROVIDERS = ["nvidia", "openai", "anthropic", "google"] as const;
+  const PROVIDER_LABELS: Record<string, string> = {
+    nvidia: "NVIDIA",
+    openai: "OpenAI",
+    anthropic: "Anthropic",
+    google: "Google",
+  };
+  const [providerMenuOpen, setProviderMenuOpen] = useState(false);
+  const providerMenuRef = useRef<HTMLDivElement>(null);
+
   useEffect(() => {
     const onDocDown = (e: MouseEvent) => {
       if (modelMenuRef.current && !modelMenuRef.current.contains(e.target as Node)) {
         setModelMenuOpen(false);
       }
+      if (providerMenuRef.current && !providerMenuRef.current.contains(e.target as Node)) {
+        setProviderMenuOpen(false);
+      }
     };
     const onKey = (e: KeyboardEvent) => {
-      if (e.key === "Escape") setModelMenuOpen(false);
+      if (e.key === "Escape") {
+        setModelMenuOpen(false);
+        setProviderMenuOpen(false);
+      }
     };
     document.addEventListener("mousedown", onDocDown);
     document.addEventListener("keydown", onKey);
@@ -81,9 +99,23 @@ const Header = ({
     setSearchParams(newParams);
   };
 
-  const providerModels = Object.entries(AI_MODELS).filter(
-    ([_, model]) => model.apiProvider === currentProvider
-  );
+  const selectProvider = (newProvider: string) => {
+    setProviderMenuOpen(false);
+    const newParams = new URLSearchParams(searchParams);
+    newParams.set("provider", newProvider);
+    if (newProvider === "nvidia") {
+      newParams.set("model", "nvidia-diffusiongemma");
+    } else if (newProvider === "google") {
+      newParams.set("model", "google-gemini-3-5-flash");
+    } else if (newProvider === "openai") {
+      newParams.set("model", "openai-gpt-4o-mini");
+    } else if (newProvider === "anthropic") {
+      newParams.set("model", "anthropic-haiku-4-5");
+    } else {
+      newParams.delete("model");
+    }
+    setSearchParams(newParams);
+  };
 
   return (
     <>
@@ -120,32 +152,51 @@ const Header = ({
             </div>
           </div>
           <div className="flex gap-2">
-            <select
-              value={currentProvider}
-              onChange={(e) => {
-                const newProvider = e.target.value;
-                const newParams = new URLSearchParams(searchParams);
-                newParams.set("provider", newProvider);
-                if (newProvider === "nvidia") {
-                  newParams.set("model", "nvidia-diffusiongemma");
-                } else if (newProvider === "google") {
-                  newParams.set("model", "google-gemini-3-5-flash");
-                } else if (newProvider === "openai") {
-                  newParams.set("model", "openai-gpt-4o-mini");
-                } else if (newProvider === "anthropic") {
-                  newParams.set("model", "anthropic-haiku-4-5");
-                } else {
-                  newParams.delete("model");
-                }
-                setSearchParams(newParams);
-              }}
-              className="glass-select text-slate-700 dark:text-slate-200 text-xs rounded-lg px-2 py-1 outline-none focus:border-blue-400 shadow-sm font-sans max-w-[100px] sm:max-w-none truncate transition-colors cursor-pointer"
-            >
-              <option value="nvidia">NVIDIA</option>
-              <option value="openai">OpenAI</option>
-              <option value="anthropic">Anthropic</option>
-              <option value="google">Google</option>
-            </select>
+            <div className="relative" ref={providerMenuRef}>
+              <button
+                type="button"
+                onClick={() => setProviderMenuOpen((o) => !o)}
+                aria-haspopup="listbox"
+                aria-expanded={providerMenuOpen}
+                className="glass-select flex items-center gap-1.5 h-[26px] max-w-[110px] sm:max-w-none text-slate-700 dark:text-slate-200 text-xs rounded-lg px-2 outline-none focus:border-blue-400 shadow-sm font-sans transition-colors cursor-pointer"
+              >
+                <span className="truncate font-medium">{PROVIDER_LABELS[currentProvider] || currentProvider}</span>
+                <span className={`shrink-0 grid place-items-center text-slate-400 transition-transform duration-200 ${providerMenuOpen ? "rotate-180" : ""}`}>
+                  <ChevronDownIcon size={12} />
+                </span>
+              </button>
+
+              {providerMenuOpen && (
+                <div
+                  role="listbox"
+                  className="absolute right-0 top-full mt-2 w-40 p-1.5 rounded-xl glass-dropdown z-[60] animate-fadeIn flex flex-col gap-0.5"
+                >
+                  {PROVIDERS.map((provider) => {
+                    const active = provider === currentProvider;
+                    return (
+                      <button
+                        key={provider}
+                        role="option"
+                        aria-selected={active}
+                        onClick={() => selectProvider(provider)}
+                        className={`w-full flex items-center justify-between px-2 py-1.5 rounded-lg text-left text-xs transition-colors ${
+                          active
+                            ? "font-semibold bg-indigo-500/10 dark:bg-sky-400/10 text-slate-800 dark:text-slate-100"
+                            : "font-medium text-slate-700 dark:text-slate-200 hover:bg-slate-500/10 dark:hover:bg-slate-400/10"
+                        }`}
+                      >
+                        {PROVIDER_LABELS[provider]}
+                        {active && (
+                          <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="shrink-0 text-indigo-500 dark:text-sky-400">
+                            <polyline points="20 6 9 17 4 12" />
+                          </svg>
+                        )}
+                      </button>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
 
             <div className="relative" ref={modelMenuRef}>
               <button
@@ -167,9 +218,11 @@ const Header = ({
               {modelMenuOpen && (
                 <div
                   role="listbox"
-                  className="absolute right-0 top-full mt-2 w-72 p-1.5 rounded-xl glass-panel z-[60] animate-fadeIn flex flex-col gap-0.5"
+                  className="absolute right-0 top-full mt-2 w-72 p-1.5 rounded-xl glass-dropdown z-[60] animate-fadeIn flex flex-col gap-0.5"
                 >
-                  {providerModels.map(([key, model]) => {
+                  {Object.entries(AI_MODELS)
+                    .filter(([_, model]) => model.apiProvider === currentProvider)
+                    .map(([key, model]) => {
                     const thinker = model.reasoning ?? isReasoningModel(model.id);
                     const active = key === currentModel;
                     return (
