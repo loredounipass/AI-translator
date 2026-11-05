@@ -44,11 +44,11 @@ const DisclaimerModal = ({ isOpen, accepting, onAccept }: DisclaimerModalProps) 
                 <BrainIcon size={14} />
               </span>
               <p className="text-sm text-slate-600 dark:text-slate-300 leading-relaxed">
-                <span className="font-semibold text-slate-800 dark:text-slate-100">Two model classes.</span>{" "}
+                <span className="font-semibold text-slate-800 dark:text-slate-100">Model behavior.</span>{" "}
                 <span className="uppercase tracking-wide text-indigo-600 dark:text-indigo-300 font-semibold">Thinker</span> models
-                reason before answering and are deliberately slower but more thorough;{" "}
+                reason before answering, so they are generally slower but more thorough;{" "}
                 <span className="uppercase tracking-wide text-sky-600 dark:text-sky-300 font-semibold">Instant</span> models
-                prioritize low latency for real-time conversation. Select the class that fits the call.
+                prioritize low latency for real-time conversation. Choose the model that fits the call.
               </p>
             </div>
 
