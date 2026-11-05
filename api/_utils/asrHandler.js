@@ -26,13 +26,18 @@ module.exports = async (req, res, contentLength) => {
     return res.status(400).json({ error: "audio (base64) es requerido" });
   }
 
-  const lang = language || "multi";
+  // El cliente manda "auto" en autodeteccion; normalizar a "multi" para no
+  // emitir "The spoken language is auto" (no es un idioma valido).
+  const lang = (!language || language === "auto" || language === "auto-detect") ? "multi" : language;
   const contentType = mime || "audio/wav";
   const cleanContentType = contentType.split(';')[0];
 
+  // "primary" (no "the language is X"): el declarante puede mezclar idiomas
+  // (code-switching). Un idioma unico estricto hacia que el modelo OMITIERA o
+  // forzara al espanol los nombres de calle/marcas/palabras en ingles.
   const langInstruction = lang === "multi"
     ? "Detect the spoken language automatically."
-    : `The spoken language is ${lang}.`;
+    : `The primary spoken language is ${lang}, but the speaker may switch languages mid-sentence.`;
 
   const contextInstruction = `\nCONTEXT ABOUT THE USER'S JOB (FOR YOUR UNDERSTANDING ONLY):\nThe user you are assisting is a professional over-the-phone interpreter. Their job involves strict training where they must interpret in the 1st person, maintain neutrality, and not break character or assist the parties directly. They use specific 3rd person phrases (e.g. "The interpreter needs repetition") only when necessary.\n\nThat is the USER'S job. YOUR ROLE AS THE AI is to transcribe the text exactly as spoken to help them. You MUST NOT try to do the user's job or intervene in the scenarios.`;
 
@@ -44,7 +49,8 @@ CRITICAL RULES:
 1. Output ONLY the transcribed text.
 2. NO explanations, NO formatting (no markdown, no bold), NO quotes around the text.
 3. DO NOT add any conversational filler (e.g., "Here is the transcription:").
-4. If there is no speech, return an empty string.`;
+4. If there is no speech, return an empty string.
+5. CODE-SWITCHING & PROPER NOUNS (MANDATORY): Transcribe every word in the SAME language exactly as it was spoken. When the speaker embeds foreign-language words inside the main language (e.g. English street/place names, addresses, brands, or terms spoken during Spanish speech), KEEP them in their ORIGINAL language and spelling. NEVER translate, localize, phonetically rewrite, or OMIT them. The foreign words must appear in the transcript even if the rest is in another language.`;
 
   let payloadStr = "";
   let options = {};
