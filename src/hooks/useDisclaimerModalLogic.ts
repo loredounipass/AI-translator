@@ -66,7 +66,15 @@ export const useDisclaimerModalLogic = () => {
       setStepIndex(WELCOME_STEP);
     } catch (err) {
       console.error("Error recording disclaimer acceptance", err);
-      showErrorToast("Error", "Could not record your acceptance. Please try again.");
+      // Se muestra el mensaje real (p. ej. RLS/42P01) para diagnosticar sin
+      // abrir DevTools; el detalle tecnico queda igual en consola.
+      const detail = err instanceof Error && err.message ? err.message : "";
+      showErrorToast(
+        "Error",
+        detail
+          ? `Could not record your acceptance: ${detail}`
+          : "Could not record your acceptance. Please try again."
+      );
     } finally {
       setAccepting(false);
     }
