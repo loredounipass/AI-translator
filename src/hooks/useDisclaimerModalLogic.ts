@@ -67,8 +67,12 @@ export const useDisclaimerModalLogic = () => {
     } catch (err) {
       console.error("Error recording disclaimer acceptance", err);
       // Se muestra el mensaje real (p. ej. RLS/42P01) para diagnosticar sin
-      // abrir DevTools; el detalle tecnico queda igual en consola.
-      const detail = err instanceof Error && err.message ? err.message : "";
+      // abrir DevTools. Ojo: supabase-js suele devolver un objeto PLANO
+      // { code, message, details }, no una instancia de Error; se leen ambos.
+      const e = err as { message?: string; code?: string } | string | undefined;
+      const detail =
+        (typeof e === "string" ? e : e?.message) ||
+        (typeof e === "object" && e?.code ? `code ${e.code}` : "");
       showErrorToast(
         "Error",
         detail
