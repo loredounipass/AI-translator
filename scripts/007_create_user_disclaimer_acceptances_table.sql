@@ -2,6 +2,10 @@
 -- One row per user AND disclaimer version (disclaimer_key), so acceptances are
 -- auditable ("did every user accept?") and a future disclaimer rewrite can ship
 -- a new key, which re-prompts everyone exactly once.
+-- The app ships a multi-step flow; current keys (see src/utils/disclaimerService.ts):
+--   'model-speeds-and-input-quality-v1'  (step 1: model speeds + input quality)
+--   'app-nature-and-api-keys-v1'         (step 2: what the app is + bring-your-own API key)
+-- Adding a third disclaimer requires NO schema change: just append its key in code.
 CREATE TABLE IF NOT EXISTS public.user_disclaimer_acceptances (
   id BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
   user_id UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,

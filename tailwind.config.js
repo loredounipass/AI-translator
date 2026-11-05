@@ -38,6 +38,9 @@ module.exports = {
         blink: "blink 0.8s step-end infinite",
         "pulse-custom": "pulse 1s infinite",
         fadeIn: "fadeIn 0.2s ease",
+        "pop-in": "popIn 0.45s cubic-bezier(0.3, 1.4, 0.5, 1) both",
+        "draw-check": "drawCheck 0.45s ease-out 0.3s both",
+        "rise-in": "riseIn 0.4s ease both",
       },
       keyframes: {
         blink: {
@@ -51,6 +54,18 @@ module.exports = {
         fadeIn: {
           from: { opacity: "0" },
           to: { opacity: "1" },
+        },
+        popIn: {
+          "0%": { transform: "scale(0)", opacity: "0" },
+          "100%": { transform: "scale(1)", opacity: "1" },
+        },
+        drawCheck: {
+          from: { "stroke-dashoffset": "24" },
+          to: { "stroke-dashoffset": "0" },
+        },
+        riseIn: {
+          from: { transform: "translateY(10px)", opacity: "0" },
+          to: { transform: "translateY(0)", opacity: "1" },
         },
       },
     },

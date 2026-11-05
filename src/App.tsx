@@ -82,8 +82,13 @@ function App() {
         <AuthModal isOpen={isAuthOpen} onClose={() => setIsAuthOpen(false)} />
         <DisclaimerModal
           isOpen={disclaimerLogic.isOpen}
+          stepIndex={disclaimerLogic.stepIndex}
+          totalSteps={disclaimerLogic.totalSteps}
+          isLastStep={disclaimerLogic.isLastStep}
+          isWelcome={disclaimerLogic.isWelcome}
           accepting={disclaimerLogic.accepting}
           onAccept={disclaimerLogic.handleAccept}
+          onFinish={disclaimerLogic.handleFinish}
         />
         {user && (
           <ApiKeyModal
