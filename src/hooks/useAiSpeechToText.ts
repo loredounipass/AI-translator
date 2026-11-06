@@ -139,6 +139,8 @@ export const useAiSpeechToText = (
   const maxDurationTimeoutRef = useRef<number | null>(null);
   const onStopRequestRef = useRef(onStopRequest);
   onStopRequestRef.current = onStopRequest;
+  // SERIAL QUEUE: CHUNKS MUST LAND IN SPOKEN ORDER, NOT IN FETCH-RESOLUTION ORDER
+  const queueRef = useRef<Promise<void>>(Promise.resolve());
 
 
   // PERSIST AI SPEECH TO TEXT TOGGLE STATE
@@ -159,8 +161,8 @@ export const useAiSpeechToText = (
   const toggleAiStt = useCallback(() => setAiStt(!isAiStt), [isAiStt, setAiStt]);
 
 
-  // STOP RECORDING AUDIO AND TRIGGER STOP CALLBACK
-  const stopRecording = useCallback(() => {
+  // STOP RECORDING AUDIO AND TRIGGER STOP CALLBACK (AFTER PENDING TRANSCRIPTIONS SETTLE)
+  const stopRecording = useCallback(async () => {
     if (maxDurationTimeoutRef.current) {
       window.clearTimeout(maxDurationTimeoutRef.current);
       maxDurationTimeoutRef.current = null;
@@ -174,6 +176,8 @@ export const useAiSpeechToText = (
 
     mediaRecorderRef.current = null;
     setIsRecording(false);
+    // LET QUEUED TRANSCRIPTIONS FLUSH SO LATE WORDS ARE NOT SILENTLY DROPPED
+    await queueRef.current.catch(() => { });
     if (wasActive && onStopRequestRef.current) onStopRequestRef.current();
   }, []);
 
@@ -229,7 +233,8 @@ export const useAiSpeechToText = (
       if (data.text && data.text.trim()) {
         logDev("[AI-STT:send] Transcription:", data.text.substring(0, 100));
         setError(null);
-        onChunk(data.text.trim());
+        const chunk = data.text.trim();
+        onChunk(chunk);
       } else {
         let errorMsg = "";
         if (data.error) {
@@ -286,7 +291,12 @@ export const useAiSpeechToText = (
     mediaRecorderRef.current = recorder;
 
     recorder.ondataavailable = (event) => {
-      if (event.data.size > 0) sendAudioChunk(event.data);
+      if (event.data.size > 0) {
+        // Chain sequentially: a fast-resolving chunk must never overtake a slower one
+        queueRef.current = queueRef.current
+          .then(() => sendAudioChunk(event.data))
+          .catch(() => { });
+      }
     };
 
     recorder.onerror = () => {

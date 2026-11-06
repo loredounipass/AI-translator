@@ -1,8 +1,11 @@
 // Multi-language question word detection
+// NOTE: single-word auxiliaries that are equally common as non-question starters
+// ('yo', french 'a', portuguese 'a') are intentionally excluded: they produced
+// false '?' on plain declarative dictation
 export const questionWords = new Set([
   'what', 'who', 'where', 'when', 'why', 'how', 'which', 'do', 'does', 'did', 'is', 'are', 'was', 'were', 'can', 'could', 'will', 'would', 'shall', 'should', 'may', 'might', 'am', 'has', 'have', 'had',
   'que', 'qué', 'quien', 'quién', 'quienes', 'quiénes', 'donde', 'dónde', 'cuando', 'cuándo', 'como', 'cómo', 'por', 'cuál', 'cual', 'cuáles', 'cuales', 'cuánto', 'cuánta', 'cuántos', 'cuántas', 'puede', 'puedes', 'podría', 'podrías', 'es', 'son', 'era', 'eran', 'tiene', 'tienes', 'hace', 'hacen',
-  'qui', 'quoi', 'où', 'quand', 'comment', 'pourquoi', 'combien', 'quel', 'quelle', 'est-ce', 'lequel', 'laquelle', 'lesquels', 'lesquelles', 'peux', 'peut', 'pourrait', 'est', 'sont', 'avez', 'a',
+  'qui', 'quoi', 'où', 'quand', 'comment', 'pourquoi', 'combien', 'quel', 'quelle', 'est-ce', 'lequel', 'laquelle', 'lesquels', 'lesquelles', 'peux', 'peut', 'pourrait', 'est', 'sont', 'avez',
   'quem', 'onde', 'quando', 'quanto', 'quanta', 'quantos', 'quantas', 'qual', 'quais', 'pode', 'poderia', 'é', 'são', 'tem',
   'wer', 'was', 'wo', 'wann', 'warum', 'wie', 'welcher', 'welche', 'welches', 'welchem', 'kann', 'kannst', 'könnte', 'könnten', 'ist', 'sind', 'war', 'waren', 'haben', 'hast',
   'chi', 'cosa', 'dove', 'perché', 'quale', 'quali', 'quanto', 'quanta', 'può', 'puoi', 'potrebbe', 'è', 'sono', 'ha', 'hai',

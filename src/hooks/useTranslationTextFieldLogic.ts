@@ -8,9 +8,32 @@ import { addPunctuation } from "../utils/punctuationLogic";
 import { useTypewriterPlaceholder } from "./useTypewriterPlaceholder";
 import { useAiSpeechToText } from "./useAiSpeechToText";
 import { useUnifiedAudio } from "./useUnifiedAudio";
-import { showAudioErrorNotification } from "../components/AppNotifications";
+import { showAudioErrorNotification, showWarningToast } from "../components/AppNotifications";
 
 export const MAX_URL_TEXT_LENGTH = 8000;
+const URL_SYNC_DELAY_MS = 250;
+
+// LONGEST OVERLAP BETWEEN TAIL OF `a` AND HEAD OF `b`, SO DELTA APPENDS
+// DON'T DUPLICATE WORDS REPEATED ACROSS ASR CHUNKS
+const mergeSharedOverlap = (a: string, b: string): string => {
+  if (!a) return b;
+  if (!b) return a;
+  const maxK = Math.min(a.length, b.length);
+  for (let k = maxK; k > 0; k--) {
+    if (a.endsWith(b.slice(0, k))) {
+      return k === b.length ? a : a + b.slice(k);
+    }
+  }
+  return a + " " + b;
+};
+
+// SPLIT AT FIRST DIFFERENCE: HEAD IS THE STABLE PART BOTH VERSIONS SHARE
+const splitAtFirstDiff = (current: string, next: string): { head: string; tail: string } => {
+  const n = Math.min(current.length, next.length);
+  let i = 0;
+  while (i < n && current[i] === next[i]) i++;
+  return { head: current.slice(0, i), tail: current.slice(i) };
+};
 
 export const useTranslationTextFieldLogic = () => {
   const [searchParams, setURLSearchParams] = useSearchParams();
@@ -48,6 +71,8 @@ export const useTranslationTextFieldLogic = () => {
   const manualEditRef = React.useRef<boolean>(false);
   const manualEditTimeoutRef = React.useRef<number | null>(null);
   const textAtMicStartRef = React.useRef<string>("");
+  const textRef = React.useRef<string>(text);
+  textRef.current = text;
 
   const [keepMicOn, setKeepMicOn] = React.useState<boolean>(() => {
     try {
@@ -59,15 +84,25 @@ export const useTranslationTextFieldLogic = () => {
   const keepMicOnRef = React.useRef<boolean>(keepMicOn);
   const placeholder = useTypewriterPlaceholder(text);
 
-  const setTextParamRef = React.useRef<((value: string | ((prev: string) => string)) => void) | null>(null);
-
   const onChunkRef = React.useRef<(chunk: string) => void>(() => { });
   onChunkRef.current = (chunk: string) => {
-    if (setTextParamRef.current) {
-      setTextParamRef.current((prevText: string) => {
-        return prevText + (prevText ? " " : "") + chunk;
-      });
+    const merged = mergeSharedOverlap(textRef.current, chunk);
+    if (merged === textRef.current) return;
+
+    // CEILING: STOP CAPTURING INSTEAD OF SILENTLY SWALLOWING SPEECH
+    if (merged.length > MAX_URL_TEXT_LENGTH) {
+      setTextParam(merged.slice(0, MAX_URL_TEXT_LENGTH));
+      if (!limitStopInProgressRef.current) {
+        limitStopInProgressRef.current = true;
+        showWarningToast("Límite de texto", "Se alcanzó el máximo de caracteres y la grabación se detuvo.");
+        Promise.resolve(aiSttRef.current?.stopRecording()).finally(() => {
+          limitStopInProgressRef.current = false;
+        });
+      }
+      return;
     }
+
+    setTextParam(merged);
   };
 
   const {
@@ -91,6 +126,9 @@ export const useTranslationTextFieldLogic = () => {
     sl,
     mediaStream
   );
+  const aiSttRef = React.useRef(aiStt);
+  aiSttRef.current = aiStt;
+  const limitStopInProgressRef = React.useRef(false);
 
   React.useEffect(() => {
     if (aiStt.isAiStt && listening) {
@@ -99,39 +137,47 @@ export const useTranslationTextFieldLogic = () => {
   }, [aiStt.isAiStt, listening]);
 
 
-  // UPDATES THE TEXT STATE AND SYNCHRONIZES WITH THE URL SEARCH PARAMETERS
-  const setTextParam = React.useCallback((value: string | ((prev: string) => string)) => {
-    setText((prevText) => {
-      const nextValue = typeof value === "function" ? value(prevText) : value;
-      const isOnlyWhitespace = nextValue.length > 0 && nextValue.trim() === "";
-      const finalValue = isOnlyWhitespace ? "" : nextValue;
+  // SINGLE SOURCE OF TRUTH: text STATE. THE URL IS A DEFERRED MIRROR.
+  const setTextParam = React.useCallback((value: string) => {
+    const isOnlyWhitespace = value.length > 0 && value.trim() === "";
+    setText(isOnlyWhitespace ? "" : value.slice(0, MAX_URL_TEXT_LENGTH));
+  }, []);
 
-      const truncatedValue = finalValue.length > MAX_URL_TEXT_LENGTH
-        ? finalValue.slice(0, MAX_URL_TEXT_LENGTH)
-        : finalValue;
-
+  // DEBOUNCED ONE-WAY SYNC (state -> url); REMEMBERS OUR OWN WRITES TO IGNORE THEM BACK
+  const lastWrittenUrlRef = React.useRef<string | null>(
+    typeof window === "undefined" ? null : new URLSearchParams(window.location.search).get("text")
+  );
+  const urlSyncTimerRef = React.useRef<number | null>(null);
+  React.useEffect(() => {
+    if (urlSyncTimerRef.current) window.clearTimeout(urlSyncTimerRef.current);
+    urlSyncTimerRef.current = window.setTimeout(() => {
+      urlSyncTimerRef.current = null;
       setURLSearchParams((params) => {
-        if (truncatedValue === "") {
+        if (text === "") {
           params.delete("text");
         } else {
-          params.set("text", truncatedValue);
+          params.set("text", text);
         }
+        lastWrittenUrlRef.current = text;
         return params;
       }, { replace: true });
+    }, URL_SYNC_DELAY_MS);
+    return () => {
+      if (urlSyncTimerRef.current) window.clearTimeout(urlSyncTimerRef.current);
+    };
+  }, [text, setURLSearchParams]);
 
-      return truncatedValue;
-    });
-  }, [setURLSearchParams, MAX_URL_TEXT_LENGTH]);
-  setTextParamRef.current = setTextParam;
-
+  // EXTERNAL URL CHANGES ONLY (back/forward, shared link): never overrides while dictating
+  const listeningRef = React.useRef(listening);
+  listeningRef.current = listening;
   React.useEffect(() => {
     if (manualEditRef.current) return;
-    if (urlTextParam !== text && urlTextParam.trim() !== text.trim()) {
-      setText(urlTextParam);
-    } else if (urlTextParam === "" && text !== "") {
-      setText("");
-    }
-  }, [urlTextParam, text]);
+    if (urlTextParam === lastWrittenUrlRef.current) return;
+    if (listeningRef.current || aiSttRef.current?.isRecording) return;
+    lastWrittenUrlRef.current = urlTextParam;
+    setText(urlTextParam.length > MAX_URL_TEXT_LENGTH ? urlTextParam.slice(0, MAX_URL_TEXT_LENGTH) : urlTextParam);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [urlTextParam]);
 
 
   // HANDLES REGION CHANGE AND SAVES THE USER PREFERENCE TO THE DATABASE
@@ -159,8 +205,11 @@ export const useTranslationTextFieldLogic = () => {
   // CLEARS ALL TEXT CONTENT AND STOPS ANY ACTIVE RECORDING SESSIONS
   const clearTextHandler = async () => {
     setTextParam("");
+    textRef.current = "";
     resetTranscript();
     previousTranscriptRef.current = "";
+    textAtMicStartRef.current = "";
+    micPrefixLenRef.current = 0;
     if (listening) {
       await SpeechRecognition.stopListening();
       SpeechRecognition.abortListening();
@@ -274,6 +323,7 @@ export const useTranslationTextFieldLogic = () => {
           resetTranscript();
           previousTranscriptRef.current = "";
           textAtMicStartRef.current = text;
+          micPrefixLenRef.current = text.length;
 
           await SpeechRecognition.startListening({
             continuous: true,
@@ -294,7 +344,13 @@ export const useTranslationTextFieldLogic = () => {
   };
 
   const previousTranscriptRef = React.useRef("");
+  const transcriptRef = React.useRef("");
+  transcriptRef.current = transcript;
+  const micPrefixLenRef = React.useRef(0);
+  const wasListeningRef = React.useRef(false);
 
+  // INTERIM DICTATION: NEVER PUNCTUATE, NEVER REWRITE STABLE TEXT.
+  // IF THE NEW TRANSCRIPT ONLY EXTENDS WHAT'S ON SCREEN, DON'T TOUCH THE DOM.
   React.useEffect(() => {
     if (!listening) return;
     if (manualEditRef.current) return;
@@ -302,24 +358,60 @@ export const useTranslationTextFieldLogic = () => {
     if (transcript && transcript !== previousTranscriptRef.current) {
       previousTranscriptRef.current = transcript;
 
-      const punctuated = addPunctuation(transcript);
       const prefix = textAtMicStartRef.current ? textAtMicStartRef.current + " " : "";
-      const fullText = prefix + punctuated;
-      const truncated = fullText.length > MAX_URL_TEXT_LENGTH
-        ? fullText.slice(0, MAX_URL_TEXT_LENGTH)
-        : fullText;
+      const fullText = prefix + transcript;
+      const current = textRef.current;
 
-      requestAnimationFrame(() => {
-        setTextParam(truncated);
-      });
+      let next: string;
+      if (fullText.startsWith(current)) {
+        // Pure extension: screen already shows the stable head, skip the write
+        if (fullText.length === current.length) return;
+        next = fullText;
+      } else {
+        // Revision: keep the shared head intact, swap only the unstable tail
+        const { head } = splitAtFirstDiff(current, fullText);
+        next = head + fullText.slice(head.length);
+      }
+
+      if (next.length > MAX_URL_TEXT_LENGTH) {
+        showWarningToast("Límite de texto", "Se alcanzó el máximo de caracteres y el dictado se detuvo.");
+        SpeechRecognition.stopListening().catch(() => { });
+        if (!keepMicOnRef.current) stopAudio();
+        setTextParam(next.slice(0, MAX_URL_TEXT_LENGTH));
+        return;
+      }
+
+      setTextParam(next);
     }
-  }, [transcript, setTextParam, listening, MAX_URL_TEXT_LENGTH]);
+  }, [transcript, listening, stopAudio]);
+
+  // PUNCTUATION IS DEFERRED TO SEGMENT CLOSURE: APPLIED ONCE WHEN LISTENING ENDS
+  React.useEffect(() => {
+    const justClosed = wasListeningRef.current && !listening && !aiStt.isAiStt;
+    wasListeningRef.current = listening;
+    if (!justClosed) return;
+    if (manualEditRef.current) return;
+
+    const body = transcriptRef.current.trim();
+    if (!body) return;
+
+    const prefixLen = Math.min(micPrefixLenRef.current, textRef.current.length);
+    const head = textRef.current.slice(0, prefixLen);
+    const tail = textRef.current.slice(prefixLen);
+    const punctuatedTail = addPunctuation(tail.trim() || body);
+    const finalText = (head + punctuatedTail).slice(0, MAX_URL_TEXT_LENGTH);
+
+    if (finalText !== textRef.current) {
+      setTextParam(finalText);
+    }
+    previousTranscriptRef.current = "";
+  }, [listening, aiStt.isAiStt]);
 
   React.useEffect(() => {
-    if (textareaRef.current && !listening && !aiStt.isRecording) {
+    if (textareaRef.current && !listening && !aiStt.isRecording && !aiStt.isAiStt) {
       textareaRef.current.focus();
     }
-  }, [listening, aiStt.isRecording]);
+  }, [listening, aiStt.isRecording, aiStt.isAiStt]);
 
   React.useEffect(() => {
     if (listening && !aiStt.isAiStt) {
