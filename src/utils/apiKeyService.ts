@@ -1,4 +1,5 @@
 import { supabase } from "./supabaseClient";
+import { notifyAuthExpired } from "./authEvents";
 
 export interface ApiKeyRow {
   provider: string;
@@ -14,6 +15,7 @@ export const apiKeyService = {
       .select("provider, api_key, created_at, updated_at")
       .eq("user_id", userId);
     if (error) {
+      notifyAuthExpired(error);
       console.error("[apiKeyService] getAll error:", error.message);
       return [];
     }
@@ -28,6 +30,7 @@ export const apiKeyService = {
       .eq("provider", provider)
       .single();
     if (error) {
+      notifyAuthExpired(error);
       console.error("[apiKeyService] get error:", error.message);
       return null;
     }
@@ -42,7 +45,10 @@ export const apiKeyService = {
         { user_id: userId, provider, api_key: apiKey },
         { onConflict: "user_id, provider" }
       );
-    if (error) throw new Error(`Error al guardar la API key: ${error.message}`);
+    if (error) {
+      notifyAuthExpired(error);
+      throw new Error(`Error al guardar la API key: ${error.message}`);
+    }
   },
 
   async remove(userId: string, provider: string): Promise<void> {
@@ -51,6 +57,9 @@ export const apiKeyService = {
       .delete()
       .eq("user_id", userId)
       .eq("provider", provider);
-    if (error) throw new Error("Error al eliminar la API key");
+    if (error) {
+      notifyAuthExpired(error);
+      throw new Error("Error al eliminar la API key");
+    }
   },
 };

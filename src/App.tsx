@@ -14,6 +14,7 @@ import { useDisclaimerModalLogic } from "./hooks/useDisclaimerModalLogic";
 import { Analytics } from "@vercel/analytics/react";
 import { useAuth } from "contexts/AuthContext";
 import { syncRegionsFromSupabase } from "./utils/mapeoLocales";
+import { AUTH_EXPIRED_EVENT } from "./utils/authEvents";
 import { AppNotificationListener } from "./components/AppNotifications";
 
 import Header from "./components/Header";
@@ -63,6 +64,13 @@ function App() {
   useEffect(() => {
     if (user) syncRegionsFromSupabase(user.id);
   }, [user]);
+
+  // SESSION DIED UNDERNEATH (expired token / failed refresh): ask to log in again
+  useEffect(() => {
+    const onAuthExpired = () => setIsAuthOpen(true);
+    window.addEventListener(AUTH_EXPIRED_EVENT, onAuthExpired);
+    return () => window.removeEventListener(AUTH_EXPIRED_EVENT, onAuthExpired);
+  }, []);
 
   return (
     <Router>

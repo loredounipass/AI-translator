@@ -1,7 +1,9 @@
-import React, { createContext, useContext, useEffect, useState, useCallback } from "react";
+import React, { createContext, useContext, useEffect, useState, useCallback, useRef } from "react";
 import type { Session, User, AuthError } from "@supabase/supabase-js";
 import { supabase } from "utils/supabaseClient";
 import { AUTH_ERRORS } from "utils/authConstants";
+import { AUTH_EXPIRED_EVENT } from "utils/authEvents";
+import { showWarningToast } from "components/AppNotifications";
 
 interface AuthState {
     session: Session | null;
@@ -30,13 +32,19 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         needsEmailVerification: false,
     });
 
+    // TRUE while OUR OWN logout runs, so its SIGNED_OUT event is not
+    // mistaken for an expired session
+    const manualSignOutRef = useRef(false);
+
 
     // MANAGE SUPABASE AUTH SESSION AND VISIBILITY REFRESH
     useEffect(() => {
         let mounted = true;
+        let hadSession = false;
 
         const updateState = (session: Session | null) => {
             if (!mounted) return;
+            hadSession = !!session;
             setState({
                 session,
                 user: session?.user ?? null,
@@ -54,12 +62,22 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
         const {
             data: { subscription },
-        } = supabase.auth.onAuthStateChange((_event, session) => {
+        } = supabase.auth.onAuthStateChange((event, session) => {
+            // The SDK gives up after a permanent refresh failure and emits
+            // SIGNED_OUT: tell the app so it can ask the user to log in again
+            if (event === "SIGNED_OUT" && hadSession && !manualSignOutRef.current) {
+                window.dispatchEvent(new Event(AUTH_EXPIRED_EVENT));
+            }
+            manualSignOutRef.current = false;
             updateState(session);
         });
 
-        const handleVisibilityChange = () => {
+        const handleVisibilityChange = async () => {
             if (document.visibilityState === "visible") {
+                // FORCE the check: getSession() only refreshes once the token
+                // is already expired, and a failed scheduled refresh may never
+                // have been re-armed while the tab was backgrounded
+                await supabase.auth.refreshSession().catch(() => { });
                 fetchSession();
             }
         };
@@ -71,6 +89,24 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             subscription.unsubscribe();
             document.removeEventListener("visibilitychange", handleVisibilityChange);
         };
+    }, []);
+
+
+    // SESSION EXPIRED NOTIFICATION (from services' 401s or SDK sign-out).
+    // THROTTLED: MANY SERVICES CAN FAIL WITH THE SAME DEAD TOKEN
+    useEffect(() => {
+        let lastNotice = 0;
+        const onExpired = () => {
+            const now = Date.now();
+            if (now - lastNotice < 30000) return;
+            lastNotice = now;
+            showWarningToast(
+                "Sesión expirada",
+                "Tu sesión caducó. Inicia sesión de nuevo para guardar historial y preferencias."
+            );
+        };
+        window.addEventListener(AUTH_EXPIRED_EVENT, onExpired);
+        return () => window.removeEventListener(AUTH_EXPIRED_EVENT, onExpired);
     }, []);
 
 
@@ -125,6 +161,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
     // LOGOUT USER
     const logout = useCallback(async () => {
+        manualSignOutRef.current = true;
         await supabase.auth.signOut();
     }, []);
 

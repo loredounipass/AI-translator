@@ -1,4 +1,5 @@
 import { supabase } from "./supabaseClient";
+import { notifyAuthExpired } from "./authEvents";
 
 export interface HistoryItem {
     id: string;
@@ -21,6 +22,7 @@ export const historyService = {
             .limit(300);
 
         if (error) {
+            notifyAuthExpired(error);
             console.error("Error fetching history");
             return [];
         }
@@ -55,6 +57,7 @@ export const historyService = {
                 .single();
 
             if (error) {
+                notifyAuthExpired(error);
                 console.error("Error updating history");
                 return null;
             }
@@ -75,6 +78,7 @@ export const historyService = {
             .single();
 
         if (error) {
+            notifyAuthExpired(error);
             console.error("Error saving history");
             return null;
         }
@@ -101,6 +105,7 @@ export const historyService = {
             .single();
 
         if (error) {
+            notifyAuthExpired(error);
             console.error("Error updating history");
             return null;
         }
@@ -116,6 +121,7 @@ export const historyService = {
             .eq("user_id", userId);
 
         if (error) {
+            notifyAuthExpired(error);
             console.error("Error toggling favorite");
             return false;
         }
@@ -131,6 +137,7 @@ export const historyService = {
             .eq("user_id", userId);
 
         if (error) {
+            notifyAuthExpired(error);
             console.error("Error deleting history");
             return false;
         }
@@ -145,6 +152,7 @@ export const historyService = {
             .eq("user_id", userId);
 
         if (error) {
+            notifyAuthExpired(error);
             console.error("Error clearing history");
             return false;
         }

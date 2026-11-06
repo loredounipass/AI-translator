@@ -1,4 +1,5 @@
 import { supabase } from "./supabaseClient";
+import { notifyAuthExpired } from "./authEvents";
 
 // Disclaimer(es) secuenciales que todo usuario debe aceptar, en orden.
 // La tabla user_disclaimer_acceptances guarda una fila por usuario Y por key,
@@ -22,8 +23,11 @@ export const disclaimerService = {
         .eq("disclaimer_key", disclaimerKey)
         .maybeSingle();
 
-      if (error || !data) return false;
-      return true;
+      if (error) {
+        notifyAuthExpired(error);
+        return false;
+      }
+      return !!data;
     } catch (e) {
       console.error("Error fetching disclaimer acceptance", e);
       return false;
@@ -42,6 +46,7 @@ export const disclaimerService = {
     if (error) {
       // 23505 = unique violation: ya habia aceptado antes, cuenta como exito.
       if (error.code === "23505") return;
+      notifyAuthExpired(error);
       throw error;
     }
   }

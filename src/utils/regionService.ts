@@ -1,4 +1,5 @@
 import { supabase } from "./supabaseClient";
+import { notifyAuthExpired } from "./authEvents";
 
 export interface UserRegion {
     id: string;
@@ -17,6 +18,7 @@ export const regionService = {
             .eq("user_id", userId);
 
         if (error) {
+            notifyAuthExpired(error);
             console.error("Error fetching regions");
             return [];
         }
@@ -31,8 +33,11 @@ export const regionService = {
             .eq("base_lang", baseLang)
             .maybeSingle();
 
-        if (error || !data) return null;
-        return data.region_code;
+        if (error) {
+            notifyAuthExpired(error);
+            return null;
+        }
+        return data ? data.region_code : null;
     },
 
     async upsertRegion(userId: string, baseLang: string, regionCode: string): Promise<boolean> {
@@ -49,6 +54,7 @@ export const regionService = {
             );
 
         if (error) {
+            notifyAuthExpired(error);
             console.error("Error saving region");
             return false;
         }
@@ -63,6 +69,7 @@ export const regionService = {
             .eq("base_lang", baseLang);
 
         if (error) {
+            notifyAuthExpired(error);
             console.error("Error deleting region");
             return false;
         }
