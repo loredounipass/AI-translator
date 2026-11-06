@@ -66,6 +66,8 @@ const TranslationTextField = () => {
   }, [aiStt.isProcessing]);
 
   const statusVisible = !text && (showTranscribing || isRecording);
+  // PLACEHOLDER ONLY ON A TRULY EMPTY FIELD: ANY TEXT (TYPED OR DICTATED) HIDES IT
+  const placeholderVisible = !text && !statusVisible && !!placeholder;
 
   return (
     <div className="relative flex flex-col flex-1 min-h-0 font-sans font-normal leading-normal bg-white/40 dark:bg-slate-800/40 transition-colors">
@@ -73,7 +75,7 @@ const TranslationTextField = () => {
         {/* BASE PLACEHOLDER: ALWAYS MOUNTED, FADES VIA OPACITY (NEVER UNMOUNTS) */}
         <div
           aria-hidden="true"
-          className={`absolute top-0 left-0 right-0 bottom-0 flex items-center justify-center text-lg text-[#9ca3af] dark:text-slate-500 font-sans pointer-events-none transition-opacity duration-200 ${statusVisible ? 'opacity-0' : 'opacity-100'}`}
+          className={`absolute top-0 left-0 right-0 bottom-0 flex items-center justify-center text-lg text-[#9ca3af] dark:text-slate-500 font-sans pointer-events-none transition-opacity duration-200 ${placeholderVisible ? 'opacity-100' : 'opacity-0'}`}
         >
           {placeholder}<span className="inline-block w-2 h-2 bg-[#9ca3af] dark:bg-slate-500 rounded-full ml-1 align-baseline relative -top-0.5 animate-blink" />
         </div>
