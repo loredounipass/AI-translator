@@ -4,7 +4,7 @@ import { useSearchParams } from "react-router-dom";
 import { DEFAULT_SOURCE_LANGUAGE } from "utils/constants";
 import { MAPEO_LOCALES, REGIONES_POR_IDIOMA, REGION_A_IDIOMA_BASE, normalizarLocale, filtrarRegiones, localeSoportado, saveRegion } from "../utils/mapeoLocales";
 import { useAuth } from "contexts/AuthContext";
-import { addPunctuation } from "../utils/punctuationLogic";
+import { mergeSharedOverlap, computeInterimNext, applyClosingPunctuation } from "../utils/dictationMerge";
 import { useTypewriterPlaceholder } from "./useTypewriterPlaceholder";
 import { useAiSpeechToText } from "./useAiSpeechToText";
 import { useUnifiedAudio } from "./useUnifiedAudio";
@@ -12,28 +12,6 @@ import { showAudioErrorNotification, showWarningToast } from "../components/AppN
 
 export const MAX_URL_TEXT_LENGTH = 8000;
 const URL_SYNC_DELAY_MS = 250;
-
-// LONGEST OVERLAP BETWEEN TAIL OF `a` AND HEAD OF `b`, SO DELTA APPENDS
-// DON'T DUPLICATE WORDS REPEATED ACROSS ASR CHUNKS
-const mergeSharedOverlap = (a: string, b: string): string => {
-  if (!a) return b;
-  if (!b) return a;
-  const maxK = Math.min(a.length, b.length);
-  for (let k = maxK; k > 0; k--) {
-    if (a.endsWith(b.slice(0, k))) {
-      return k === b.length ? a : a + b.slice(k);
-    }
-  }
-  return a + " " + b;
-};
-
-// SPLIT AT FIRST DIFFERENCE: HEAD IS THE STABLE PART BOTH VERSIONS SHARE
-const splitAtFirstDiff = (current: string, next: string): { head: string; tail: string } => {
-  const n = Math.min(current.length, next.length);
-  let i = 0;
-  while (i < n && current[i] === next[i]) i++;
-  return { head: current.slice(0, i), tail: current.slice(i) };
-};
 
 export const useTranslationTextFieldLogic = () => {
   const [searchParams, setURLSearchParams] = useSearchParams();
@@ -360,18 +338,10 @@ export const useTranslationTextFieldLogic = () => {
 
       const prefix = textAtMicStartRef.current ? textAtMicStartRef.current + " " : "";
       const fullText = prefix + transcript;
-      const current = textRef.current;
 
-      let next: string;
-      if (fullText.startsWith(current)) {
-        // Pure extension: screen already shows the stable head, skip the write
-        if (fullText.length === current.length) return;
-        next = fullText;
-      } else {
-        // Revision: keep the shared head intact, swap only the unstable tail
-        const { head } = splitAtFirstDiff(current, fullText);
-        next = head + fullText.slice(head.length);
-      }
+      // null = nothing really changed: skip the write entirely (no flicker)
+      const next = computeInterimNext(textRef.current, fullText);
+      if (next === null) return;
 
       if (next.length > MAX_URL_TEXT_LENGTH) {
         showWarningToast("Límite de texto", "Se alcanzó el máximo de caracteres y el dictado se detuvo.");
@@ -395,11 +365,11 @@ export const useTranslationTextFieldLogic = () => {
     const body = transcriptRef.current.trim();
     if (!body) return;
 
-    const prefixLen = Math.min(micPrefixLenRef.current, textRef.current.length);
-    const head = textRef.current.slice(0, prefixLen);
-    const tail = textRef.current.slice(prefixLen);
-    const punctuatedTail = addPunctuation(tail.trim() || body);
-    const finalText = (head + punctuatedTail).slice(0, MAX_URL_TEXT_LENGTH);
+    const finalText = applyClosingPunctuation(
+      textRef.current,
+      Math.min(micPrefixLenRef.current, textRef.current.length),
+      body
+    ).slice(0, MAX_URL_TEXT_LENGTH);
 
     if (finalText !== textRef.current) {
       setTextParam(finalText);
